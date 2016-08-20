@@ -36,7 +36,7 @@ class Agent:
     def select_move(self, state):
         if self.epsilon < random.random():
             return np.argmax(self.actor.predict(state, batch_size=32, verbose=0))
-        print("Epsilon!!")
+        #print("Epsilon!!")
         return random.choice([0,1])
 
     def eval(self, state):
@@ -44,7 +44,6 @@ class Agent:
 
     def update(self, state, action, true_reward):
         pred_reward = self.critic.predict(state)
-        td_error = true_reward - pred_reward
         actor_reward = self.actor.predict(state)
         actor_reward[0][action] = true_reward
         self.critic.fit(state, true_reward, verbose=0)
@@ -56,23 +55,30 @@ def one_hot(state):
     return np.expand_dims(vector, axis=0)
 
 def main():
-    env = StochasticMDPEnv()
-    agent = Agent()
-    total_reward = np.zeros(100)
-    for episode in range(1000):
-        state = env.reset()
-        action = agent.select_move(one_hot(state))
-        print("State: %d, Action: %d" % (state, action))
-        state, reward, done = env.step(action)
-        while not done:
+    goals = np.zeros(1000)
+    for trial in range(100):
+        env = StochasticMDPEnv()
+        agent = Agent()
+        total_reward = np.zeros(100)
+        for episode in range(100):
+            reached_goal = False
+            state = env.reset()
             action = agent.select_move(one_hot(state))
-            print("State: %d, Action: %d" % (state, action))
-            next_state, reward, done = env.step(action)
-            agent.update(one_hot(state), action, reward + agent.gamma * agent.eval(one_hot(next_state)))
-            state = next_state
-        total_reward[episode % 100] = reward
-        print("Episode %d: DONE" % episode)
-        print(total_reward.mean())
-
+            #print("State: %d, Action: %d" % (state, action))
+            state, reward, done = env.step(action)
+            while not done:
+                if state == 6 and not reached_goal:
+                    goals[episode] += 1
+                    reached_goal = True
+                action = agent.select_move(one_hot(state))
+                #print("State: %d, Action: %d" % (state, action))
+                next_state, reward, done = env.step(action)
+                agent.update(one_hot(state), action, reward + agent.gamma * agent.eval(one_hot(next_state)))
+                state = next_state
+                total_reward[episode % 100] = reward
+                #print("Episode %d: DONE" % episode)
+                #print(total_reward.mean())
+        print(trial)
+    print(goals)
 if __name__ == "__main__":
     main()
