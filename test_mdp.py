@@ -1,4 +1,4 @@
-from env.mdp import StochasticMDPEnv
+from envs.mdp import StochasticMDPEnv
 
 class Agent:
 
