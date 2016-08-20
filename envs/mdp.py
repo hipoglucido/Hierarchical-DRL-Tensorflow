@@ -6,6 +6,11 @@ class StochasticMDPEnv:
         self.visited_six = False
         self.current_state = 2
 
+    def reset(self):
+        self.visited_six = False
+        self.current_state = 2
+        return self.current_state
+
     def step(self, action):
         # If "right" selected
         if action == 1:
