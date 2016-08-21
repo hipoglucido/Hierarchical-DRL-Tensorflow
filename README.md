@@ -7,6 +7,8 @@ This is totally a work in progress. As of this writing (Aug 21, 2016) I only sta
 
 Also, I haven't started on Montezuma's revenge yet. But I do intend to.
 
+Comments/criticisms/suggestions welcome, as always.
+
 ## Requirements
 
 - numpy
