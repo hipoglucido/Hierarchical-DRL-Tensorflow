@@ -17,7 +17,7 @@ Comments/criticisms/suggestions/pull requests welcome, as always.
 
 The simple actor-critic methods defined in `actor_critic.py` doesn't learn to visit state 6 very much at all.
 
-![State visits](https://github.com/EthanMacdonald/h-DQN/fig/mdp-actor-critic-visits.png)
+![State visits](https://github.com/EthanMacdonald/h-DQN/blob/master/fig/mdp-actor-critic-visits.png)
 
 Fig 1. Each subplot shows the number of times the actor-critic agent visited a given state (averaged over 1000 episodes).
 
