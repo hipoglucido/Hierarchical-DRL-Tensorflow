@@ -3,11 +3,8 @@ import numpy as np
 from collections import namedtuple
 from envs.mdp import StochasticMDPEnv
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dense, Activation
 from keras.optimizers import Adam
-from rl.agents.dqn import DQNAgent
-from rl.policy import BoltzmannQPolicy
-from rl.memory import SequentialMemory
 
 def meta_controller():
     meta = Sequential()
