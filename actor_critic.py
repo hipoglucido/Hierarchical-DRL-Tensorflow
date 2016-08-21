@@ -4,6 +4,8 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import Adam
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
 
 def actor():
     actor = Sequential()
@@ -52,30 +54,75 @@ def one_hot(state):
     return np.expand_dims(vector, axis=0)
 
 def main():
-    goals = np.zeros(1000)
-    for trial in range(100):
-        env = StochasticMDPEnv()
-        agent = Agent()
-        total_reward = np.zeros(100)
-        for episode in range(100):
-            reached_goal = False
+    np.set_printoptions(precision=2)
+    env = StochasticMDPEnv()
+    agent = Agent()
+    visits = np.zeros((12, 6))
+    for episode_thousand in range(12):
+        for episode in range(1000):
+            if episode % 1000 == 0 or episode % 500 == 0:
+                print("### EPISODE %d ###" % (episode_thousand*1000 + episode))
             state = env.reset()
+            visits[episode_thousand][state-1] += 1
             action = agent.select_move(one_hot(state))
-            #print("State: %d, Action: %d" % (state, action))
             state, reward, done = env.step(action)
+            visits[episode_thousand][state-1] += 1
             while not done:
-                if state == 6 and not reached_goal:
-                    goals[episode] += 1
-                    reached_goal = True
                 action = agent.select_move(one_hot(state))
-                #print("State: %d, Action: %d" % (state, action))
                 next_state, reward, done = env.step(action)
+                visits[episode_thousand][next_state-1] += 1
                 agent.update(one_hot(state), action, reward + agent.gamma * agent.eval(one_hot(next_state)))
                 state = next_state
-                total_reward[episode % 100] = reward
-                #print("Episode %d: DONE" % episode)
-                #print(total_reward.mean())
-        print(trial)
-    print(goals)
+
+    eps = list(range(1,13))
+    plt.subplot(2, 3, 1)
+    plt.plot(eps, visits[:,0]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S1")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 2)
+    plt.plot(eps, visits[:,1]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S2")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 3)
+    plt.plot(eps, visits[:,2]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S3")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 4)
+    plt.plot(eps, visits[:,3]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S4")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 5)
+    plt.plot(eps, visits[:,4]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S5")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 6)
+    plt.plot(eps, visits[:,5]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S6")
+    plt.grid(True)
+    plt.show()
+
 if __name__ == "__main__":
     main()
