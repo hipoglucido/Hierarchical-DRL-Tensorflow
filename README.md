@@ -21,7 +21,7 @@ The simple actor-critic methods defined in `actor_critic.py` doesn't learn to vi
 
 Fig 1. Each subplot shows the number of times the actor-critic agent visited a given state (averaged over 1000 episodes).
 
-To reproduce the figure above run `python actor_critic.py` from the command lie.md
+To reproduce the figure above run `python actor_critic.py` from the command line
 
 ## Requirements
 

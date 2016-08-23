@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import namedtuple
 from envs.mdp import StochasticMDPEnv
 from keras.models import Sequential
@@ -24,31 +25,23 @@ def actor():
     actor.compile(loss='mse', optimizer=Adam())
     return actor
 
-def critic():
-    critic = Sequential()
-    critic.add(Dense(6, init='lecun_uniform', input_shape=(19,)))
-    critic.add(Activation("relu"))
-    critic.add(Dense(1, init='lecun_uniform'))
-    critic.compile(loss='mse', optimizer=Adam())
-    return critic
-
 class Agent:
 
     def __init__(self):
         self.meta_controller = meta_controller()
         self.actor = actor()
-        self.critic = critic()
-        self.actor_epsilon = 0.1 # TODO: Epsilon decay and goal-specific epsilons
-        self.meta_epsilon = 0.1 # TODO: Epsilon decay
-        self.n_samples = 10
-        self.meta_n_samples = 10
+        self.goal_selected = np.ones(6)
+        self.goal_success = np.zeros(6)
+        self.meta_epsilon = 2.0
+        self.n_samples = 100
+        self.meta_n_samples = 100
         self.gamma = 0.96
         self.memory = []
         self.meta_memory = []
 
     def select_move(self, state, goal):
         vector = np.concatenate([state, goal], axis=1)
-        if self.actor_epsilon < random.random():
+        if 1.0 - 5*self.goal_success[np.argmax(goal)]/self.goal_selected[np.argmax(goal)] < random.random():
             return np.argmax(self.actor.predict(vector, verbose=0))
         return random.choice([0,1])
 
@@ -57,9 +50,8 @@ class Agent:
             return np.argmax(self.meta_controller.predict(state, verbose=0))+1
         return random.choice([1,2,3,4,5,6])
 
-    def criticize(self, state, goal, action, next_state):
-        vector = np.concatenate([state, goal, [[action]], next_state], axis=1)
-        return self.critic.predict(vector, verbose=0)
+    def criticize(self, goal, next_state):
+        return 1.0 if goal == next_state else 0.0
 
     def store(self, experience, meta=False):
         if meta:
@@ -70,11 +62,9 @@ class Agent:
     def _update(self):
         exps = [random.choice(self.memory) for _ in range(self.n_samples)]
         for exp in exps:
-            critic_vector = np.concatenate([exp.state, exp.goal, [[exp.action]], exp.next_state], axis=1)
             actor_vector = np.concatenate([exp.state, exp.goal], axis=1)
             actor_reward = self.actor.predict(actor_vector, verbose=0)
             actor_reward[0][exp.action] = exp.reward
-            self.critic.fit(critic_vector, exp.reward, verbose=0)
             self.actor.fit(actor_vector, actor_reward, verbose=0)
 
     def _update_meta(self):
@@ -101,31 +91,94 @@ def main():
     MetaExperience = namedtuple("MetaExperience", ["state", "goal", "reward", "next_state"])
     env = StochasticMDPEnv()
     agent = Agent()
-    for episode in range(100):
-        print("\n### EPISODE %d ###" % episode)
-        state = env.reset()
-        done = False
-        while not done:
-            goal = agent.select_goal(one_hot(state))
-            print("New Goal: %d" % goal)
-            total_external_reward = 0
-            goal_reached = False
-            while not done and not goal_reached:
-                print(state, end=",")
-                action = agent.select_move(one_hot(state), one_hot(goal))
-                next_state, external_reward, done = env.step(action)
-                intrinsic_reward = agent.criticize(one_hot(state), one_hot(goal), action, one_hot(next_state))
-                goal_reached = next_state == goal
-                if goal_reached:
-                    print("Success!!")
-                exp = ActorExperience(one_hot(state), one_hot(goal), action, intrinsic_reward, one_hot(next_state))
-                agent.store(exp, meta=False)
-                agent.update(meta=False)
-                agent.update(meta=True)
-                total_external_reward += external_reward
-                state = next_state
-            exp = MetaExperience(one_hot(state), one_hot(goal), total_external_reward, one_hot(next_state))
-            agent.store(exp, meta=True)
+    visits = np.zeros((12, 6))
+    for episode_thousand in range(12):
+        agent.meta_epsilon = agent.meta_epsilon/2.0
+        print("\nNew meta-epsilon: %.4f" % agent.meta_epsilon, end="")
+        for episode in range(1000):
+            print("\n\n### EPISODE %d ###" % (episode_thousand*1000 + episode), end="")
+            state = env.reset()
+            visits[episode_thousand][state-1] += 1
+            done = False
+            while not done:
+                goal = agent.select_goal(one_hot(state))
+                agent.goal_selected[goal-1] += 1
+                print("\nNew Goal: %d\nState-Actions: " % goal)
+                total_external_reward = 0
+                goal_reached = False
+                while not done and not goal_reached:
+                    action = agent.select_move(one_hot(state), one_hot(goal))
+                    print((state,action), end="; ")
+                    next_state, external_reward, done = env.step(action)
+                    visits[episode_thousand][next_state-1] += 1
+                    intrinsic_reward = agent.criticize(goal, next_state)
+                    goal_reached = next_state == goal
+                    if goal_reached:
+                        agent.goal_success[goal-1] += 1
+                        print("Goal reached!!", end=" ")
+                    if next_state == 6:
+                        print("S6 reached!!", end=" ")
+                    exp = ActorExperience(one_hot(state), one_hot(goal), action, intrinsic_reward, one_hot(next_state))
+                    agent.store(exp, meta=False)
+                    agent.update(meta=False)
+                    agent.update(meta=True)
+                    total_external_reward += external_reward
+                    state = next_state
+                exp = MetaExperience(one_hot(state), one_hot(goal), total_external_reward, one_hot(next_state))
+                agent.store(exp, meta=True)
+            if (episode % 100 == 99):
+                print("")
+                print(visits/1000, end="")
+
+    eps = list(range(1,13))
+    plt.subplot(2, 3, 1)
+    plt.plot(eps, visits[:,0]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S1")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 2)
+    plt.plot(eps, visits[:,1]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S2")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 3)
+    plt.plot(eps, visits[:,2]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S3")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 4)
+    plt.plot(eps, visits[:,3]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S4")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 5)
+    plt.plot(eps, visits[:,4]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S5")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 6)
+    plt.plot(eps, visits[:,5]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 1.1)
+    plt.xlim(1, 12)
+    plt.title("S6")
+    plt.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     main()
