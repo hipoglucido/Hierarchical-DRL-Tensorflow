@@ -1,4 +1,7 @@
+import numpy as np
+import matplotlib.pyplot as plt
 from envs.mdp import StochasticMDPEnv
+plt.style.use('ggplot')
 
 class Agent:
 
@@ -17,22 +20,72 @@ class Agent:
         pass
 
 def main():
+    np.set_printoptions(precision=2)
     env = StochasticMDPEnv()
-    state = env.current_state
-    print("State: %d" % state)
     agent = Agent()
-    action = agent.select_move(state)
-    state, reward, done = env.step(action)
-    while not done:
-        print("Action: %d" % action)
-        print("Reward: %.2f" % reward)
-        print("State: %d" % state)
-        action = agent.select_move(state)
-        next_state, reward, done = env.step(action)
-        agent.update(state, action, reward)
-        state = next_state
-    print("DONE")
-    print(reward)
+    visits = np.zeros((12, 6))
+    for episode_thousand in range(12):
+        for episode in range(1000):
+            done = False
+            state = env.reset()
+            agent.seen_6 = False
+            visits[episode_thousand][state-1] += 1
+            while not done:
+                action = agent.select_move(state)
+                next_state, reward, done = env.step(action)
+                visits[episode_thousand][next_state-1] += 1
+                state = next_state
+    print(visits/1000)
+
+    eps = list(range(1,13))
+    plt.subplot(2, 3, 1)
+    plt.plot(eps, visits[:,0]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S1")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 2)
+    plt.plot(eps, visits[:,1]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S2")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 3)
+    plt.plot(eps, visits[:,2]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S3")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 4)
+    plt.plot(eps, visits[:,3]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S4")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 5)
+    plt.plot(eps, visits[:,4]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S5")
+    plt.grid(True)
+
+    plt.subplot(2, 3, 6)
+    plt.plot(eps, visits[:,5]/1000)
+    plt.xlabel("Episodes (*1000)")
+    plt.ylim(-0.01, 2.0)
+    plt.xlim(1, 12)
+    plt.title("S6")
+    plt.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     main()
