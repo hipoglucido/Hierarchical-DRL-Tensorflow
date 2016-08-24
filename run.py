@@ -33,8 +33,8 @@ class Agent:
         self.goal_selected = np.ones(6)
         self.goal_success = np.zeros(6)
         self.meta_epsilon = 2.0
-        self.n_samples = 100
-        self.meta_n_samples = 100
+        self.n_samples = 500
+        self.meta_n_samples = 500
         self.gamma = 0.96
         self.memory = []
         self.meta_memory = []
@@ -61,19 +61,21 @@ class Agent:
 
     def _update(self):
         exps = [random.choice(self.memory) for _ in range(self.n_samples)]
-        for exp in exps:
-            actor_vector = np.concatenate([exp.state, exp.goal], axis=1)
-            actor_reward = self.actor.predict(actor_vector, verbose=0)
-            actor_reward[0][exp.action] = exp.reward
-            self.actor.fit(actor_vector, actor_reward, verbose=0)
+        state_vectors = np.squeeze(np.asarray([np.concatenate([exp.state, exp.goal], axis=1) for exp in exps]))
+        reward_vectors = self.actor.predict(state_vectors, verbose=0)
+        for i, exp in enumerate(exps):
+            reward_vectors[i][exp.action] = exp.reward
+        reward_vectors = np.asarray(reward_vectors)
+        self.actor.fit(state_vectors, reward_vectors, verbose=0)
 
     def _update_meta(self):
         if 0 < len(self.meta_memory):
             exps = [random.choice(self.meta_memory) for _ in range(self.meta_n_samples)]
-            for exp in exps:
-                meta_reward = self.meta_controller.predict(exp.state, verbose=0)
-                meta_reward[0][np.argmax(exp.goal)] = exp.reward
-                self.meta_controller.fit(exp.state, meta_reward, verbose=0)
+            state_vectors = np.squeeze(np.asarray([exp.state for exp in exps]))
+            reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
+            for i, exp in enumerate(exps):
+                reward_vectors[i][np.argmax(exp.goal)] = exp.reward
+            self.meta_controller.fit(state_vectors, reward_vectors, verbose=0)
 
     def update(self, meta=False):
         if meta:
