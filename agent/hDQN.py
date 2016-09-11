@@ -2,7 +2,7 @@ import random
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from keras.optimizers import Adam, SGD
+from keras.optimizers import SGD
 
 # Default architecture for the meta controller
 default_meta_layers = [Dense, Dense, Dense]
@@ -11,6 +11,7 @@ default_meta_nodes = [6, 10, 6]
 default_meta_activations = ['relu', 'relu', 'relu']
 default_meta_loss = "mse"
 default_meta_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+default_meta_n_samples = 50
 
 # Default architectures for the lower level controller/actor
 default_layers = [Dense] * 6
@@ -19,6 +20,9 @@ default_nodes = [12, 10, 8, 6, 4, 2]
 default_activations = ['relu'] * 6
 default_loss = "mse"
 default_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+default_n_samples = 100
+default_gamma = 0.96
+default_meta_epsilon = 4.0
 
 class hDQN:
 
@@ -26,7 +30,10 @@ class hDQN:
                 meta_nodes=default_meta_nodes, meta_activations=default_meta_activations,
                 meta_loss=default_meta_loss, meta_optimizer=default_meta_optimizer,
                 layers=default_layers, inits=default_inits, nodes=default_nodes,
-                activations=default_activations, loss=default_loss, optimizer=default_optimizer):
+                activations=default_activations, loss=default_loss,
+                optimizer=default_optimizer, n_samples=default_n_samples,
+                meta_n_samples=default_meta_n_samples, gamma=default_gamma,
+                meta_epsilon=default_meta_epsilon):
         self.meta_layers = meta_layers
         self.meta_inits = meta_inits
         self.meta_nodes = meta_nodes
@@ -43,10 +50,10 @@ class hDQN:
         self.actor = self.actor()
         self.goal_selected = np.ones(6)
         self.goal_success = np.zeros(6)
-        self.meta_epsilon = 4.0
-        self.n_samples = 100
-        self.meta_n_samples = 50
-        self.gamma = 0.96
+        self.meta_epsilon = meta_epsilon
+        self.n_samples = n_samples
+        self.meta_n_samples = meta_n_samples
+        self.gamma = gamma
         self.memory = []
         self.meta_memory = []
 
@@ -97,7 +104,11 @@ class hDQN:
     def _update(self):
         exps = [random.choice(self.memory) for _ in range(self.n_samples)]
         state_vectors = np.squeeze(np.asarray([np.concatenate([exp.state, exp.goal], axis=1) for exp in exps]))
-        reward_vectors = self.actor.predict(state_vectors, verbose=0)
+        try:
+            reward_vectors = self.actor.predict(state_vectors, verbose=0)
+        except Exception as e:
+            state_vectors = np.expand_dims(state_vectors, axis=0)
+            reward_vectors = self.actor.predict(state_vectors, verbose=0)
         for i, exp in enumerate(exps):
             reward_vectors[i][exp.action] = exp.reward
         reward_vectors = np.asarray(reward_vectors)
@@ -107,7 +118,11 @@ class hDQN:
         if 0 < len(self.meta_memory):
             exps = [random.choice(self.meta_memory) for _ in range(self.meta_n_samples)]
             state_vectors = np.squeeze(np.asarray([exp.state for exp in exps]))
-            reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
+            try:
+                reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
+            except Exception as e:
+                state_vectors = np.expand_dims(state_vectors, axis=0)
+                reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
             for i, exp in enumerate(exps):
                 reward_vectors[i][np.argmax(exp.goal)] = exp.reward
             self.meta_controller.fit(state_vectors, reward_vectors, verbose=0)

@@ -25,3 +25,14 @@ I'd like to build an automated system for testing network architectures and reco
 #### Modify h-DQN to accept network architecture hyperparameters
 
 - This also went smoothly.
+
+#### Create `search_architectures.py`: randomly select network architecture, test it, and append results to data file
+
+- Was tedious but easy to create the ability to randomly select network architectures
+- Didn't think about the fact that I'm not currently recording cumulative regret
+  - Needed to implement this feature as part of this task
+- Also realized there were a bunch of other parameters worth searching through
+  - Pulled these out so that `search_architectures.py` can pass them in as params
+- There seems to be some sort of bug that occurs when some architectures are randomly selected
+  - Finished debugging/fixing this issue. Needed to add a `np.expand_dims()` call whenever the number of experience samples was set to 1
+- Now outputing results to data file
