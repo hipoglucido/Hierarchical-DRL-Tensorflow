@@ -125,8 +125,8 @@ def run_once():
     optimizer = SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
 
     # Choose n_samples
-    n_samples = random.randint(1,11)
-    meta_n_samples = random.randint(1,11)
+    n_samples = random.randint(1,1000)
+    meta_n_samples = random.randint(1,1000)
     print("n_samples: ", n_samples)
     print("meta_n_samples: ", meta_n_samples)
 
