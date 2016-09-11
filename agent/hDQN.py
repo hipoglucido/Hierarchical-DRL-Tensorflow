@@ -4,9 +4,41 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import Adam, SGD
 
+# Default architecture for the meta controller
+default_meta_layers = [Dense, Dense, Dense]
+default_meta_inits = ['lecun_uniform', 'lecun_uniform', 'lecun_uniform']
+default_meta_nodes = [6, 10, 6]
+default_meta_activations = ['relu', 'relu', 'relu']
+default_meta_loss = "mse"
+default_meta_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+
+# Default architectures for the lower level controller/actor
+default_layers = [Dense] * 6
+default_inits = ['lecun_uniform'] * 6
+default_nodes = [12, 10, 8, 6, 4, 2]
+default_activations = ['relu'] * 6
+default_loss = "mse"
+default_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+
 class hDQN:
 
-    def __init__(self):
+    def __init__(self, meta_layers=default_meta_layers, meta_inits=default_meta_inits,
+                meta_nodes=default_meta_nodes, meta_activations=default_meta_activations,
+                meta_loss=default_meta_loss, meta_optimizer=default_meta_optimizer,
+                layers=default_layers, inits=default_inits, nodes=default_nodes,
+                activations=default_activations, loss=default_loss, optimizer=default_optimizer):
+        self.meta_layers = meta_layers
+        self.meta_inits = meta_inits
+        self.meta_nodes = meta_nodes
+        self.meta_activations = meta_activations
+        self.meta_loss = meta_loss
+        self.meta_optimizer = meta_optimizer
+        self.layers = layers
+        self.inits = inits
+        self.nodes = nodes
+        self.activations = activations
+        self.loss = loss
+        self.optimizer = optimizer
         self.meta_controller = self.meta_controller()
         self.actor = self.actor()
         self.goal_selected = np.ones(6)
@@ -20,38 +52,22 @@ class hDQN:
 
     def meta_controller(self):
         meta = Sequential()
-        meta.add(Dense(6, init='lecun_uniform', input_shape=(6,)))
-        meta.add(Activation("relu"))
-        meta.add(Dense(10, init='lecun_uniform'))
-        meta.add(Activation("relu"))
-        meta.add(Dense(20, init='lecun_uniform'))
-        meta.add(Activation("relu"))
-        meta.add(Dense(20, init='lecun_uniform'))
-        meta.add(Activation("relu"))
-        meta.add(Dense(20, init='lecun_uniform'))
-        meta.add(Activation("relu"))
-        meta.add(Dense(10, init='lecun_uniform'))
-        meta.add(Activation("relu"))
-        meta.add(Dense(6, init='lecun_uniform'))
-        meta.add(Activation("softmax"))
-        meta.compile(loss='mse', optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False))
+        meta.add(self.meta_layers[0](self.meta_nodes[0], init=self.meta_inits[0], input_shape=(self.meta_nodes[0],)))
+        meta.add(Activation(self.meta_activations[0]))
+        for layer, init, node, activation in list(zip(self.meta_layers, self.meta_inits, self.meta_nodes, self.meta_activations))[1:]:
+            meta.add(layer(node, init=init, input_shape=(node,)))
+            meta.add(Activation(activation))
+        meta.compile(loss=self.meta_loss, optimizer=self.meta_optimizer)
         return meta
 
     def actor(self):
         actor = Sequential()
-        actor.add(Dense(12, init='lecun_uniform', input_shape=(12,)))
-        actor.add(Activation("relu"))
-        actor.add(Dense(10, init='lecun_uniform'))
-        actor.add(Activation("relu"))
-        actor.add(Dense(8, init='lecun_uniform'))
-        actor.add(Activation("relu"))
-        actor.add(Dense(6, init='lecun_uniform'))
-        actor.add(Activation("relu"))
-        actor.add(Dense(4, init='lecun_uniform'))
-        actor.add(Activation("relu"))
-        actor.add(Dense(2, init='lecun_uniform'))
-        actor.add(Activation("softmax"))
-        actor.compile(loss='mse', optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False))
+        actor.add(self.layers[0](self.nodes[0], init=self.inits[0], input_shape=(self.nodes[0],)))
+        actor.add(Activation(self.activations[0]))
+        for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
+            actor.add(layer(node, init=init, input_shape=(node,)))
+            actor.add(Activation(activation))
+        actor.compile(loss=self.loss, optimizer=self.optimizer)
         return actor
 
     def select_move(self, state, goal):

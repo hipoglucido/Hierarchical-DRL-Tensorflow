@@ -21,3 +21,7 @@ I'd like to build an automated system for testing network architectures and reco
 #### Abstract h-DQN into separate file from `run.py`
 
 - This was easy to do. Only took a few minutes.
+
+#### Modify h-DQN to accept network architecture hyperparameters
+
+- This also went smoothly.
