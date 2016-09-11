@@ -23,6 +23,10 @@ Comments/criticisms/suggestions/pull requests welcome, as always.
 
 TODO
 
+### Work Notes
+
+I've started [keeping track of experiments and work](https://github.com/EthanMacdonald/h-DQN/work_notes.md) notes for posterity. 
+
 ## Results
 
 ### Stochastic MDP Environment
