@@ -4,11 +4,11 @@ Reproduction of "Hierarchical Deep Reinforcement Learning: Integrating Temporal 
 
 ## Disclaimer
 
-This is totally a work in progress. As of this writing (Aug 21, 2016) I only started working on this yesterday evening. :)
+This is a work in progress. I haven't been able to replicate the results yet.
 
-Also, I haven't started on Montezuma's revenge yet. But I do intend to.
+Also, I haven't started on Montezuma's revenge yet. I intend to do this eventually, but I'm not sure when. Pull requests are welcomed and encouraged!
 
-Comments/criticisms/suggestions/pull requests welcome, as always.
+Comments/criticisms/suggestions/etc welcome, as always.
 
 ## Progress
 
@@ -21,11 +21,11 @@ Comments/criticisms/suggestions/pull requests welcome, as always.
 
 ### Montezuma's Revenge
 
-TODO
+TODO (This might be a while. Pull requests welcome.)
 
 ### Work Notes
 
-I've started [keeping track of experiments and work](https://github.com/EthanMacdonald/h-DQN/blob/master/work_notes.md) notes for posterity. 
+I've started [keeping track of experiments and work](https://github.com/EthanMacdonald/h-DQN/blob/master/work_notes.md) notes for posterity.
 
 ## Results
 
@@ -33,13 +33,21 @@ I've started [keeping track of experiments and work](https://github.com/EthanMac
 
 #### Simple Actor-Critic
 
-The simple actor-critic methods defined in `actor_critic.py` doesn't learn to visit state 6 very much at all. This is exactly what we might expect from this sort of agent in this sort of environment. This agent is simply a baseline for comparison.
+The simple actor-critic agent defined in `actor_critic.py` doesn't learn to visit state 6 very much at all. This is exactly what we might expect from this sort of agent in this sort of environment. This agent is simply a baseline for comparison.
 
 ![State visits](https://github.com/EthanMacdonald/h-DQN/blob/master/fig/mdp-actor-critic-visits.png)
 
 Fig 1. Each subplot shows the number of times the actor-critic agent visited a given state (averaged over 1000 episodes).
 
 To reproduce the figure above run `python actor_critic.py` from the command line.
+
+#### h-DQN
+
+The h-DQN agent is located in `./agent/hDQN.py`. So far I haven't been able to produce comparable results to the paper, but I have been getting better than baseline.
+
+There are a few reasons this could be happening. I might have a critical bug(s) somewhere in my code or I might not have the right network architecture. I've added the file `search_architectures.py` which essentially chooses a random architecture, runs it for 12000 episodes, and prints the results to a CSV file. My next step will be creating a Knitr document for analyzing the output.
+
+One particularly odd pattern I'm noticing is a tendency for the agent to seemingly converge to selecting the correct (or *almost* correct) subgoal only to watch performance taper off in later episodes. It's almost like the poor little guy gets tired and loses hope. :'(
 
 ## Requirements
 
