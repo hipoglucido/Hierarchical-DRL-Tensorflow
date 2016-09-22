@@ -6,7 +6,7 @@ from collections import namedtuple
 from envs.mdp import StochasticMDPEnv
 from agent.hDQN import hDQN
 from keras.layers import Dense, Activation
-from keras.optimizers import SGD
+from keras.optimizers import SGD, RMSprop
 
 def one_hot(state):
     vector = np.zeros(6)
@@ -25,8 +25,8 @@ def run_architecture(meta_layers, meta_inits, meta_nodes, meta_activations,
                 meta_nodes=meta_nodes, meta_activations=meta_activations,
                 meta_loss=meta_loss, meta_optimizer=meta_optimizer,
                 layers=layers, inits=inits, nodes=nodes, activations=activations,
-                loss=loss, optimizer=optimizer, n_samples=n_samples,
                 meta_n_samples=meta_n_samples, gamma=gamma, meta_epsilon=meta_epsilon)
+    #agent = hDQN()
     visits = np.zeros((k_episodes, 6))
     cumulative_regret = 0
     for episode_thousand in range(k_episodes):
