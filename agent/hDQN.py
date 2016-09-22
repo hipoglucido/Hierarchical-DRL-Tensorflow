@@ -2,27 +2,28 @@ import random
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from keras.optimizers import SGD
+from keras.optimizers import SGD, RMSprop
 
 # Default architecture for the meta controller
 default_meta_layers = [Dense, Dense, Dense]
-default_meta_inits = ['lecun_uniform', 'lecun_uniform', 'lecun_uniform']
-default_meta_nodes = [6, 10, 6]
-default_meta_activations = ['relu', 'relu', 'relu']
+default_meta_inits = ['lecun_uniform', 'lecun_uniform', 'lecun_uniform', 'lecun_uniform', 'lecun_uniform']
+default_meta_nodes = [6, 30, 30, 30, 6]
+default_meta_activations = ['relu', 'relu', 'relu', 'relu', 'relu']
 default_meta_loss = "mse"
-default_meta_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
-default_meta_n_samples = 50
+default_meta_optimizer=RMSprop(lr=0.00025, rho=0.9, epsilon=1e-06)
+default_meta_n_samples = 1000
+default_meta_epsilon = 0.1
 
 # Default architectures for the lower level controller/actor
-default_layers = [Dense] * 6
-default_inits = ['lecun_uniform'] * 6
-default_nodes = [12, 10, 8, 6, 4, 2]
-default_activations = ['relu'] * 6
+default_layers = [Dense] * 5
+default_inits = ['lecun_uniform'] * 5
+default_nodes = [12, 30, 30, 30, 2]
+default_activations = ['relu'] * 5
 default_loss = "mse"
-default_optimizer=SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
-default_n_samples = 100
-default_gamma = 0.96
-default_meta_epsilon = 4.0
+default_optimizer=RMSprop(lr=0.00025, rho=0.9, epsilon=1e-06)
+default_n_samples = 1000
+default_gamma = 0.975
+default_epsilon = 0.1
 
 class hDQN:
 
@@ -33,7 +34,7 @@ class hDQN:
                 activations=default_activations, loss=default_loss,
                 optimizer=default_optimizer, n_samples=default_n_samples,
                 meta_n_samples=default_meta_n_samples, gamma=default_gamma,
-                meta_epsilon=default_meta_epsilon):
+                meta_epsilon=default_meta_epsilon, epsilon=default_epsilon):
         self.meta_layers = meta_layers
         self.meta_inits = meta_inits
         self.meta_nodes = meta_nodes
@@ -72,6 +73,7 @@ class hDQN:
         actor.add(self.layers[0](self.nodes[0], init=self.inits[0], input_shape=(self.nodes[0],)))
         actor.add(Activation(self.activations[0]))
         for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
+            print(node)
             actor.add(layer(node, init=init, input_shape=(node,)))
             actor.add(Activation(activation))
         actor.compile(loss=self.loss, optimizer=self.optimizer)
@@ -79,13 +81,15 @@ class hDQN:
 
     def select_move(self, state, goal):
         vector = np.concatenate([state, goal], axis=1)
-        if 1.0 - 5*self.goal_success[np.argmax(goal)]/self.goal_selected[np.argmax(goal)] < random.random():
+        if random.random() < self.meta_epsilon:
             return np.argmax(self.actor.predict(vector, verbose=0))
         return random.choice([0,1])
 
     def select_goal(self, state):
         if self.meta_epsilon < random.random():
-            return np.argmax(self.meta_controller.predict(state, verbose=0))+1
+            pred = self.meta_controller.predict(state, verbose=0)
+            print(pred.shape)
+            return np.argmax(pred)+1
         return random.choice([1,2,3,4,5,6])
 
     def criticize(self, goal, next_state):
@@ -94,12 +98,12 @@ class hDQN:
     def store(self, experience, meta=False):
         if meta:
             self.meta_memory.append(experience)
-            if len(self.meta_memory) > 100:
+            if len(self.meta_memory) > 1000000:
                 self.meta_memory = self.meta_memory[-100:]
         else:
             self.memory.append(experience)
-            if len(self.memory) > 500:
-                self.memory = self.memory[-500:]
+            if len(self.memory) > 1000000:
+                self.memory = self.memory[-1000000:]
 
     def _update(self):
         exps = [random.choice(self.memory) for _ in range(self.n_samples)]
