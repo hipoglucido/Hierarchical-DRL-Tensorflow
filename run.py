@@ -17,8 +17,9 @@ def main():
     env = StochasticMDPEnv()
     agent = hDQN()
     visits = np.zeros((12, 6))
+    anneal_factor = (1.0-0.1)/12000
+    print("Annealing factor: " + str(anneal_factor))
     for episode_thousand in range(12):
-        agent.meta_epsilon = agent.meta_epsilon/2.0
         print("\nNew meta-epsilon: %.4f" % agent.meta_epsilon, end="")
         for episode in range(1000):
             print("\n\n### EPISODE %d ###" % (episode_thousand*1000 + episode), end="")
@@ -32,7 +33,7 @@ def main():
                 total_external_reward = 0
                 goal_reached = False
                 while not done and not goal_reached:
-                    action = agent.select_move(one_hot(state), one_hot(goal))
+                    action = agent.select_move(one_hot(state), one_hot(goal), goal)
                     print((state,action), end="; ")
                     next_state, external_reward, done = env.step(action)
                     visits[episode_thousand][next_state-1] += 1
@@ -51,6 +52,21 @@ def main():
                     state = next_state
                 exp = MetaExperience(one_hot(state), one_hot(goal), total_external_reward, one_hot(next_state))
                 agent.store(exp, meta=True)
+                
+                #Annealing 
+                agent.meta_epsilon -= anneal_factor
+                avg_success_rate = agent.goal_success[goal-1] / agent.goal_selected[goal-1]
+                
+                if(avg_success_rate == 0 or avg_success_rate == 1):
+                    agent.actor_epsilon[goal-1] -= anneal_factor
+                else:
+                    agent.actor_epsilon[goal-1] = 1- avg_success_rate
+            
+                if(agent.actor_epsilon[goal-1] < 0.1):
+                    agent.actor_epsilon[goal-1] = 0.1
+                print("meta_epsilon: " + str(agent.meta_epsilon))
+                print("actor_epsilon " + str(goal) + ": " + str(agent.actor_epsilon[goal-1]))
+                
             if (episode % 100 == 99):
                 print("")
                 print(visits/1000, end="")
