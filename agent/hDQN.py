@@ -141,10 +141,10 @@ class hDQN:
         state_vectors = np.squeeze(np.asarray([np.concatenate([exp.state, exp.goal], axis=1) for exp in exps]))
         next_state_vectors = np.squeeze(np.asarray([np.concatenate([exp.next_state, exp.goal], axis=1) for exp in exps]))
         try:
-            reward_vectors = self.target_actor.predict(state_vectors, verbose=0)
+            reward_vectors = self.actor.predict(state_vectors, verbose=0)
         except Exception as e:
             state_vectors = np.expand_dims(state_vectors, axis=0)
-            reward_vectors = self.target_actor.predict(state_vectors, verbose=0)
+            reward_vectors = self.actor.predict(state_vectors, verbose=0)
         
         try:
             next_state_reward_vectors = self.target_actor.predict(next_state_vectors, verbose=0)
@@ -153,7 +153,9 @@ class hDQN:
             next_state_reward_vectors = self.target_actor.predict(next_state_vectors, verbose=0)
         
         for i, exp in enumerate(exps):
-            reward_vectors[i][exp.action] = exp.reward + self.gamma * max(next_state_reward_vectors[i])
+            reward_vectors[i][exp.action] = exp.reward
+            if not exp.done:
+                reward_vectors[i][exp.action] += self.gamma * max(next_state_reward_vectors[i])
         reward_vectors = np.asarray(reward_vectors)
         self.actor.fit(state_vectors, reward_vectors, verbose=0)
         
@@ -170,10 +172,10 @@ class hDQN:
             state_vectors = np.squeeze(np.asarray([exp.state for exp in exps]))
             next_state_vectors = np.squeeze(np.asarray([exp.next_state for exp in exps]))
             try:
-                reward_vectors = self.target_meta_controller.predict(state_vectors, verbose=0)
+                reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
             except Exception as e:
                 state_vectors = np.expand_dims(state_vectors, axis=0)
-                reward_vectors = self.target_meta_controller.predict(state_vectors, verbose=0)
+                reward_vectors = self.meta_controller.predict(state_vectors, verbose=0)
             
             try:
                 next_state_reward_vectors = self.target_meta_controller.predict(next_state_vectors, verbose=0)
@@ -182,7 +184,9 @@ class hDQN:
                 next_state_reward_vectors = self.target_meta_controller.predict(next_state_vectors, verbose=0)
             
             for i, exp in enumerate(exps):
-                reward_vectors[i][np.argmax(exp.goal)] = exp.reward + self.gamma * max(next_state_reward_vectors[i])
+                reward_vectors[i][np.argmax(exp.goal)] = exp.reward
+                if not exp.done:
+                    reward_vectors[i][np.argmax(exp.goal)] += self.gamma * max(next_state_reward_vectors[i])
             self.meta_controller.fit(state_vectors, reward_vectors, verbose=0)
             
             #Update target network
