@@ -1,3 +1,4 @@
-# h-DQN
+# Hierarchical Reinforcement Learning
+The purpose of this project is to use Hierarchical Deep Reinforcement Learning to solve the Space Fortress Game.
 
-Based on of "Hierarchical Deep Reinforcement Learning: Integrating Temporal Abstraction and Intrinsic Motivation" by Kulkarni et al. (2016) in Python: https://arxiv.org/abs/1604.06057
+The initial approach is to use [**h-DQN**](https://arxiv.org/abs/1604.06057)
