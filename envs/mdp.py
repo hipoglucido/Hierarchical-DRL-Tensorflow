@@ -26,9 +26,11 @@ class StochasticMDPEnv:
             if self.current_state == 6:
                 self.visited_six = True
         if self.current_state == 1:
+            #Finished
             if self.visited_six:
                 return self.current_state, 1.00, True
             else:
                 return self.current_state, 1.00/100.00, True
         else:
+            #Not finished
             return self.current_state, 0.0, False

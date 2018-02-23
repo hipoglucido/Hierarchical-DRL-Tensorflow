@@ -38,6 +38,7 @@ def main():
     print(visits/1000)
 
     eps = list(range(1,13))
+    plt.figure()
     plt.subplot(2, 3, 1)
     plt.plot(eps, visits[:,0]/1000)
     plt.xlabel("Episodes (*1000)")
@@ -85,6 +86,7 @@ def main():
     plt.xlim(1, 12)
     plt.title("S6")
     plt.grid(True)
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
