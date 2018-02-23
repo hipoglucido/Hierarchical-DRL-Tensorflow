@@ -66,10 +66,10 @@ class hDQN:
 
     def meta_controller(self):
         meta = Sequential()
-        meta.add(self.meta_layers[0](self.meta_nodes[0], init=self.meta_inits[0], input_shape=(self.meta_nodes[0],)))
+        meta.add(self.meta_layers[0](self.meta_nodes[0], kernel_initializer=self.meta_inits[0], input_shape=(self.meta_nodes[0],)))
         meta.add(Activation(self.meta_activations[0]))
         for layer, init, node, activation in list(zip(self.meta_layers, self.meta_inits, self.meta_nodes, self.meta_activations))[1:]:
-            meta.add(layer(node, init=init, input_shape=(node,)))
+            meta.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             meta.add(Activation(activation))
             print("meta node: " + str(node))
         meta.compile(loss=self.meta_loss, optimizer=self.meta_optimizer)
@@ -77,10 +77,10 @@ class hDQN:
     
     def target_meta_controller(self):
         meta = Sequential()
-        meta.add(self.meta_layers[0](self.meta_nodes[0], init=self.meta_inits[0], input_shape=(self.meta_nodes[0],)))
+        meta.add(self.meta_layers[0](self.meta_nodes[0], kernel_initializer=self.meta_inits[0], input_shape=(self.meta_nodes[0],)))
         meta.add(Activation(self.meta_activations[0]))
         for layer, init, node, activation in list(zip(self.meta_layers, self.meta_inits, self.meta_nodes, self.meta_activations))[1:]:
-            meta.add(layer(node, init=init, input_shape=(node,)))
+            meta.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             meta.add(Activation(activation))
             print("meta node: " + str(node))
         meta.compile(loss=self.meta_loss, optimizer=self.meta_optimizer)
@@ -89,22 +89,22 @@ class hDQN:
 
     def actor(self):
         actor = Sequential()
-        actor.add(self.layers[0](self.nodes[0], init=self.inits[0], input_shape=(self.nodes[0],)))
+        actor.add(self.layers[0](self.nodes[0], kernel_initializer=self.inits[0], input_shape=(self.nodes[0],)))
         actor.add(Activation(self.activations[0]))
         for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
             print(node)
-            actor.add(layer(node, init=init, input_shape=(node,)))
+            actor.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             actor.add(Activation(activation))
         actor.compile(loss=self.loss, optimizer=self.optimizer)
         return actor
     
     def target_actor(self):
         actor = Sequential()
-        actor.add(self.layers[0](self.nodes[0], init=self.inits[0], input_shape=(self.nodes[0],)))
+        actor.add(self.layers[0](self.nodes[0], kernel_initializer=self.inits[0], input_shape=(self.nodes[0],)))
         actor.add(Activation(self.activations[0]))
         for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
             print(node)
-            actor.add(layer(node, init=init, input_shape=(node,)))
+            actor.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             actor.add(Activation(activation))
         actor.compile(loss=self.loss, optimizer=self.optimizer)
         return actor
