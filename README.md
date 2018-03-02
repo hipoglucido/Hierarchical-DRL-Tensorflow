@@ -16,3 +16,4 @@ The initial approach is to use [**h-DQN**](https://arxiv.org/abs/1604.06057)
 - Experiment with location on updates of Q2
 - Experiment and understand better experience replay (specially on meta-controller Q2)
 - Experiment and understand better annealing of exploration process (specially on Q1's goals)
+- Consider translating Keras to Tensorflow
