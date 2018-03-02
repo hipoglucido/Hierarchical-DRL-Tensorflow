@@ -27,6 +27,3 @@ if USE_TB:
       logger.info("TB folder created " + TB_DIR)
 
 
-#TODO: use tensorboard
-#TODO: save figs
-#TODO: tensorboard training progress per goal

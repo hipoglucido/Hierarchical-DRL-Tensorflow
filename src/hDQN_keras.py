@@ -165,41 +165,8 @@ class hDQN:
         for i in range(len(actor_weights)):
             actor_target_weights[i] = self.target_tau * actor_weights[i] + (1 - self.target_tau) * actor_target_weights[i]
         self.target_actor.set_weights(actor_target_weights)
-    def uup(self, meta=False):        
-        memory = self.meta_memory if meta else self.memory
-        if len(memory) == 0:
-            return
-        n_samples = self.meta_n_samples if meta else self.n_samples
-        exps = [random.choice(memory) for _ in range(n_samples)]
-        def exp_getter(exp, meta, next_):
-            if not meta:
-                if next_:
-                    return [exp.next_state, exp.goal]
-                else:
-                    return [exp.state, exp.goal]
-            else:
-                if next_:
-                    return exp.state
-                else:
-                    return exp.next_state
-        state_vectors = np.squeeze(np.asarray([np.concatenate(exp_getter(exp, meta, False), axis=1) for exp in exps]))
-        next_state_vectors = np.squeeze(np.asarray([np.concatenate(exp_getter(exp, meta, True), axis=1) for exp in exps]))
-        reward_vectors = self.actor.predict(state_vectors, verbose=0)       
-        network = self.meta_controller if meta else self.actor
-        target_network = self.target_meta_controller if meta else self.target_actor
-        next_state_reward_vectors = target_network.predict(next_state_vectors, verbose=0)      
-        for i, exp in enumerate(exps):
-            reward_vectors[i][np.argmax(exp.goal)] = exp.reward
-            if not exp.done:
-                reward_vectors[i][np.argmax(exp.goal)] += self.gamma * max(next_state_reward_vectors[i])
-        self.meta_controller.fit(state_vectors, reward_vectors, verbose=0)
 
-        #Update target network
-        meta_weights = self.meta_controller.get_weights()
-        meta_target_weights = self.target_meta_controller.get_weights()
-        for i in range(len(meta_weights)):
-            meta_target_weights[i] = self.target_tau * meta_weights[i] + (1 - self.target_tau) * meta_target_weights[i]
-        self.target_meta_controller.set_weights(meta_target_weights)       
+     
     def _update_meta(self):
         if 0 < len(self.meta_memory):
             exps = [random.choice(self.meta_memory) for _ in range(self.meta_n_samples)]
