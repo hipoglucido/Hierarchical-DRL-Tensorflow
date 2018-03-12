@@ -1,4 +1,4 @@
-import settings
+
 import utils
 import random
 import numpy as np
@@ -76,7 +76,7 @@ class hDQN:
         for layer, init, node, activation in list(zip(self.meta_layers, self.meta_inits, self.meta_nodes, self.meta_activations))[1:]:
             meta.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             meta.add(Activation(activation))
-            print("meta node: " + str(node))
+            utils.info("meta node: " + str(node))
         meta.compile(loss=self.meta_loss, optimizer=self.meta_optimizer)
         return meta
 
@@ -87,7 +87,7 @@ class hDQN:
         for layer, init, node, activation in list(zip(self.meta_layers, self.meta_inits, self.meta_nodes, self.meta_activations))[1:]:
             meta.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             meta.add(Activation(activation))
-            print("meta node: " + str(node))
+            utils.info("meta node: " + str(node))
         meta.compile(loss=self.meta_loss, optimizer=self.meta_optimizer)
         return meta
 
@@ -97,7 +97,7 @@ class hDQN:
         actor.add(self.layers[0](self.nodes[0], kernel_initializer=self.inits[0], input_shape=(self.nodes[0],)))
         actor.add(Activation(self.activations[0]))
         for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
-            print(node)
+            utils.info(str(node))
             actor.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             actor.add(Activation(activation))
         actor.compile(loss=self.loss, optimizer=self.optimizer)
@@ -108,7 +108,7 @@ class hDQN:
         actor.add(self.layers[0](self.nodes[0], kernel_initializer=self.inits[0], input_shape=(self.nodes[0],)))
         actor.add(Activation(self.activations[0]))
         for layer, init, node, activation in list(zip(self.layers, self.inits, self.nodes, self.activations))[1:]:
-            print(node)
+            utils.info(str(node))
             actor.add(layer(node, kernel_initializer=init, input_shape=(node,)))
             actor.add(Activation(activation))
         actor.compile(loss=self.loss, optimizer=self.optimizer)
@@ -127,7 +127,7 @@ class hDQN:
         if self.meta_epsilon < random.random():
             pred = self.meta_controller.predict(state, verbose=0)
             return np.argmax(pred)+1
-        print("Exploring");
+        utils.info("Exploring");
         return random.choice([1,2,3,4,5,6])
 
     def criticize(self, goal, next_state):
