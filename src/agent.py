@@ -96,9 +96,9 @@ class Agent(BaseModel):
 					except Exception as e:
 						print(str(e))
 						max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
-	
-					print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
-							% (avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
+					msg = ("\navg_r: {:.4f}, avg_l: {:.6f}, avg_q: {:.3f}, avg_ep_r: {:.2f}, max_ep_r: {:.1f}, min_ep_r: {:.2f}, secs: {:.1f}, #g: {}").format(
+							avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, time_, num_game)
+					print(msg)
 	
 					if max_avg_ep_reward * 0.9 <= avg_ep_reward:
 						self.step_assign_op.eval({self.step_input: self.step + 1})
@@ -107,7 +107,7 @@ class Agent(BaseModel):
 						max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 	
 					if self.step > 10:
-						print(time_)
+						
 						self.inject_summary({
 								'average.reward': avg_reward,
 								'average.loss': avg_loss,
@@ -118,7 +118,7 @@ class Agent(BaseModel):
 								'episode.avg reward': avg_ep_reward,
 								'num of game': num_game,
 								'episode.rewards': ep_rewards,
-								'episode.actions': actions,
+								'actions': actions,
 								'training.learning_rate': self.learning_rate_op.eval({self.learning_rate_step: self.step}),
 							}, self.step)
 	
@@ -144,7 +144,7 @@ class Agent(BaseModel):
 		return action
 
 	def observe(self, screen, reward, action, terminal):
-		reward = max(self.min_reward, min(self.max_reward, reward))
+		#reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
 
 		self.history.add(screen)
 		self.memory.add(screen, reward, action, terminal)
@@ -159,26 +159,14 @@ class Agent(BaseModel):
 	def q_learning_mini_batch(self):
 		if self.memory.count < self.history_length:
 			return
-		else:
-			s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+		
+		s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+		
+		q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
 
-		t = time.time()
-		if self.double_q:
-			# Double Q-learning
-			pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
-
-			q_t_plus_1_with_pred_action = self.target_q_with_idx.eval({
-				self.target_s_t: s_t_plus_1,
-				self.target_q_idx: [[idx, pred_a] for idx, pred_a in enumerate(pred_action)]
-			})
-			target_q_t = (1. - terminal) * self.discount * q_t_plus_1_with_pred_action + reward
-		else:
-			
-			q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
-
-			terminal = np.array(terminal) + 0.
-			max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-			target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
+		terminal = np.array(terminal) + 0.
+		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+		target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
 
 		_, q_t, loss, summary_str = self.sess.run([self.optim, self.q, self.loss, self.q_summary], {
 			self.target_q_t: target_q_t,
@@ -199,13 +187,13 @@ class Agent(BaseModel):
 		#initializer = tf.truncated_normal_initializer(0, 0.02)
 		activation_fn = tf.nn.relu
 		
-		#architecture = [20, 30, 20]
+		
 		# training network
 		with tf.variable_scope('prediction'):
 			
 			# Network Parameters
 			
-			arch = [10, 20, 5]
+			arch = [100, 200, 50]
 			# tf Graph input
 			self.s_t = tf.placeholder("float",
 					    [None, self.history_length, self.state_size], name='s_t')
@@ -223,11 +211,12 @@ class Agent(BaseModel):
 												  self.env.action_size, name='q')
 
 			self.q_action = tf.argmax(self.q, axis=1)
-			for l in [self.s_t, self.s_t_flat, self.l1, self.l2, self.l3, self.q, self.q_action]:
-				print(l.get_shape().as_list())
 			
 			q_summary = []
 			avg_q = tf.reduce_mean(self.q, 0)
+			for l in [self.s_t, self.s_t_flat, self.l1, self.l2, self.l3, self.q, self.q_action, avg_q]:
+				print(l.get_shape().as_list())
+			
 			for idx in range(self.env.action_size):
 				q_summary.append(tf.summary.histogram('q/%s' % idx, avg_q[idx]))
 			self.q_summary = tf.summary.merge(q_summary, 'q_summary')
@@ -266,8 +255,8 @@ class Agent(BaseModel):
 			self.target_q_t = tf.placeholder('float32', [None], name='target_q_t')
 			self.action = tf.placeholder('int64', [None], name='action')
 
-			action_one_hot = tf.one_hot(self.action, self.env.action_size, 1.0, 0.0, name='action_one_hot')
-			q_acted = tf.reduce_sum(self.q * action_one_hot, reduction_indices=1, name='q_acted')
+			action_one_hot = tf.one_hot(self.action, self.env.action_size, 1.0, 0.0, name = 'action_one_hot')
+			q_acted = tf.reduce_sum(self.q * action_one_hot, reduction_indices = 1, name = 'q_acted')
 
 			self.delta = self.target_q_t - q_acted
 
@@ -295,9 +284,9 @@ class Agent(BaseModel):
 
 			for tag in scalar_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
-				self.summary_ops[tag]	= tf.summary.scalar("%s-%s/%s" % (self.env_name, self.env_type, tag), self.summary_placeholders[tag])
+				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % (self.env_name, tag), self.summary_placeholders[tag])
 
-			histogram_summary_tags = ['episode.rewards', 'episode.actions']
+			histogram_summary_tags = ['episode.rewards', 'actions']
 
 			for tag in histogram_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))

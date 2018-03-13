@@ -1,5 +1,5 @@
-class AgentConfig(object):
-	scale = 500
+class Configuration():
+	scale = 1000
 	display = False
 
 
@@ -24,36 +24,25 @@ class AgentConfig(object):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-	min_delta = -1
-	max_delta = 1
+	#min_delta = -1
+	#max_delta = 1
 
-	double_q = False
-	dueling = False
+	#double_q = False
+	#dueling = False
 
 
 	_test_step = 5 * scale
 	_save_step = _test_step * 10
-
-class EnvironmentConfig(object):
-	#env_name = 'stochastic_mdp-v0'
-	env_name = 'ez_mdp-v0'
-	state_size = 6
-	max_reward = 1.
-	min_reward = 0
-
-class DQNConfig(AgentConfig, EnvironmentConfig):
-	model = ''
-	pass
-
-class M1(DQNConfig):
-	backend = 'tf'
-	env_type = 'detail'
+	
 	action_repeat = 1
+	
+	env_name = None
+
+
 
 def get_config(FLAGS):
-	config = M1	
-	for k, v in FLAGS.__dict__['__flags'].items():
-		if hasattr(config, k):						 
-			setattr(config, k, v)
-		print(k,v)
+	config = Configuration()
+	print(config.__dir__)
+	for k, v in FLAGS.__dict__['__flags'].items():				 
+		setattr(config, k, v)
 	return config

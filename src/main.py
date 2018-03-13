@@ -9,15 +9,15 @@ from agent import Agent
 from config import get_config
 
 import sys
-sys.path.insert(0, '/home/victorgarcia/work/Environments/gym-stochastic-mdp/gym_stochastic_mdp/envs/stochastic_mdp_env')
+sys.path.insert(0, '/home/victorgarcia/work/Environments/gym-stochastic-mdp/gym_stochastic_mdp/envs/')
 
 
 flags = tf.app.flags
 
 # Model
-flags.DEFINE_string('model', 'm1', 'Type of model')
-flags.DEFINE_boolean('dueling', False, 'Whether to use dueling deep q-network')
-flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
+#flags.DEFINE_string('model', 'm1', 'Type of model')
+#flags.DEFINE_boolean('dueling', False, 'Whether to use dueling deep q-network')
+#flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
 
 # Environment
 flags.DEFINE_string('env_name', 'stochastic_mdp-v0', 'The name of gym environment to use')

@@ -9,9 +9,10 @@ class Environment(object):
 	def __init__(self, config):
 		self.env = utils.get_env(config.env_name)
 		
-
-		self.state_size, self.action_repeat, self.random_start = \
-				config.state_size, config.action_repeat, config.random_start
+		self.action_size = self.env.action_size
+		self.state_size = self.env.state_size
+		self.action_repeat, self.random_start = \
+				config.action_repeat, config.random_start
 
 		self.display = config.display
 		
@@ -19,7 +20,16 @@ class Environment(object):
 		self._screen = None
 		self.reward = 0
 		self.terminal = True
-
+		
+		self.update_config(config)
+	
+	def update_config(self, config):
+		include = ['state_size', 'action_size']
+		for name in include:
+			value = self.__dict__[name]
+			setattr(config, name, value)
+		
+		
 	def new_game(self, from_random_game=False):
 		#if self.lives == 0:
 		self._screen = self.env.reset()
@@ -46,9 +56,6 @@ class Environment(object):
 		#return cv2.resize(cv2.cvtColor(self._screen, cv2.COLOR_BGR2YCR_CB)/255., self.dims)[:,:,0]
 		return self._screen
 
-	@property
-	def action_size(self):
-		return self.env.action_space.n
 
 	@property
 	def lives(self):
