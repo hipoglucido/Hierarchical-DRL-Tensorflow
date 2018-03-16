@@ -8,7 +8,7 @@ import time
 import glob
 import gym
 import sys
-
+import inspect
 ################################
 #	 CONFIGURATION SETTINGS
 ################################
@@ -33,10 +33,9 @@ def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 def get_timestamp():
 	return time.strftime("%Ss%Hh%Mm%b%d")
 
-def insert_envs_paths():
-	for env_dir in glob.glob(os.path.join(ENVS_DIR, '*')):
-			print("Added", env_dir)
-			sys.path.insert(0, env_dir)
+
+
+
 
 class Logger:
 	# Using the existing Logger library was throwing some issues when developing on Spyder
@@ -68,18 +67,18 @@ def get_env(env_name):
 	
 
 #Auxiliary
-logger = Logger()
+#logger = Logger()
 #Session timestamp
-SESSION_TS = get_timestamp()
-
-
-if USE_TB:
-	TB_DIR = os.path.join(DATA_DIR, 'tensorboard', SESSION_TS)
-	os.makedirs(TB_DIR)
-	logger.info("TB folder created " + TB_DIR)
+#SESSION_TS = get_timestamp()
+#
+#
+#if USE_TB:
+#	TB_DIR = os.path.join(DATA_DIR, 'tensorboard', SESSION_TS)
+#	os.makedirs(TB_DIR)
+#	logger.info("TB folder created " + TB_DIR)
 
 #Envs
-insert_envs_paths()
+#insert_envs_paths()
 
 sys.path.insert(0, os.path.join(ROOT_DIR))
 sys.path.insert(0, os.path.join(ROOT_DIR, 'agents'))

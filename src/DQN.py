@@ -12,7 +12,7 @@ import sys
 from base import BaseModel
 from history import History
 from replay_memory import ReplayMemory
-from ops import linear, conv2d, clipped_error
+from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 
 class Agent(BaseModel):
@@ -30,10 +30,10 @@ class Agent(BaseModel):
 			self.step_input = tf.placeholder('int32', None, name='step_input')
 			self.step_assign_op = self.step_op.assign(self.step_input)
 
-		self.build_dqn()
+		self.build_dqn(config)
 
 	def train(self):
-		start_step = self.step_op.eval()
+		start_step = self.step_op.eval() #TODO understand, why this?
 		
 
 		num_game, self.update_count, ep_reward = 0, 0, 0.
@@ -74,8 +74,7 @@ class Agent(BaseModel):
 					self.history.add(screen)
 				num_game += 1
 				ep_rewards.append(ep_reward)
-				ep_reward = 0.
-			
+				ep_reward = 0.			
 			
 			actions.append(action)
 			total_reward += reward
@@ -96,7 +95,7 @@ class Agent(BaseModel):
 					except Exception as e:
 						print(str(e))
 						max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
-					msg = ("\navg_r: {:.4f}, avg_l: {:.6f}, avg_q: {:.3f}, avg_ep_r: {:.2f}, max_ep_r: {:.1f}, min_ep_r: {:.2f}, secs: {:.1f}, #g: {}").format(
+					msg = ("\navg_r: {:.4f}, avg_l: {:.6f}, avg_q: {:.3f}, avg_ep_r: {:.2f}, max_ep_r: {:.2f}, min_ep_r: {:.2f}, secs: {:.1f}, #g: {}").format(
 							avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, time_, num_game)
 					print(msg)
 	
@@ -179,37 +178,25 @@ class Agent(BaseModel):
 		self.total_q += q_t.mean()
 		self.update_count += 1
 
-	def build_dqn(self):
+	def build_dqn(self, config):
 		self.w = {}
-		self.t_w = {}
+		self.target_w = {}
 
-		#initializer = tf.contrib.layers.xavier_initializer()
-		#initializer = tf.truncated_normal_initializer(0, 0.02)
-		activation_fn = tf.nn.relu
-		
-		
 		# training network
 		with tf.variable_scope('prediction'):
 			
-			# Network Parameters
-			
-			arch = [100, 200, 50]
 			# tf Graph input
 			self.s_t = tf.placeholder("float",
 					    [None, self.history_length, self.state_size], name='s_t')
 			shape = self.s_t.get_shape().as_list()
 			self.s_t_flat = tf.reshape(self.s_t, [-1, reduce(lambda x, y: x * y, shape[1:])])
 			#(input_, output_size, stddev=0.02, bias_start=0.0, activation_fn=None, name='linear')
-			self.l1, self.w['l1_w'], self.w['l1_b'] = linear(self.s_t_flat, arch[0],
-					  activation_fn = activation_fn, name='l1')
-			self.l2, self.w['l2_w'], self.w['l2_b'] = linear(self.l1, arch[1],
-					  activation_fn = activation_fn, name='l2')
-			self.l3, self.w['l3_w'], self.w['l3_b'] = linear(self.l2, arch[2],
-					  activation_fn = activation_fn, name='l3')
-
-			self.q, self.w['q_w'], self.w['q_b'] = linear(self.l3,
+			last_layer = self.s_t_flat
+			last_layer = self.add_dense_layers(config = config,
+											   input_layer = last_layer,
+											   prefix = '')
+			self.q, self.w['q_w'], self.w['q_b'] = linear(last_layer,
 												  self.env.action_size, name='q')
-
 			self.q_action = tf.argmax(self.q, axis=1)
 			
 			q_summary = []
@@ -227,14 +214,13 @@ class Agent(BaseModel):
 					    [None, self.history_length, self.state_size], name='target_s_t')
 			shape = self.target_s_t.get_shape().as_list()
 			self.target_s_t_flat = tf.reshape(self.target_s_t, [-1, reduce(lambda x, y: x * y, shape[1:])])
-			self.target_l1, self.t_w['l1_w'], self.t_w['l1_b'] = linear(self.target_s_t_flat, arch[0],
-					  activation_fn = activation_fn, name='target_l1')
-			self.target_l2, self.t_w['l2_w'], self.t_w['l2_b'] = linear(self.target_l1, arch[1],
-					  activation_fn = activation_fn, name='target_l2')
-			self.target_l3, self.t_w['l3_w'], self.t_w['l3_b'] = linear(self.target_l2, arch[2],
-					  activation_fn = activation_fn, name='target_l3')
+			last_layer = self.target_s_t_flat
+			last_layer = self.add_dense_layers(config = config,
+											   input_layer = last_layer,
+											   prefix = 'target')
+			
 
-			self.target_q, self.t_w['q_w'], self.t_w['q_b'] = linear(self.target_l3,
+			self.target_q, self.target_w['q_w'], self.target_w['q_b'] = linear(last_layer,#self.target_l3,
 												  self.env.action_size, name='target_q')
 
 			
@@ -243,12 +229,12 @@ class Agent(BaseModel):
 			self.target_q_with_idx = tf.gather_nd(self.target_q, self.target_q_idx)
 
 		with tf.variable_scope('pred_to_target'):
-			self.t_w_input = {}
-			self.t_w_assign_op = {}
+			self.target_w_input = {}
+			self.target_w_assign_op = {}
 
 			for name in self.w.keys():
-				self.t_w_input[name] = tf.placeholder('float32', self.t_w[name].get_shape().as_list(), name=name)
-				self.t_w_assign_op[name] = self.t_w[name].assign(self.t_w_input[name])
+				self.target_w_input[name] = tf.placeholder('float32', self.target_w[name].get_shape().as_list(), name=name)
+				self.target_w_assign_op[name] = self.target_w[name].assign(self.target_w_input[name])
 
 		# optimizer
 		with tf.variable_scope('optimizer'):
@@ -302,7 +288,7 @@ class Agent(BaseModel):
 
 	def update_target_q_network(self):
 		for name in self.w.keys():
-			self.t_w_assign_op[name].eval({self.t_w_input[name]: self.w[name].eval()})
+			self.target_w_assign_op[name].eval({self.target_w_input[name]: self.w[name].eval()})
 
 	def save_weight_to_pkl(self):
 		if not os.path.exists(self.weight_dir):

@@ -1,39 +1,49 @@
 import os
 import pprint
+from configuration import MetaControllerParameters, ControllerParameters
 import inspect
-
 import tensorflow as tf
 import numpy as np
-
+import utils
+import ops
 pp = pprint.PrettyPrinter().pprint
 
-def class_vars(obj):
-	return {k:v for k, v in inspect.getmembers(obj)
-			if not k.startswith('__') and not callable(k)}
+
 
 class BaseModel(object):
 	"""Abstract object representing an Reader model."""
 	def __init__(self, config):
 		self._saver = None
 		self.config = config
+		for k, v in inspect.getmembers(config):
+			name = k if not k.startswith('_') else k[1:]
+			setattr(self, name, v)
 
-		try:
-			self._attrs = config.__dict__['__flags']
-		except:
-			self._attrs = class_vars(config)
-		pp(self._attrs)
-
-		self.config = config
-
-		for attr in self._attrs:
-			name = attr if not attr.startswith('_') else attr[1:]
-			setattr(self, name, getattr(self.config, attr))
-
+	def add_dense_layers(self, config, input_layer, prefix):
+		last_layer = input_layer
+		prefix = prefix + "_" if prefix != '' else prefix
+		if config.activation_fn == 'relu':
+			activation_fn = tf.nn.relu
+		else:
+			raise ValueError("Wrong activaction function")
+		for i, neurons in enumerate(config.architecture):
+			number = 'l' + str(i + 1)
+			layer_name = prefix + number
+			layer, weights, biases = \
+				ops.linear(input_ = last_layer,
+		               output_size = neurons,
+					   activation_fn = activation_fn,
+					   name = layer_name)
+			setattr(self, layer_name, layer)
+			getattr(self, prefix + 'w')[number + "_w"] = weights
+			getattr(self, prefix + 'w')[number + "_b"] = biases
+			last_layer = layer
+			print(layer_name, layer.get_shape().as_list())		
+		return last_layer
+	
 	def save_model(self, step=None):
 		print(" [*] Saving checkpoints...")
-		model_name = type(self).__name__
-		
-		
+
 		if not os.path.exists(self.checkpoint_dir):
 			os.makedirs(self.checkpoint_dir)
 		self.saver.save(self.sess, self.checkpoint_dir, global_step=step)
@@ -56,21 +66,20 @@ class BaseModel(object):
 	def checkpoint_dir(self):
 		return os.path.join('checkpoints', self.model_dir)
 
+			
 	@property
 	def model_dir(self):
-		model_dir = self.config.env_name
-		for k, v in self._attrs.items():
-			if not k.startswith('_') and k not in ['display']:
-				model_dir += os.path.sep + "%s-%s" % (k, ",".join([str(i) for i in v])
-						if type(v) == list else v)
-		return model_dir + os.path.sep
+		parts = self.config.as_list(ignore = True)
+		
+		result = os.path.join(*parts)
+		
+		return result
 
 	@property
 	def saver(self):
 		if self._saver == None:
 			self._saver = tf.train.Saver(max_to_keep=10)
 		return self._saver
-
 
 
 

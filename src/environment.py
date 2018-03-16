@@ -16,19 +16,16 @@ class Environment(object):
 
 		self.display = config.display
 		
-
 		self._screen = None
 		self.reward = 0
 		self.terminal = True
 		
-		self.update_config(config)
 	
-	def update_config(self, config):
-		include = ['state_size', 'action_size']
-		for name in include:
-			value = self.__dict__[name]
-			setattr(config, name, value)
-		
+	@property
+	def configuration_attrs(self):
+		attrs = {'state_size' : self.state_size,
+		   'action_size' : self.action_size}
+		return attrs		
 		
 	def new_game(self, from_random_game=False):
 		#if self.lives == 0:
@@ -70,7 +67,7 @@ class Environment(object):
 		if self.display:
 			self.env.render()
 
-	def after_act(self, action):
+	def after_act(self, action):		
 		self.render()
 
 class GymEnvironment(Environment):
@@ -99,12 +96,12 @@ class GymEnvironment(Environment):
 		
 		return self.state
 
-class SimpleGymEnvironment(Environment):
-	def __init__(self, config):
-		super(SimpleGymEnvironment, self).__init__(config)
-
-	def act(self, action, is_training=True):
-		self._step(action)
-
-		self.after_act(action)
-		return self.state
+#class SimpleGymEnvironment(Environment):
+#	def __init__(self, config):
+#		super(SimpleGymEnvironment, self).__init__(config)
+#
+#	def act(self, action, is_training=True):
+#		self._step(action)
+#
+#		self.after_act(action)
+#		return self.state
