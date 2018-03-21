@@ -6,6 +6,8 @@ import tensorflow as tf
 import numpy as np
 import utils
 import ops
+from functools import reduce
+from ops import linear, clipped_error
 pp = pprint.PrettyPrinter().pprint
 
 
@@ -21,6 +23,7 @@ class BaseModel(object):
 
 	def add_dense_layers(self, config, input_layer, prefix):
 		last_layer = input_layer
+		print(last_layer)
 		prefix = prefix + "_" if prefix != '' else prefix
 		if config.activation_fn == 'relu':
 			activation_fn = tf.nn.relu
@@ -38,9 +41,64 @@ class BaseModel(object):
 			getattr(self, prefix + 'w')[number + "_w"] = weights
 			getattr(self, prefix + 'w')[number + "_b"] = biases
 			last_layer = layer
-			print(layer_name, layer.get_shape().as_list())		
+#			print(layer_name, layer.get_shape().as_list(), 'added')		
+			print(layer, 'added')
 		return last_layer
+
+	def create_target(self, config, prefix):
+		#prefix = ''
+		prefix = prefix + '_' if prefix is not '' else prefix
+		#config = config
+		#config = self.config
+#		# target network
+		aux1 = prefix + 'target'    # mc_target
+		aux2 = aux1 + '_s_t'        # mc_target_s_t
+		aux3 = aux1 + '_w'          # mc_target_w
+		aux4 = aux1 + '_q'          # mc_target_q
+		target_w = {}
+		setattr(self, aux3, target_w)
+		with tf.variable_scope(aux1):
+			target_s_t = tf.placeholder("float",
+					    [None, config.history_length, config.state_size],
+						name = aux2)
+			shape = target_s_t.get_shape().as_list()
+			target_s_t_flat = \
+				tf.reshape(target_s_t,
+					      [-1, reduce(lambda x, y: x * y, shape[1:])])
+			
+			last_layer = target_s_t_flat
+			last_layer = self.add_dense_layers(config = config,
+											   input_layer = last_layer,
+											   prefix = aux1)
+			
+			
+			target_q, weights, biases = \
+						linear(last_layer,#self.target_l3,
+							   self.env.action_size, name=aux4)
+			
+			setattr(self, aux2, target_s_t)
+			getattr(self, aux3)['q_w'] = weights
+			getattr(self, aux3)['q_b'] = biases
+			setattr(self, aux4, target_q)
 	
+
+		with tf.variable_scope(prefix + 'pred_to_target'):
+			target_w_input = {}
+			target_w_assign_op = {}
+			w = getattr(self, prefix + '_w')
+			target_w
+			for name in w.keys():
+				target_w_input[name] = tf.placeholder(
+						       'float32',
+							   target_w[name].get_shape().as_list(),
+							   name=name)
+				target_w_assign_op[name] = target_w[name].assign(
+												target_w_input[name])
+		setattr(self, aux3 + "_input", target_w_input)
+		setattr(self, aux3 + "_assign_op", target_w_assign_op)
+		
+		
+		
 	def save_model(self, step=None):
 		print(" [*] Saving checkpoints...")
 

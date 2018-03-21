@@ -5,7 +5,14 @@ import sys
 
 import utils
 
-class Environment(object):
+class Goal():
+	def __init__(self, name, function):
+		self.name = name
+		self.is_achieved = function
+		
+	
+
+class Environment():
 	def __init__(self, config):
 		self.env = utils.get_env(config.env_name)
 		
@@ -19,8 +26,28 @@ class Environment(object):
 		self._screen = None
 		self.reward = 0
 		self.terminal = True
-		
+		if config.agent == 'hdqn':
+			self.define_goals(config.env_name)			
+
 	
+	def is_goal_achieved(self, goal_name, state):
+		return self.goals[goal_name].achieved(state)
+
+		
+	def define_goals(self, env_name):
+		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0"]
+		self.goal_size = self.state_size
+		goals = []
+		if env_name in mdps:
+			
+			for n in range(self.goal_size):
+				function = lambda s: self.env.one_hot_inverse(s) == n 
+				goal = Goal(n, function)
+				goals.append(goal)
+			self.goals = goals
+		else:
+			raise ValueError("No prior goals for " + env_name)
+#	def goal
 	@property
 	def configuration_attrs(self):
 		attrs = {'state_size' : self.state_size,

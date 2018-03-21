@@ -8,7 +8,8 @@ import pprint
 class Configuration():
 	def update(self, new_attrs):
 		for key, value in new_attrs.items():
-			if not value:
+			
+			if value is None:
 				continue
 			else:
 				setattr(self, key, value)
@@ -23,7 +24,7 @@ class Configuration():
 		def aux(k, v, p): return "%s%s-%s" % (p, k, ",".join([str(i) for i in v])
 													if type(v) == list else v)
 		if not self.new_instance:
-			self.config.ignore.append('date')
+			self.ignore.append('date')
 		parts = [self.env_name]
 		for k, v in inspect.getmembers(self):
 			if isinstance(v, ControllerParameters):
@@ -42,7 +43,9 @@ class Configuration():
 				parts.append(aux(k, v, ''))		
 		return parts
 	def print(self):
-		out = 'Configuration:\n' + '\n\t'.join(self.as_list(ignore = False))
+		elements = self.as_list(ignore = False)
+		elements = [e for e in elements if e is not None]
+		out = 'Configuration:\n' + '\n\t'.join(elements)
 		print(out)
 
 class GlobalConfiguration(Configuration):
@@ -54,7 +57,7 @@ class GlobalConfiguration(Configuration):
 	action_repeat = 1
 	use_gpu = True
 	gpu_fraction = '1/1'
-	is_train = True
+	mode = 'train'
 	random_seed = 7
 	root_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 	envs_dirs = [os.path.join(root_dir, '..', 'Environments','gym-stochastic-mdp'),
@@ -92,9 +95,10 @@ class ControllerParameters(Configuration):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-
+	architecture = [200, 300, 100, 50]
 	_test_step = 5 * scale
 	_save_step = _test_step * 10
+	activation_fn = 'relu'
 	
 	ignore = ['ignore']
 	
@@ -124,9 +128,11 @@ class MetaControllerParameters(Configuration):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-
+	architecture = [50, 75, 25]
+	
 	_test_step = 5 * scale
 	_save_step = _test_step * 10
+	activation_fn = 'relu'
 	
 	ignore = ['ignore']
 	
@@ -134,7 +140,6 @@ class hDQNConfiguration(GlobalConfiguration):
 	mc_params = MetaControllerParameters()
 	c_params = ControllerParameters()
 	random_start = 30
-
 	
 	
 class DQNConfiguration(GlobalConfiguration):
@@ -157,7 +162,7 @@ class DQNConfiguration(GlobalConfiguration):
 	ep_start = 1.
 	ep_end_t = memory_size
 
-	history_length = 1
+	history_length = 4
 	train_frequency = 4
 	learn_start = 5. * scale
 

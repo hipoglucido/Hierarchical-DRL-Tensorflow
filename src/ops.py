@@ -8,8 +8,8 @@ def clipped_error(x):
   except:
     return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
 
-
-def linear(input_, output_size, stddev=0.02, bias_start=0.0, activation_fn=None, name='linear'):
+def linear(input_, output_size, stddev=0.02, bias_start=0.0,
+		   activation_fn = None, name = 'linear'):
   shape = input_.get_shape().as_list()
 
   with tf.variable_scope(name):
