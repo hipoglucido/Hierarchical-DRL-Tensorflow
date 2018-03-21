@@ -51,10 +51,11 @@ class BaseModel(object):
 		#config = config
 		#config = self.config
 #		# target network
-		aux1 = prefix + 'target'    # mc_target
-		aux2 = aux1 + '_s_t'        # mc_target_s_t
-		aux3 = aux1 + '_w'          # mc_target_w
-		aux4 = aux1 + '_q'          # mc_target_q
+		aux1 = prefix + 'target'                         # mc_target
+		aux2 = aux1 + '_s_t'                             # mc_target_s_t
+		aux3 = aux1 + '_w'                               # mc_target_w
+		aux4 = aux1 + '_q'                               # mc_target_q
+		aux5 = 'w' if prefix == '' else prefix + 'w'    # mc_w
 		target_w = {}
 		setattr(self, aux3, target_w)
 		with tf.variable_scope(aux1):
@@ -85,8 +86,8 @@ class BaseModel(object):
 		with tf.variable_scope(prefix + 'pred_to_target'):
 			target_w_input = {}
 			target_w_assign_op = {}
-			w = getattr(self, prefix + '_w')
-			target_w
+			w = getattr(self, aux5)
+			
 			for name in w.keys():
 				target_w_input[name] = tf.placeholder(
 						       'float32',

@@ -105,7 +105,7 @@ class ControllerParameters(Configuration):
 class MetaControllerParameters(Configuration):
 	scale = 1000
 	
-	history_length = 2	
+	history_length = 1	
 	
 	memory_size = 100 * scale
 		

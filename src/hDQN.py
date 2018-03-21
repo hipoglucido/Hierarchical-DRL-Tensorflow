@@ -99,7 +99,7 @@ class Agent(BaseModel):
 					config.mc_params.learning_rate_minimum,
 					tf.train.exponential_decay(
 						learning_rate = config.mc_params.learning_rate,
-						global_step   = config.mc_params.learning_rate_step,
+						global_step   = self.mc_learning_rate_step,
 						decay_steps   = config.mc_params.learning_rate_decay_step,
 						decay_rate    = config.mc_params.learning_rate_decay,
 						staircase     = True))
@@ -109,42 +109,42 @@ class Agent(BaseModel):
 								epsilon       = 0.01).minimize(self.mc_loss)
 
 	def build_controller(self, config):
-		pass
+		self.c_w = {}
+		self.c_target_w = {}
 	
 	
 	def build_hdqn(self, config):
 
 		
-		self.c_w = {}
-		self.c_target_w = {}
+		
 
 		self.build_meta_controller(config)
-#		
-#		self.build_controller(config)
-#
-#		with tf.variable_scope('summary'):
-#			scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
-#					'time', 'episode.max reward', 'episode.min reward', \
-#					 'episode.avg reward', 'num of game', 'training.learning_rate']
-#
-#			self.summary_placeholders = {}
-#			self.summary_ops = {}
-#
-#			for tag in scalar_summary_tags:
-#				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
-#				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % (self.env_name, tag), self.summary_placeholders[tag])
-#
-#			histogram_summary_tags = ['episode.rewards', 'actions']
-#
-#			for tag in histogram_summary_tags:
-#				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
-#				self.summary_ops[tag]	= tf.summary.histogram(tag, self.summary_placeholders[tag])
-#			print(self.model_dir)
-#			self.writer = tf.summary.FileWriter('./logs/%s' % self.model_dir, self.sess.graph)
-#			
-#		tf.initialize_all_variables().run()
-#		self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op], max_to_keep=30)
-#
+		
+		self.build_controller(config)
+
+		with tf.variable_scope('summary'):
+			scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
+					'time', 'episode.max reward', 'episode.min reward', \
+					 'episode.avg reward', 'num of game', 'training.learning_rate']
+
+			self.summary_placeholders = {}
+			self.summary_ops = {}
+
+			for tag in scalar_summary_tags:
+				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % (self.env_name, tag), self.summary_placeholders[tag])
+
+			histogram_summary_tags = ['episode.rewards', 'actions']
+
+			for tag in histogram_summary_tags:
+				self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+				self.summary_ops[tag]	= tf.summary.histogram(tag, self.summary_placeholders[tag])
+			print(self.model_dir)
+			self.writer = tf.summary.FileWriter('./logs/%s' % self.model_dir, self.sess.graph)
+			
+		tf.initialize_all_variables().run()
+		self._saver = tf.train.Saver(list(self.mc_w.values()) + [self.mc_step_op], max_to_keep=30)
+
 #		self.load_model()
 #		self.update_target_q_network()
 
