@@ -8,6 +8,7 @@ import utils
 import ops
 from functools import reduce
 from ops import linear, clipped_error
+
 pp = pprint.PrettyPrinter().pprint
 
 
@@ -25,10 +26,12 @@ class BaseModel(object):
 		last_layer = input_layer
 		print(last_layer)
 		prefix = prefix + "_" if prefix != '' else prefix
+		
 		if config.activation_fn == 'relu':
 			activation_fn = tf.nn.relu
 		else:
 			raise ValueError("Wrong activaction function")
+			
 		for i, neurons in enumerate(config.architecture):
 			number = 'l' + str(i + 1)
 			layer_name = prefix + number
@@ -45,9 +48,10 @@ class BaseModel(object):
 			print(layer, 'added')
 		return last_layer
 
-	def create_target(self, config, prefix):
-		#prefix = ''
-		prefix = prefix + '_' if prefix is not '' else prefix
+	def create_target(self, config):
+		print("Creating target...")
+
+		prefix = config.prefix + '_' if config.prefix != '' else config.prefix
 		#config = config
 		#config = self.config
 #		# target network
@@ -57,10 +61,12 @@ class BaseModel(object):
 		aux4 = aux1 + '_q'                               # mc_target_q
 		aux5 = 'w' if prefix == '' else prefix + 'w'    # mc_w
 		target_w = {}
+		
+		
 		setattr(self, aux3, target_w)
 		with tf.variable_scope(aux1):
 			target_s_t = tf.placeholder("float",
-					    [None, config.history_length, config.state_size],
+					    [None, config.history_length, config.q_input_length],
 						name = aux2)
 			shape = target_s_t.get_shape().as_list()
 			target_s_t_flat = \
@@ -73,10 +79,11 @@ class BaseModel(object):
 											   prefix = aux1)
 			
 			
-			target_q, weights, biases = \
-						linear(last_layer,#self.target_l3,
-							   self.env.action_size, name=aux4)
 			
+			target_q, weights, biases = \
+						linear(last_layer,
+							   config.q_output_length, name=aux4)
+			print(target_q)
 			setattr(self, aux2, target_s_t)
 			getattr(self, aux3)['q_w'] = weights
 			getattr(self, aux3)['q_b'] = biases
@@ -89,12 +96,15 @@ class BaseModel(object):
 			w = getattr(self, aux5)
 			
 			for name in w.keys():
+#				print("__________________________")
 				target_w_input[name] = tf.placeholder(
 						       'float32',
 							   target_w[name].get_shape().as_list(),
 							   name=name)
 				target_w_assign_op[name] = target_w[name].assign(
-												target_w_input[name])
+												value = target_w_input[name])
+#				print(target_w_input[name])
+#				print(target_w_assign_op[name])
 		setattr(self, aux3 + "_input", target_w_input)
 		setattr(self, aux3 + "_assign_op", target_w_assign_op)
 		

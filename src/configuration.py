@@ -65,14 +65,14 @@ class GlobalConfiguration(Configuration):
 								  'gym_stochastic_mdp','envs')]
 	
 	ignore = ['display','new_instance','envs_dirs','root_dir', 'ignore',
-		   'use_gpu', 'gpu_fraction', 'is_train']
+		   'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
 	
 
 
 class ControllerParameters(Configuration):
 	scale = 1000
 	
-	history_length = 2	
+	history_length = 1	
 	
 	memory_size = 100 * scale
 		
@@ -101,6 +101,10 @@ class ControllerParameters(Configuration):
 	activation_fn = 'relu'
 	
 	ignore = ['ignore']
+	prefix = 'c'
+	
+	
+	
 	
 class MetaControllerParameters(Configuration):
 	scale = 1000
@@ -128,13 +132,16 @@ class MetaControllerParameters(Configuration):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-	architecture = [50, 75, 25]
+	architecture = [50, 75, 100, 50, 25, 10]
 	
 	_test_step = 5 * scale
 	_save_step = _test_step * 10
 	activation_fn = 'relu'
 	
 	ignore = ['ignore']
+	prefix = 'mc'
+	
+
 	
 class hDQNConfiguration(GlobalConfiguration):
 	mc_params = MetaControllerParameters()
@@ -145,7 +152,7 @@ class hDQNConfiguration(GlobalConfiguration):
 class DQNConfiguration(GlobalConfiguration):
 	scale = 1000
 
-	max_step = 5000 * scale
+	max_step = 100 * scale
 	memory_size = 100 * scale
 
 	batch_size = 32
@@ -173,6 +180,8 @@ class DQNConfiguration(GlobalConfiguration):
 	_save_step = _test_step * 10
 	
 	activation_fn = 'relu'
+	prefix = ''
+	
 
 
 

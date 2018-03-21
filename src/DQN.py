@@ -29,12 +29,14 @@ class Agent(BaseModel):
 			self.step_op = tf.Variable(0, trainable=False, name='step')
 			self.step_input = tf.placeholder('int32', None, name='step_input')
 			self.step_assign_op = self.step_op.assign(self.step_input)
-
+			
+		config.q_input_length = self.env.state_size
+		config.q_output_length = self.env.action_size
+		
 		self.build_dqn(config)
 
 	def train(self):
-		start_step = self.step_op.eval() #TODO understand, why this?
-		
+		start_step = self.step_op.eval() #TODO understand, why this?		
 
 		num_game, self.update_count, ep_reward = 0, 0, 0.
 		total_reward, self.total_loss, self.total_q = 0., 0., 0.
@@ -46,8 +48,8 @@ class Agent(BaseModel):
 		for _ in range(self.history_length):
 			self.history.add(screen)
 		t_0 = time.time()
-#		for self.step in tqdm(range(start_step, self.max_step), ncols=70, initial=start_step):
-		for self.step in range(start_step, self.max_step):
+		for self.step in tqdm(range(start_step, self.max_step), ncols=70, initial=start_step):
+#		for self.step in range(start_step, self.max_step):
 			if self.step == self.learn_start:
 				
 				num_game, self.update_count, ep_reward = 0, 0, 0.
@@ -60,8 +62,6 @@ class Agent(BaseModel):
 			
 			# 2. act			
 			screen, reward, terminal = self.env.act(action, is_training = True)
-			
-			#print(self.env.env.one_hot_inverse(aux[-1]),'->',action,'->',self.env.env.one_hot_inverse(screen), reward, terminal)
 
 			# 3. observe
 			self.observe(screen, reward, action, terminal)
@@ -198,16 +198,17 @@ class Agent(BaseModel):
 			
 			# tf Graph input
 			self.s_t = tf.placeholder("float",
-								    [None, self.history_length,
-									  self.state_size], name='s_t')
+								    [None, config.history_length,
+									  config.q_input_length], name='s_t')
+			print(self.s_t)
 			shape = self.s_t.get_shape().as_list()
 			self.s_t_flat = tf.reshape(self.s_t, [-1, reduce(
 											lambda x, y: x * y, shape[1:])])
-			#(input_, output_size, stddev=0.02, bias_start=0.0, activation_fn=None, name='linear')
+			
 			last_layer = self.s_t_flat
 			last_layer = self.add_dense_layers(config = config,
 											   input_layer = last_layer,
-											   prefix = '')
+											   prefix = config.prefix)
 			self.q, self.w['q_w'], self.w['q_b'] = linear(last_layer,
 												  self.env.action_size,
 												  name='q')
@@ -215,15 +216,13 @@ class Agent(BaseModel):
 			
 			q_summary = []
 			avg_q = tf.reduce_mean(self.q, 0)
-			for l in [self.s_t, self.s_t_flat, self.l1, self.l2,
-									 self.l3, self.q, self.q_action, avg_q]:
-				print(l.get_shape().as_list())
+	
 			
 			for idx in range(self.env.action_size):
 				q_summary.append(tf.summary.histogram('q/%s' % idx, avg_q[idx]))
 			self.q_summary = tf.summary.merge(q_summary, 'q_summary')
 
-		self.create_target(config = config, prefix = '')
+		self.create_target(config = config)
 
 
 	
@@ -282,7 +281,7 @@ class Agent(BaseModel):
 			self.writer = tf.summary.FileWriter('./logs/%s' % \
 									      self.model_dir, self.sess.graph)
 			
-		tf.initialize_all_variables().run()
+		tf.global_variables_initializer().run()
 		self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op],
 								   max_to_keep=30)
 
