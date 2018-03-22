@@ -5,16 +5,11 @@ import sys
 
 import utils
 
-class Goal():
-	def __init__(self, name, function):
-		self.name = name
-		self.is_achieved = function
-		
-	
 
 class Environment():
 	def __init__(self, config):
-		self.env = utils.get_env(config.env_name)
+		self.env_name = config.env_name
+		self.env = utils.get_env(self.env_name)
 		
 		self.action_size = self.env.action_size
 		self.state_size = self.env.state_size
@@ -26,28 +21,7 @@ class Environment():
 		self._screen = None
 		self.reward = 0
 		self.terminal = True
-		if config.agent == 'hdqn':
-			self.define_goals(config.env_name)			
 
-	
-	def is_goal_achieved(self, goal_name, state):
-		return self.goals[goal_name].achieved(state)
-
-		
-	def define_goals(self, env_name):
-		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0"]
-		self.goal_size = self.state_size
-		goals = []
-		if env_name in mdps:
-			
-			for n in range(self.goal_size):
-				function = lambda s: self.env.one_hot_inverse(s) == n 
-				goal = Goal(n, function)
-				goals.append(goal)
-			self.goals = goals
-		else:
-			raise ValueError("No prior goals for " + env_name)
-#	def goal
 	@property
 	def configuration_attrs(self):
 		attrs = {'state_size' : self.state_size,
@@ -96,39 +70,31 @@ class Environment():
 
 	def after_act(self, action):		
 		self.render()
-
-class GymEnvironment(Environment):
-	def __init__(self, config):
-		super(GymEnvironment, self).__init__(config)
-
+		
 	def act(self, action, is_training=True):
-		cumulated_reward = 0
-		#start_lives = self.lives
+			cumulated_reward = 0
+			#start_lives = self.lives
+			
+			for _ in range(self.action_repeat):
+				self._step(action)
+				cumulated_reward = cumulated_reward + self.reward
+	
+				if 0:#is_training and start_lives > self.lives:
+					continue #TODO better understand this
+					cumulated_reward -= 1
+					self.terminal = True
+	
+				if self.terminal:
+					break
+	
+			self.reward = cumulated_reward
+	
+			self.after_act(action)
+			
+			return self.state
 		
-		for _ in range(self.action_repeat):
-			self._step(action)
-			cumulated_reward = cumulated_reward + self.reward
 
-			if 0:#is_training and start_lives > self.lives:
-				continue #TODO better understand this
-				cumulated_reward -= 1
-				self.terminal = True
+				
 
-			if self.terminal:
-				break
 
-		self.reward = cumulated_reward
 
-		self.after_act(action)
-		
-		return self.state
-
-#class SimpleGymEnvironment(Environment):
-#	def __init__(self, config):
-#		super(SimpleGymEnvironment, self).__init__(config)
-#
-#	def act(self, action, is_training=True):
-#		self._step(action)
-#
-#		self.after_act(action)
-#		return self.state

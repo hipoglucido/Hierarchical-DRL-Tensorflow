@@ -9,7 +9,7 @@ import tensorflow as tf
 import sys
 
 
-from base import BaseModel
+from base import BaseModel, Epsilon
 from history import History
 from replay_memory import ReplayMemory
 from ops import linear, clipped_error
@@ -31,13 +31,15 @@ class Agent(BaseModel):
 			self.step_assign_op = self.step_op.assign(self.step_input)
 			
 		config.q_input_length = self.env.state_size
-		config.q_output_length = self.env.action_size
+		config.q_output_length = self.env.action_size		
 		
 		self.build_dqn(config)
 
+	
 	def train(self):
 		start_step = self.step_op.eval() #TODO understand, why this?		
-
+		self.epsilon = Epsilon(self.config, start_step)
+		
 		num_game, self.update_count, ep_reward = 0, 0, 0.
 		total_reward, self.total_loss, self.total_q = 0., 0., 0.
 		max_avg_ep_reward = 0
@@ -45,11 +47,14 @@ class Agent(BaseModel):
 
 		#screen, reward, action, terminal = self.env.new_random_game()
 		screen, _, _, _ = self.env.new_game(False)
-		for _ in range(self.history_length):
-			self.history.add(screen)
+	
+			
+		self.history.fill_up(screen)
 		t_0 = time.time()
-		for self.step in tqdm(range(start_step, self.max_step), ncols=70, initial=start_step):
+		for self.step in tqdm(range(start_step, self.max_step), ncols=70,
+						initial=start_step):
 #		for self.step in range(start_step, self.max_step):
+			self.epsilon.plus_one()
 			if self.step == self.learn_start:
 				
 				num_game, self.update_count, ep_reward = 0, 0, 0.
@@ -70,8 +75,7 @@ class Agent(BaseModel):
 				#print("Terminal")
 				screen, _, _, _ = self.env.new_game(False)
 				
-				for _ in range(self.history_length):
-					self.history.add(screen)
+				self.history.fill_up(screen)
 				num_game += 1
 				ep_rewards.append(ep_reward)
 				ep_reward = 0.			
@@ -111,22 +115,22 @@ class Agent(BaseModel):
 						max_avg_ep_reward = max(max_avg_ep_reward,
 											    avg_ep_reward)
 	
-					if self.step > 10:
-						
+					if self.step > 10:						
 						self.inject_summary({
 								'average.reward': avg_reward,
 								'average.loss': avg_loss,
 								'average.q': avg_q,
-								'time': time_,
+								'test.time': time_,
 								'episode.max reward': max_ep_reward,
 								'episode.min reward': min_ep_reward,
 								'episode.avg reward': avg_ep_reward,
-								'num of game': num_game,
+								'test.num of game': num_game,
 								'episode.rewards': ep_rewards,
 								'actions': actions,
-								'training.learning_rate': \
+								'learning_rate': \
 									self.learning_rate_op.eval(
 										{self.learning_rate_step: self.step}),
+								'epsilon': self.epsilon.value
 							}, self.step)
 	
 					num_game = 0
@@ -139,11 +143,8 @@ class Agent(BaseModel):
 					actions = []
 
 	def predict(self, s_t, test_ep = None):
-		ep = test_ep or (self.ep_end +
-				max(0., (self.ep_start - self.ep_end)
-					* (self.ep_end_t - \
-					max(0., self.step - self.learn_start)) / self.ep_end_t))
-		
+
+		ep = test_ep or self.epsilon.value
 		if random.random() < ep:
 			action = random.randrange(self.env.action_size)
 		else:
@@ -255,32 +256,14 @@ class Agent(BaseModel):
 			self.optim = tf.train.RMSPropOptimizer(
 								self.learning_rate_op, momentum=0.95,
 								epsilon=0.01).minimize(self.loss)
-
-		with tf.variable_scope('summary'):
-			scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
-					'time', 'episode.max reward', 'episode.min reward', \
-					 'episode.avg reward', 'num of game', 'training.learning_rate']
-
-			self.summary_placeholders = {}
-			self.summary_ops = {}
-
-			for tag in scalar_summary_tags:
-				self.summary_placeholders[tag] = tf.placeholder(
-								'float32', None, name=tag.replace(' ', '_'))
-				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
-						(self.env_name, tag), self.summary_placeholders[tag])
-
-			histogram_summary_tags = ['episode.rewards', 'actions']
-
-			for tag in histogram_summary_tags:
-				self.summary_placeholders[tag] = tf.placeholder('float32',
-										 None, name=tag.replace(' ', '_'))
-				self.summary_ops[tag]	= tf.summary.histogram(tag,
-											self.summary_placeholders[tag])
-			print(self.model_dir)
-			self.writer = tf.summary.FileWriter('./logs/%s' % \
-									      self.model_dir, self.sess.graph)
-			
+		
+		scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
+					'test.time', 'episode.max reward', 'episode.min reward', \
+					 'episode.avg reward', 'test.num of game', 'learning_rate', \
+					 'epsilon']
+		histogram_summary_tags = ['episode.rewards', 'actions']
+		
+		self.setup_summary(scalar_summary_tags, histogram_summary_tags)
 		tf.global_variables_initializer().run()
 		self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op],
 								   max_to_keep=30)

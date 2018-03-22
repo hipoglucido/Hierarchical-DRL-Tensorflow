@@ -83,9 +83,9 @@ class ControllerParameters(Configuration):
 
 	discount = 0.99
 	target_q_update_step = 1 * scale
-	learning_rate = 0.00025
+	learning_rate = 0.001
 	learning_rate_minimum = 0.00025
-	learning_rate_decay = 0.96
+	learning_rate_decay = 0.94
 	learning_rate_decay_step = 5 * scale
 
 	ep_end = 0.1
@@ -120,9 +120,9 @@ class MetaControllerParameters(Configuration):
 
 	discount = 0.99
 	target_q_update_step = 1 * scale
-	learning_rate = 0.00025
+	learning_rate = 0.001
 	learning_rate_minimum = 0.00025
-	learning_rate_decay = 0.96
+	learning_rate_decay = 0.94
 	learning_rate_decay_step = 5 * scale
 
 	ep_end = 0.1
@@ -150,7 +150,7 @@ class hDQNConfiguration(GlobalConfiguration):
 	
 	
 class DQNConfiguration(GlobalConfiguration):
-	scale = 1000
+	scale = 100
 
 	max_step = 100 * scale
 	memory_size = 100 * scale
@@ -160,9 +160,9 @@ class DQNConfiguration(GlobalConfiguration):
 
 	discount = 0.99
 	target_q_update_step = 1 * scale
-	learning_rate = 0.00025
+	learning_rate = 0.001
 	learning_rate_minimum = 0.00025
-	learning_rate_decay = 0.96
+	learning_rate_decay = 0.93
 	learning_rate_decay_step = 5 * scale
 
 	ep_end = 0.1
@@ -173,7 +173,7 @@ class DQNConfiguration(GlobalConfiguration):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-	architecture = [500, 500, 500]
+	architecture = [500, 100, 50]
 
 
 	_test_step = 5 * scale

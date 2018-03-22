@@ -8,13 +8,24 @@ from functools import reduce
 import tensorflow as tf
 import sys
 
-
-from base import BaseModel
+from base import BaseModel, Epsilon
 from history import History
 from replay_memory import ReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 
+
+class Goal:
+	def __init__(self, n, name, function, config):
+		self.n = n
+		self.name = str(name)
+		self.is_achieved = function
+		
+	def setup_epsilon(self, config, start_step):
+		self.epsilon = Epsilon(config, start_step)
+	
+
+		
 class Agent(BaseModel):
 	def __init__(self, config, environment, sess):
 		super(Agent, self).__init__(config)
@@ -22,50 +33,112 @@ class Agent(BaseModel):
 		self.weight_dir = 'weights'
 
 		self.env = environment
+		
+		
+		
 		self.mc_history = History(self.config.mc_params)
 		self.c_history = History(self.config.c_params)
 		
 		self.mc_memory = ReplayMemory(self.config.mc_params, self.model_dir)
 		self.c_memory = ReplayMemory(self.config.c_params, self.model_dir)
 		
-		
-		with tf.variable_scope('c_step'):
-			self.c_step_op = tf.Variable(0, trainable=False, name='c_step')
-			self.c_step_input = tf.placeholder('int32', None,
-												  name='c_step_input')
-			self.c_step_assign_op = self.c_step_op.assign(self.c_step_input)
 			
-		with tf.variable_scope('mc_step'):
-			self.mc_step_op = tf.Variable(0, trainable=False,
-										    name='mc_step')
-			self.mc_step_input = tf.placeholder('int32', None,
-										   name='mc_step_input')
-			self.mc_step_assign_op = self.mc_step_op.assign(self.mc_step_input)
-				
-		
-		
-		self.set_interfaces_lengths(config)
+	
 		self.build_hdqn(config)
+		
+		self.goals = self.define_goals(config)
+		
+#	def is_goal_achieved(self, goal, state):
+#		return goal.achieved(state)
 
-	def predict_goal(self, s_t. test_ep = None):
-	    ep = test_ep or (self.ep_end +
-	        max(0., (self.ep_start - self.ep_end)
-	          * (self.ep_end_t - max(0., self.step - self.learn_start)) / self.ep_end_t))
+	def inverse_one_hot_goal(self, one_hot_goal):
+		n = np.where(one_hot_goal)[0][0]
+		goal = self.get_goal(n)
+		return goal
+	
+	def get_goal(self, n):
+		return self.goals[n]
+		
+	def define_goals(self, config):
+		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0"]
+		self.env.goal_size = self.env.state_size
+		goals = {}
+		if self.env.env_name in mdps:
+			
+			for n in range(self.env.goal_size):
+				goal_name = "s" + str(n)
+				function = lambda s: self.env.one_hot_inverse(s) == n 
+				goal = Goal(n, goal_name, function, config.c_params)
+				goals[goal_name] = goal
+		elif 0:
+			#Space Fortress
+			pass
+		else:
+			raise ValueError("No prior goals for " + self.env.env_name)
+			
+		return goals
+	
+	def predict_next_goal(self, s_t, test_ep = None):
+		ep = test_ep or self.mc_epsilon.value
+	
+		if random.random() < ep:
+			n_goal = random.randrange(self.env.goal_size)
+		else:
+			n_goal = self.mc_q_goal.eval({self.s_t: [s_t]})[0]
+			
+		goal = self.get_goal(n_goal)
+		return goal
+	
+	
+		
+	def predict_next_action(self, s_t, goal, test_ep = None):
+	    ep = test_ep or self.mc_epsilon.value
 	
 	    if random.random() < ep:
 	      action = random.randrange(self.env.action_size)
 	    else:
 	      action = self.q_action.eval({self.s_t: [s_t]})[0]
 	
-	    return action		
+	    return action
+	
+	def observe(self, screen, reward, action, terminal, prefix):
+		prefix = prefix + "_"
+		#reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
+		history = getattr(self, prefix + 'history')
+		memory = getattr(self, prefix + 'memory')
+		step = getattr(self, prefix + 'step')
+		learn_start = getattr(self, prefix + 'learn_start')
+		train_frequency = getattr(self, prefix + 'train_frequency')
+		target_q_update_step = getattr(self, prefix + 'target_q_update_step')
+		update_target_q_network = getattr(self, prefix + 'update_target_q_network')
+		q_learning_mini_batch = getattr(self, prefix + 'q_learning_mini_batch')
 		
+		history.add(screen)
+		memory.add(screen, reward, action, terminal)
+
+		if step > learn_start:
+			if step % train_frequency == 0:
+				q_learning_mini_batch()
+
+			if step % target_q_update_step == target_q_update_step - 1:
+				update_target_q_network()		
+	
 	def train(self, config):
 		
 		mc_cnf = config.mc_params
 		c_cnf = config.c_params
+			
 		
-		mc_start_step = self.mc_step_op.eval()	
-		c_start_step = self.c_step_op.eval()		
+		
+		
+		
+		mc_start_step = 0#self.mc_step_op.eval()	
+		c_start_step = 0#self.c_step_op.eval()
+		
+		self.mc_epsilon = Epsilon(mc_cnf, mc_start_step)
+		for key, goal in self.goals:
+			goal.setup_epsilon(config, c_start_step) #TODO load individual
+		
 		
 		num_game, self.update_count, ep_reward = 0, 0, 0.
 		total_reward, self.total_loss, self.total_q = 0., 0., 0.
@@ -74,45 +147,67 @@ class Agent(BaseModel):
 
 		#screen, reward, action, terminal = self.env.new_random_game()
 		screen, _, _, _ = self.env.new_game(False)
-		for _ in range(self.mc_history.length):
-			self.mc_history.add(screen)
-		t_0 = time.time()
-#		for self.step in tqdm(range(start_step, self.max_step), ncols=70, initial=start_step):
+		
+		self.mc_history.fill_up(screen)
+		self.c_history.fill_up(screen)
+		
+		t_0 = time.time()	
 		
 		
+		goal = self.predict_next_goal(self.mc_history.get())
 		
-		for self.mc_step in range(mc_start_step, c_cnf.max_step):
-			if self.mc_step == c_cnf.learn_start:				
+		self.mc_step = mc_start_step
+		for self.c_step in tqdm(range(c_start_step, self.c_max_step),
+											  ncols=70, initial=c_start_step):
+			if self.c_step == c_cnf.learn_start:				
 				num_game, self.update_count, ep_reward = 0, 0, 0.
 				total_reward, self.total_loss, self.total_q = 0., 0., 0.
 				ep_rewards, actions, goals = [], [], []
+				
 			
-			# 1. predict
-			aux = self.history.get()
-			action = self.predict(aux)	
+						
+			# 1. predict							
+			action = self.predict_next_action(self.c_history.get())	
 			
 			# 2. act			
-			screen, reward, terminal = self.env.act(action, is_training = True)
-
-			# 3. observe
-			self.observe(screen, reward, action, terminal)
-			ep_reward += reward
-			if terminal:
-				#print("Terminal")
-				screen, _, _, _ = self.env.new_game(False)
-				
-				for _ in range(self.history_length):
-					self.history.add(screen)
-				num_game += 1
-				ep_rewards.append(ep_reward)
-				ep_reward = 0.			
+			screen, reward, terminal = self.env.act(action, is_training = True)			
+			goal_achieved = goal.is_achieved(screen)
 			
+			
+			# 3. observe
+			self.observe(screen, reward, action, terminal, 'c')
+			ep_reward += reward
+			
+			if terminal or goal_achieved:
+				int_reward = 1 if goal_achieved else 0
+				self.observe(screen, int_reward, goal.n, terminal, 'mc')
+				self.mc_step += 1
+				
+				if terminal:
+					screen, _, _, _ = self.env.new_game(False)
+					
+					self.mc_history.fill_up(screen)
+					self.c_history.fill_up(screen)
+					
+					num_game += 1
+					ep_rewards.append(ep_reward)
+					ep_reward = 0.
+					
+				goal = self.predict_next_goal(self.mc_history.get())
+					
+			
+			if not terminal and goal_achieved:
+				goal = self.predict_next_goal(self.mc_history.get())
+				goals.append(goal.n)
+				
+				int_reward = 1 if goal_achieved else 0
+				
 			actions.append(action)
 			total_reward += reward
 
-			if self.step >= self.learn_start:
+			if self.c_step >= self.c_learn_start:
 				
-				if self.step % self.test_step == self.test_step - 1:
+				if self.c_step % self.c_test_step == self.c_test_step - 1:
 					avg_reward = total_reward / self.test_step
 					avg_loss = self.total_loss / self.update_count
 					avg_q = self.total_q / self.update_count
@@ -310,60 +405,63 @@ class Agent(BaseModel):
 	def build_hdqn(self, config):
 
 		
+		with tf.variable_scope('c_step'):
+			self.c_step_op = tf.Variable(0, trainable=False, name='c_step')
+			self.c_step_input = tf.placeholder('int32', None,
+												  name='c_step_input')
+			self.c_step_assign_op = self.c_step_op.assign(self.c_step_input)
+			
+		with tf.variable_scope('mc_step'):
+			self.mc_step_op = tf.Variable(0, trainable=False,
+										    name='mc_step')
+			self.mc_step_input = tf.placeholder('int32', None,
+										   name='mc_step_input')
+			self.mc_step_assign_op = self.mc_step_op.assign(self.mc_step_input)
 		
+		
+		self.set_interfaces_lengths(config)
 
 		self.build_meta_controller(config)
 		
 		self.build_controller(config)
-
-		with tf.variable_scope('summary'):
-			scalar_summary_tags = ['average.reward', 'average.loss', \
-						  'average.q', 'time', 'episode.max reward', \
-						  'episode.min reward','episode.avg reward', \
-						  'num of game', 'training.learning_rate']
-
-			self.summary_placeholders = {}
-			self.summary_ops = {}
-
-			for tag in scalar_summary_tags:
-				self.summary_placeholders[tag] = tf.placeholder('float32',
-										 None, name=tag.replace(' ', '_'))
-				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
-					(self.env_name, tag), self.summary_placeholders[tag])
-
-			histogram_summary_tags = ['episode.rewards', 'actions', 'goals']
-
-			for tag in histogram_summary_tags:
-				self.summary_placeholders[tag] = tf.placeholder('float32',
-											 None, name=tag.replace(' ', '_'))
-				self.summary_ops[tag] = tf.summary.histogram(tag,
-											self.summary_placeholders[tag])
-			print(self.model_dir)
-			self.writer = tf.summary.FileWriter('./logs/%s' % \
-										   self.model_dir, self.sess.graph)
+		
+		self.setup_summary()
 			
 		tf.global_variables_initializer().run()
 		
 		mc_vars = list(self.mc_w.values()) + [self.mc_step_op]
 		c_vars = list(self.c_w.values()) + [self.c_step_op]
 		
+		
 		self._saver = tf.train.Saver(var_list = mc_vars + c_vars,
 								      max_to_keep=30)
 
 		self.load_model()
-		self.update_target_q_networks()
-
-	def update_target_q_networks(self):
-		print("META")
+		self.update_meta_controller_target_q_network()
+		self.update_controller_target_q_network()
+		
+	def setup_summary(self):
+		scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
+					'test.time', 'episode.max reward', 'episode.min reward', \
+					 'episode.avg reward', 'test.num of game', 'learning_rate']
+		for goal in self.goals:
+			name = "g" + goal.name
+			rate_tag = name + '_success_rate'
+			frequency_tag = 'test_' + name + '_freq'
+			epsilon_tag = name + '_epsilon'
+			scalar_summary_tags += [rate_tag, frequency_tag, epsilon_tag]
+		
+		histogram_summary_tags = ['episode.rewards', 'actions', 'goals']
+		
+		super().setup_summary(scalar_summary_tags, histogram_summary_tags)
+		
+	def mc_update_target_q_network(self):	
 		for name in self.mc_w.keys():
 			self.mc_target_w_assign_op[name].eval(
 					{self.mc_target_w_input[name]: self.mc_w[name].eval()})
-		print("CONTROLLER")
+			
+	def c_update_target_q_networks(self):
 		for name in self.c_w.keys():
-#			print("__________")
-#			print(self.c_target_w_assign_op[name])
-#			print(self.c_target_w_input[name])
-#			print(self.c_w[name])
 			self.c_target_w_assign_op[name].eval(
 					{self.c_target_w_input[name]: self.c_w[name].eval()})
 	

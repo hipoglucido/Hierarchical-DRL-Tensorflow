@@ -11,7 +11,23 @@ from ops import linear, clipped_error
 
 pp = pprint.PrettyPrinter().pprint
 
-
+class Epsilon():
+	def __init__(self, config, start_step):
+		self.start = config.ep_start
+		self.end = config.ep_end
+		self.end_t = config.ep_end_t
+		
+		self.learn_start = config.learn_start
+		self.step = start_step
+	@property
+	def value(self):
+		epsilon = self.end + \
+				max(0., (self.start - self.end) * \
+				 (self.end_t -max(0., self.step - self.learn_start)) / self.end_t)
+		return epsilon
+	
+	def plus_one(self):
+		self.step += 1
 
 class BaseModel(object):
 	"""Abstract object representing an Reader model."""
@@ -21,7 +37,36 @@ class BaseModel(object):
 		for k, v in inspect.getmembers(config):
 			name = k if not k.startswith('_') else k[1:]
 			setattr(self, name, v)
+	def setup_summary(self, scalar_summary_tags, histogram_summary_tags):	
+		"""
+		average.X   : mean X per step
+		test.X      : total X per testing inverval
+		episode.X Y : X Y per episode
+		
+		"""		
+		with tf.variable_scope('summary'):
+			
 
+			self.summary_placeholders = {}
+			self.summary_ops = {}
+
+			for tag in scalar_summary_tags:
+				self.summary_placeholders[tag] = tf.placeholder(
+								'float32', None, name=tag.replace(' ', '_'))
+				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
+						(self.env_name, tag), self.summary_placeholders[tag])
+
+			
+
+			for tag in histogram_summary_tags:
+				self.summary_placeholders[tag] = tf.placeholder('float32',
+										 None, name=tag.replace(' ', '_'))
+				self.summary_ops[tag]	= tf.summary.histogram(tag,
+											self.summary_placeholders[tag])
+			print(self.model_dir)
+			self.writer = tf.summary.FileWriter('./logs/%s' % \
+									      self.model_dir, self.sess.graph)
+			
 	def add_dense_layers(self, config, input_layer, prefix):
 		last_layer = input_layer
 		print(last_layer)

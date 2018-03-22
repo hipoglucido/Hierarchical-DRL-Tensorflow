@@ -18,3 +18,7 @@ class History:
 
 	def get(self):
 		return self.history
+	
+	def fill_up(self, state):
+		for _ in range(self.length):
+			self.add(state)
