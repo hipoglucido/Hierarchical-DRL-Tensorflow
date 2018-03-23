@@ -29,8 +29,8 @@ flags.DEFINE_string('gpu_fraction', '1/1', 'idx / # of gpu fraction e.g. 1/3, 2/
 flags.DEFINE_boolean('display', None, 'Whether to do display the game screen or not')
 flags.DEFINE_string('mode', None, 'Whether to do training, testing or just seeing the graph')
 flags.DEFINE_integer('random_seed', None, 'Value of random seed')
-flags.DEFINE_integer('just_graph', None, 'Whether to just write the graph to TB or not')
-flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
+#flags.DEFINE_integer('just_graph', None, 'Whether to just write the graph to TB or not')
+#flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
 
 #
 
@@ -52,14 +52,14 @@ def calc_gpu_fraction(fraction_string):
 
 def main(_):
 	
-	
+	flags_dict = flags.FLAGS.__dict__['__flags']
 	if flags.FLAGS.agent == 'dqn':
 		config = configuration.DQNConfiguration()
 	elif flags.FLAGS.agent == 'hdqn':
 		config = configuration.hDQNConfiguration()
 	else:
 		raise ValueError("Wrong agent")
-	config.update(flags.FLAGS.__dict__['__flags'])
+	config.update(flags_dict)
 	config.print()
 	config.insert_envs_paths()
 	env = Environment(config)

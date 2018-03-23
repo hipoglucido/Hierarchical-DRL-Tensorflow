@@ -1,17 +1,20 @@
 import numpy as np
+from configuration import DQNConfiguration, ControllerParameters, MetaControllerParameters
 
 class History:
 	def __init__(self, config):
 		
+		
 		self.history = np.zeros(
-				[config.history_length, config.state_size], dtype=np.float32)
+				[config.history_length, config.input_size], dtype=np.float32)
 	@property
 	def length(self):
 		return self.get().shape[0]
 	
-	def add(self, screen):
+
+	def add(self, item):
 		self.history[:-1] = self.history[1:]
-		self.history[-1] = screen
+		self.history[-1] = item
 
 	def reset(self):
 		self.history *= 0
@@ -19,6 +22,6 @@ class History:
 	def get(self):
 		return self.history
 	
-	def fill_up(self, state):
+	def fill_up(self, item):
 		for _ in range(self.length):
-			self.add(state)
+			self.add(item)

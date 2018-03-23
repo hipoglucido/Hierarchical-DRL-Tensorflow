@@ -24,7 +24,10 @@ class Goal:
 	def setup_epsilon(self, config, start_step):
 		self.epsilon = Epsilon(config, start_step)
 	
-
+	def setup_one_hot(self, length):
+		one_hot = np.zeros(length)
+		one_hot[self.n] = 1.
+		self.one_hot = one_hot
 		
 class Agent(BaseModel):
 	def __init__(self, config, environment, sess):
@@ -33,6 +36,12 @@ class Agent(BaseModel):
 		self.weight_dir = 'weights'
 
 		self.env = environment
+		self.goals = self.define_goals(config)
+		print(self.goals)
+		#Update controller config with goal size
+		self.config.c_params.update({'input_size': self.env.state_size})
+							#self.env.goal_size + self.env.state_size})
+		self.config.mc_params.update({'input_size': self.env.state_size})
 		
 		
 		
@@ -46,11 +55,13 @@ class Agent(BaseModel):
 	
 		self.build_hdqn(config)
 		
-		self.goals = self.define_goals(config)
 		
 #	def is_goal_achieved(self, goal, state):
 #		return goal.achieved(state)
-
+	def one_hot_goal(self, goal):
+		one_hot_goal = np.zeros(self.env.goal_size)
+		one_hot_goal[goal.n] = 1
+		return one_hot_goal
 	def inverse_one_hot_goal(self, one_hot_goal):
 		n = np.where(one_hot_goal)[0][0]
 		goal = self.get_goal(n)
@@ -62,6 +73,9 @@ class Agent(BaseModel):
 	def define_goals(self, config):
 		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0"]
 		self.env.goal_size = self.env.state_size
+		
+		
+		
 		goals = {}
 		if self.env.env_name in mdps:
 			
@@ -69,16 +83,18 @@ class Agent(BaseModel):
 				goal_name = "s" + str(n)
 				function = lambda s: self.env.one_hot_inverse(s) == n 
 				goal = Goal(n, goal_name, function, config.c_params)
-				goals[goal_name] = goal
+				goal.setup_one_hot(self.env.goal_size)
+				goals[goal.n] = goal
 		elif 0:
 			#Space Fortress
 			pass
 		else:
 			raise ValueError("No prior goals for " + self.env.env_name)
-			
+		
 		return goals
 	
-	def predict_next_goal(self, s_t, test_ep = None):
+	def predict_next_goal(self, test_ep = None):
+		s_t = self.mc_history.get()
 		ep = test_ep or self.mc_epsilon.value
 	
 		if random.random() < ep:
@@ -89,17 +105,25 @@ class Agent(BaseModel):
 		goal = self.get_goal(n_goal)
 		return goal
 	
-	
+
 		
-	def predict_next_action(self, s_t, goal, test_ep = None):
-	    ep = test_ep or self.mc_epsilon.value
+	def predict_next_action(self, test_ep = None):
+		
+		
+		
+		#s_t should have goals and screens concatenated
+		ep = test_ep or self.current_goal.epsilon.value
 	
-	    if random.random() < ep:
-	      action = random.randrange(self.env.action_size)
-	    else:
-	      action = self.q_action.eval({self.s_t: [s_t]})[0]
-	
-	    return action
+		if random.random() < ep:
+			action = random.randrange(self.env.action_size)
+		else:
+			screens = self.c_history.get()
+			
+			action = self.q_action.eval(
+							{self.c_s_t: [screens],
+							 self.c_g_t: [self.current_goal.one_hot]})[0]
+		
+		return action
 	
 	def observe(self, screen, reward, action, terminal, prefix):
 		prefix = prefix + "_"
@@ -114,6 +138,9 @@ class Agent(BaseModel):
 		q_learning_mini_batch = getattr(self, prefix + 'q_learning_mini_batch')
 		
 		history.add(screen)
+		if prefix == 'c':
+			one_hot_goal = self.one_hot_goal(self.current_goal)
+			next_state = np.hstack([])
 		memory.add(screen, reward, action, terminal)
 
 		if step > learn_start:
@@ -122,22 +149,23 @@ class Agent(BaseModel):
 
 			if step % target_q_update_step == target_q_update_step - 1:
 				update_target_q_network()		
+	def new_episode(self):
+		#screen, reward, action, terminal = self.env.new_random_game()
+		screen, _, _, _ = self.env.new_game(False)
+		
+		self.mc_history.fill_up(screen)
+		self.c_history.fill_up(screen)
+		return 
 	
-	def train(self, config):
-		
-		mc_cnf = config.mc_params
-		c_cnf = config.c_params
-			
-		
-		
-		
-		
+	def train(self):
+		mc_params = self.config.mc_params
+		c_params = self.config.c_params
 		mc_start_step = 0#self.mc_step_op.eval()	
 		c_start_step = 0#self.c_step_op.eval()
 		
-		self.mc_epsilon = Epsilon(mc_cnf, mc_start_step)
-		for key, goal in self.goals:
-			goal.setup_epsilon(config, c_start_step) #TODO load individual
+		self.mc_epsilon = Epsilon(mc_params, mc_start_step)
+		for key, goal in self.goals.items():
+			goal.setup_epsilon(c_params, c_start_step) #TODO load individual
 		
 		
 		num_game, self.update_count, ep_reward = 0, 0, 0.
@@ -145,62 +173,48 @@ class Agent(BaseModel):
 		max_avg_ep_reward = 0
 		ep_rewards, actions, goals = [], [], []
 
-		#screen, reward, action, terminal = self.env.new_random_game()
-		screen, _, _, _ = self.env.new_game(False)
 		
-		self.mc_history.fill_up(screen)
-		self.c_history.fill_up(screen)
-		
+		self.new_episode()
 		t_0 = time.time()	
 		
-		
-		goal = self.predict_next_goal(self.mc_history.get())
+		#metacontroller predicts
+		self.current_goal = self.predict_next_goal()
 		
 		self.mc_step = mc_start_step
-		for self.c_step in tqdm(range(c_start_step, self.c_max_step),
+		for self.c_step in tqdm(range(c_start_step, c_params.max_step),
 											  ncols=70, initial=c_start_step):
-			if self.c_step == c_cnf.learn_start:				
+			if self.c_step == c_params.learn_start:				
 				num_game, self.update_count, ep_reward = 0, 0, 0.
 				total_reward, self.total_loss, self.total_q = 0., 0., 0.
 				ep_rewards, actions, goals = [], [], []
-				
+							
+			# 1. controller predicts
+			action = self.predict_next_action()	
+			
+			# 2. controller acts			
+			screen, reward, terminal = self.env.act(action, is_training = True)			
 			
 						
-			# 1. predict							
-			action = self.predict_next_action(self.c_history.get())	
-			
-			# 2. act			
-			screen, reward, terminal = self.env.act(action, is_training = True)			
-			goal_achieved = goal.is_achieved(screen)
-			
-			
-			# 3. observe
+			# 3. controller observes
 			self.observe(screen, reward, action, terminal, 'c')
+			goal_achieved = goal.is_achieved(screen)
 			ep_reward += reward
 			
 			if terminal or goal_achieved:
+				#Controller observes
 				int_reward = 1 if goal_achieved else 0
 				self.observe(screen, int_reward, goal.n, terminal, 'mc')
-				self.mc_step += 1
 				
 				if terminal:
-					screen, _, _, _ = self.env.new_game(False)
-					
-					self.mc_history.fill_up(screen)
-					self.c_history.fill_up(screen)
+					self.new_episode()
 					
 					num_game += 1
 					ep_rewards.append(ep_reward)
 					ep_reward = 0.
-					
-				goal = self.predict_next_goal(self.mc_history.get())
-					
-			
-			if not terminal and goal_achieved:
-				goal = self.predict_next_goal(self.mc_history.get())
+				self.mc_step += 1					
+				goal = self.predict_next_goal()
 				goals.append(goal.n)
 				
-				int_reward = 1 if goal_achieved else 0
 				
 			actions.append(action)
 			total_reward += reward
@@ -265,10 +279,10 @@ class Agent(BaseModel):
 					actions = []		
 
 	def set_interfaces_lengths(self, config):	
+		#TODO remove method, not useful anymore
 		config.mc_params.q_input_length = self.env.state_size
 		config.mc_params.q_output_length = self.env.goal_size
-		config.c_params.q_input_length = self.env.state_size + \
-														self.env.goal_size
+		config.c_params.q_input_length = self.env.state_size
 		config.c_params.q_output_length = self.env.action_size
 		
 	def build_meta_controller(self, config):
@@ -291,7 +305,6 @@ class Agent(BaseModel):
 			self.mc_q, self.mc_w['q_w'], self.mc_w['q_b'] = linear(last_layer,
 												  self.env.goal_size,
 												  name='mc_q')
-			print(self.mc_q)
 			self.mc_q_goal= tf.argmax(self.mc_q, axis=1)
 			
 			q_summary = []
@@ -342,14 +355,23 @@ class Agent(BaseModel):
 		self.c_target_w = {}
 	
 		with tf.variable_scope('c_prediction'):
-			input_size = self.env.state_size + self.env.goal_size
+			#input_size = self.env.state_size + self.env.goal_size
 			self.c_s_t = tf.placeholder("float",
-								[None, self.c_history.length, input_size],
+								[None, self.c_history.length, self.env.state_size],
 								name = 'c_s_t')
 			shape = self.c_s_t.get_shape().as_list()
 			self.c_s_t_flat = tf.reshape(self.c_s_t, [-1, reduce(
 					lambda x, y: x * y, shape[1:])])
-			last_layer = self.c_s_t_flat
+			self.c_g_t = tf.placeholder("float",
+							   [None, self.env.goal_size],
+							   name = 'c_g_t')
+			self.c_gs_t = tf.concat([self.c_g_t, self.c_s_t_flat],
+						   axis = 1,
+						   name = 'c_gs_concat')
+			print(self.c_g_t)
+			print(self.c_s_t_flat)
+			last_layer = self.c_gs_t
+			print(last_layer)
 			last_layer = self.add_dense_layers(config = config.c_params,
 											   input_layer = last_layer,
 											   prefix = 'c')
@@ -420,8 +442,9 @@ class Agent(BaseModel):
 		
 		
 		self.set_interfaces_lengths(config)
-
+		print("Building meta-controller")
 		self.build_meta_controller(config)
+		print("Building controller")
 		
 		self.build_controller(config)
 		
@@ -437,15 +460,15 @@ class Agent(BaseModel):
 								      max_to_keep=30)
 
 		self.load_model()
-		self.update_meta_controller_target_q_network()
-		self.update_controller_target_q_network()
+		self.mc_update_target_q_network()
+		self.c_update_target_q_network()
 		
 	def setup_summary(self):
 		scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
 					'test.time', 'episode.max reward', 'episode.min reward', \
 					 'episode.avg reward', 'test.num of game', 'learning_rate']
-		for goal in self.goals:
-			name = "g" + goal.name
+		for k, goal in self.goals.items():
+			name = goal.name
 			rate_tag = name + '_success_rate'
 			frequency_tag = 'test_' + name + '_freq'
 			epsilon_tag = name + '_epsilon'
@@ -460,7 +483,7 @@ class Agent(BaseModel):
 			self.mc_target_w_assign_op[name].eval(
 					{self.mc_target_w_input[name]: self.mc_w[name].eval()})
 			
-	def c_update_target_q_networks(self):
+	def c_update_target_q_network(self):
 		for name in self.c_w.keys():
 			self.c_target_w_assign_op[name].eval(
 					{self.c_target_w_input[name]: self.c_w[name].eval()})

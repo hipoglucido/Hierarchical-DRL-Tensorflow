@@ -104,7 +104,7 @@ class BaseModel(object):
 		aux2 = aux1 + '_s_t'                             # mc_target_s_t
 		aux3 = aux1 + '_w'                               # mc_target_w
 		aux4 = aux1 + '_q'                               # mc_target_q
-		aux5 = 'w' if prefix == '' else prefix + 'w'    # mc_w
+		aux5 = 'w' if prefix == '' else prefix + 'w'     # mc_w
 		target_w = {}
 		
 		
@@ -117,8 +117,16 @@ class BaseModel(object):
 			target_s_t_flat = \
 				tf.reshape(target_s_t,
 					      [-1, reduce(lambda x, y: x * y, shape[1:])])
-			
-			last_layer = target_s_t_flat
+			if config.prefix == 'c':
+				self.c_target_g_t = tf.placeholder("float",
+								   [None, self.env.goal_size],
+								   name = 'c_target_g_t')
+				self.target_gs_t = tf.concat([self.c_target_g_t, target_s_t_flat],
+								   axis = 1,
+								   name = 'c_target_gs_concat')
+				last_layer = self.target_gs_t
+			else:
+				last_layer = target_s_t_flat
 			last_layer = self.add_dense_layers(config = config,
 											   input_layer = last_layer,
 											   prefix = aux1)

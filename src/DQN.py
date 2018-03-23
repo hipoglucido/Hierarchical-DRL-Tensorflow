@@ -22,6 +22,7 @@ class Agent(BaseModel):
 		self.weight_dir = 'weights'
 
 		self.env = environment
+		config.update({'input_size' : self.env.state_size})
 		self.history = History(self.config)
 		self.memory = ReplayMemory(self.config, self.model_dir)
 		

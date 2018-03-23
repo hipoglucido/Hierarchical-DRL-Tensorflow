@@ -72,7 +72,7 @@ class GlobalConfiguration(Configuration):
 class ControllerParameters(Configuration):
 	scale = 1000
 	
-	history_length = 1	
+	history_length = 4	
 	
 	memory_size = 100 * scale
 		
@@ -150,7 +150,7 @@ class hDQNConfiguration(GlobalConfiguration):
 	
 	
 class DQNConfiguration(GlobalConfiguration):
-	scale = 100
+	scale = 500
 
 	max_step = 100 * scale
 	memory_size = 100 * scale
@@ -173,7 +173,7 @@ class DQNConfiguration(GlobalConfiguration):
 	train_frequency = 4
 	learn_start = 5. * scale
 
-	architecture = [500, 100, 50]
+	architecture = [500, 500, 500]
 
 
 	_test_step = 5 * scale
