@@ -48,11 +48,10 @@ def calc_gpu_fraction(fraction_string):
 	print(" [*] GPU : %.4f" % fraction)
 	return fraction
 
-
+ 
 
 def main(_):
-	
-	flags_dict = flags.FLAGS.__dict__['__flags']
+	flags_dict = flags.FLAGS.flag_values_dict()
 	if flags.FLAGS.agent == 'dqn':
 		config = configuration.DQNConfiguration()
 	elif flags.FLAGS.agent == 'hdqn':

@@ -39,8 +39,8 @@ class Agent(BaseModel):
 		self.goals = self.define_goals(config)
 		print(self.goals)
 		#Update controller config with goal size
-		self.config.c_params.update({'input_size': self.env.state_size})
-							#self.env.goal_size + self.env.state_size})
+		self.config.c_params.update({'input_size': \
+							self.env.goal_size + self.env.state_size})
 		self.config.mc_params.update({'input_size': self.env.state_size})
 		
 		
@@ -81,7 +81,7 @@ class Agent(BaseModel):
 			
 			for n in range(self.env.goal_size):
 				goal_name = "s" + str(n)
-				function = lambda s: self.env.one_hot_inverse(s) == n 
+				function = lambda s: self.env.env.one_hot_inverse(s) == n 
 				goal = Goal(n, goal_name, function, config.c_params)
 				goal.setup_one_hot(self.env.goal_size)
 				goals[goal.n] = goal
@@ -124,7 +124,79 @@ class Agent(BaseModel):
 							 self.c_g_t: [self.current_goal.one_hot]})[0]
 		
 		return action
+	def mc_observe(self, screen, ext_reward, goal, terminal):
+		self.mc_history.add(screen)
+		next_state = screen
+		self.mc_memory.add(next_state, ext_reward, goal, terminal)
+
+		if self.mc_step >  self.config.mc_params.learn_start:
+			if self.mc_step % self.config.mc_params.train_frequency == 0:
+				self.mc_q_learning_mini_batch()
+
+			if self.mc_step % self.config.mc_params.target_q_update_step ==\
+						self.config.mc_params.target_q_update_step - 1:
+				self.mc_update_target_q_network()	
 	
+	def c_observe(self, screen, int_reward, action, terminal):
+		self.c_history.add(screen)
+		next_state = np.hstack([self.current_goal.one_hot, screen])
+		self.c_memory.add(next_state, reward, action, terminal)
+		
+		if self.c_step > self.config.c_params.learn_start:
+			if self.c_step % self.config.c_params.train_frequency == 0:
+				self.c_q_learning_mini_batch()
+
+			if self.c_step % self.c_target_q_update_step == self.c_target_q_update_step - 1:
+				self.c_update_target_q_network()
+
+	def mc_q_learning_mini_batch(self):
+		if self.mc_memory.count < self.mc_history.length:
+			return
+		
+		s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
+		
+		q_t_plus_1 = self.target_q.eval({self.mc_target_s_t: s_t_plus_1})
+
+		terminal = np.array(terminal) + 0.
+		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+		target_q_t = (1. - terminal) * self.config.mc_params.discount * max_q_t_plus_1 + ext_reward
+
+		_, q_t, loss, summary_str = self.sess.run([self.mc_optim, self.mc_q,
+											 self.mc_loss, self.q_summary], {
+			self.mc_target_q_t: target_q_t,
+			self.mc_action: goal,
+			self.mc_s_t: s_t,
+			self.mc_learning_rate_step: self.mc_step,
+		})
+		self.writer.add_summary(summary_str, self.mc_step)
+		self.mc_total_loss += loss
+		self.mc_total_q += q_t.mean()
+		self.mc_update_count += 1
+
+	def c_q_learning_mini_batch(self):
+		if self.memory.count < self.history_length:
+			return
+		
+		s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+		
+		q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
+
+		terminal = np.array(terminal) + 0.
+		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+		target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
+
+		_, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
+											 self.loss, self.q_summary], {
+			self.target_q_t: target_q_t,
+			self.action: action,
+			self.s_t: s_t,
+			self.learning_rate_step: self.step,
+		})
+		self.writer.add_summary(summary_str, self.step)
+		self.total_loss += loss
+		self.total_q += q_t.mean()
+		self.update_count += 1
+
 	def observe(self, screen, reward, action, terminal, prefix):
 		prefix = prefix + "_"
 		#reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
@@ -139,9 +211,10 @@ class Agent(BaseModel):
 		
 		history.add(screen)
 		if prefix == 'c':
-			one_hot_goal = self.one_hot_goal(self.current_goal)
-			next_state = np.hstack([])
-		memory.add(screen, reward, action, terminal)
+			next_state = np.hstack([self.current_goal.one_hot, screen])
+		elif prefix == 'mc':
+			next_state = screen
+		memory.add(next_state, reward, action, terminal)
 
 		if step > learn_start:
 			if step % train_frequency == 0:
@@ -149,6 +222,8 @@ class Agent(BaseModel):
 
 			if step % target_q_update_step == target_q_update_step - 1:
 				update_target_q_network()		
+	
+	
 	def new_episode(self):
 		#screen, reward, action, terminal = self.env.new_random_game()
 		screen, _, _, _ = self.env.new_game(False)
@@ -192,18 +267,20 @@ class Agent(BaseModel):
 			action = self.predict_next_action()	
 			
 			# 2. controller acts			
-			screen, reward, terminal = self.env.act(action, is_training = True)			
+			screen, ext_reward, terminal = self.env.act(action, is_training = True)			
 			
 						
 			# 3. controller observes
-			self.observe(screen, reward, action, terminal, 'c')
 			goal_achieved = goal.is_achieved(screen)
-			ep_reward += reward
+			int_reward = 1 if goal_achieved else 0
+			self.observe(screen, int_reward, action, terminal, 'c')
+			
+			ep_reward += ext_reward
 			
 			if terminal or goal_achieved:
 				#Controller observes
-				int_reward = 1 if goal_achieved else 0
-				self.observe(screen, int_reward, goal.n, terminal, 'mc')
+				
+				self.observe(screen, ext_reward, goal.n, terminal, 'mc')
 				
 				if terminal:
 					self.new_episode()
@@ -212,12 +289,12 @@ class Agent(BaseModel):
 					ep_rewards.append(ep_reward)
 					ep_reward = 0.
 				self.mc_step += 1					
-				goal = self.predict_next_goal()
-				goals.append(goal.n)
+				self.current_goal = self.predict_next_goal()
+				goals.append(self.current_goal.n)
 				
 				
 			actions.append(action)
-			total_reward += reward
+			total_reward += ext_reward
 
 			if self.c_step >= self.c_learn_start:
 				

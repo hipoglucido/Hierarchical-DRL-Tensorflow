@@ -6,7 +6,7 @@ class History:
 		
 		
 		self.history = np.zeros(
-				[config.history_length, config.input_size], dtype=np.float32)
+				[config.history_length, config.state_size], dtype=np.float32)
 	@property
 	def length(self):
 		return self.get().shape[0]
