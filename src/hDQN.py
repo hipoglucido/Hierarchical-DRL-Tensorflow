@@ -13,21 +13,97 @@ from history import History
 from replay_memory import ReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
+from goals import MDPGoal
 
-
-class Goal:
-	def __init__(self, n, name, function, config):
-		self.n = n
-		self.name = str(name)
-		self.is_achieved = function
-		
-	def setup_epsilon(self, config, start_step):
-		self.epsilon = Epsilon(config, start_step)
+class Metrics:
+	def __init__(self, config):
+		self.restart()
+		self.mc_params = config.mc_params
+		self.c_params = config.c_params
 	
-	def setup_one_hot(self, length):
-		one_hot = np.zeros(length)
-		one_hot[self.n] = 1.
-		self.one_hot = one_hot
+	def start_timer(self):
+		self.t0 = time.time()
+		
+	def restart_timer(self):
+		self.t1 = time.time()
+		time_, self.t0 = self.t1 - self.t0, self.t1
+		return time_
+	def restart_after():
+		pass
+	def restart(self):
+		self.num_game = 0
+		self.update_count = 0
+		
+		
+		#Scalars with c and mc versions
+		scalars = ['total_reward', 'ep_reward', 'total_q',
+				'total_loss']
+		for scalar in scalars:
+			for prefix in ['mc', 'c']:
+				setattr(self, prefix + "_" + scalar, 0)
+		
+		self.mc_ep_rewards = []
+		self.c_ep_rewards = []
+		self.actions, self.goals = [], []
+		
+		self.start_timer()
+		
+	def increment_rewards(self, internal, external):
+		self.c_total_reward += internal
+		self.c_ep_reward += internal
+		
+		self.mc_total_reward += external		
+		self.mc_ep_reward += external
+		
+	def c_inject_summaries(self, step):
+		self.inject_summary({
+				'average.reward': avg_reward,
+				'average.loss': avg_loss,
+				'average.q': avg_q,
+				'time': time_,
+				'episode.max reward': max_ep_reward,
+				'episode.min reward': min_ep_reward,
+				'episode.avg reward': avg_ep_reward,
+				'num of game': num_game,
+				'episode.rewards': ep_rewards,
+				'actions': actions,
+				'training.learning_rate': \
+					self.learning_rate_op.eval(
+						{self.learning_rate_step: self.step}),
+			}, self.step)
+		pass
+		
+	def mc_inject_summaries(self, step):
+		pass
+	
+	def compute_test(self, prefix, update_count):
+		assert prefix in ['c', 'mc']
+		prefix = '_' + prefix
+		config = getattr(self, prefix + 'params')
+		test_step = config.test_step
+		total_reward = getattr(self, prefix + 'total_reward')
+		setattr(self, prefix + 'avg_reward', total_reward / test_step)
+		total_loss = getattr(self, prefix + 'total_loss')
+		setattr(self, prefix + 'avg_loss', total_loss / update_count)
+		total_q = getattr(self, prefix + 'total_q')
+		setattr(self, prefix + 'avg_q', total_q / update_count)
+		
+		ep_rewards = getattr(self, prefix + 'ep_rewards')
+		
+		try:
+			setattr(self, prefix + 'max_ep_reward', np.max(ep_rewards))
+			setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
+			setattr(self, prefix + 'mean_ep_reward', np.mean(ep_rewards))
+		except Exception as e:
+			print(str(e))
+			for s in ['max', 'min', 'mean']:
+				setattr(self, prefix + s +'_ep_reward', 0.)
+			
+	def close_episode(self):
+		self.num_game += 1
+		self.mc_ep_rewards.append(self.mc_ep_reward)
+		self.c_ep_rewards.append(self.c_ep_reward)
+		self.mc_ep_reward, self.c_ep_reward = 0., 0.
 		
 class Agent(BaseModel):
 	def __init__(self, config, environment, sess):
@@ -77,19 +153,17 @@ class Agent(BaseModel):
 		
 		
 		goals = {}
-		if self.env.env_name in mdps:
-			
-			for n in range(self.env.goal_size):
+		for n in range(self.env.goal_size):
+			if self.env.env_name in mdps:
 				goal_name = "s" + str(n)
-				function = lambda s: self.env.env.one_hot_inverse(s) == n 
-				goal = Goal(n, goal_name, function, config.c_params)
+				goal = MDPGoal(n, goal_name, config.c_params)			
 				goal.setup_one_hot(self.env.goal_size)
-				goals[goal.n] = goal
-		elif 0:
-			#Space Fortress
-			pass
-		else:
-			raise ValueError("No prior goals for " + self.env.env_name)
+			elif 0:
+				#Space Fortress
+				pass
+			else:
+				raise ValueError("No prior goals for " + self.env.env_name)
+			goals[goal.n] = goal
 		
 		return goals
 	
@@ -125,28 +199,31 @@ class Agent(BaseModel):
 		
 		return action
 	def mc_observe(self, screen, ext_reward, goal, terminal):
+		params = self.config.mc_params
 		self.mc_history.add(screen)
 		next_state = screen
 		self.mc_memory.add(next_state, ext_reward, goal, terminal)
 
-		if self.mc_step >  self.config.mc_params.learn_start:
-			if self.mc_step % self.config.mc_params.train_frequency == 0:
+		if self.mc_step >  params.learn_start:
+			if self.mc_step % params.train_frequency == 0:
 				self.mc_q_learning_mini_batch()
 
-			if self.mc_step % self.config.mc_params.target_q_update_step ==\
-						self.config.mc_params.target_q_update_step - 1:
+			if self.mc_step % params.target_q_update_step ==\
+						params.target_q_update_step - 1:
 				self.mc_update_target_q_network()	
 	
 	def c_observe(self, screen, int_reward, action, terminal):
+		params = self.config.c_params
 		self.c_history.add(screen)
 		next_state = np.hstack([self.current_goal.one_hot, screen])
-		self.c_memory.add(next_state, reward, action, terminal)
+
+		self.c_memory.add(next_state, int_reward, action, terminal)
 		
-		if self.c_step > self.config.c_params.learn_start:
-			if self.c_step % self.config.c_params.train_frequency == 0:
+		if self.c_step > params.learn_start:
+			if self.c_step % params.train_frequency == 0:
 				self.c_q_learning_mini_batch()
 
-			if self.c_step % self.c_target_q_update_step == self.c_target_q_update_step - 1:
+			if self.c_step % params.target_q_update_step == params.target_q_update_step - 1:
 				self.c_update_target_q_network()
 
 	def mc_q_learning_mini_batch(self):
@@ -155,14 +232,14 @@ class Agent(BaseModel):
 		
 		s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
 		
-		q_t_plus_1 = self.target_q.eval({self.mc_target_s_t: s_t_plus_1})
+		q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
 
 		terminal = np.array(terminal) + 0.
 		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
 		target_q_t = (1. - terminal) * self.config.mc_params.discount * max_q_t_plus_1 + ext_reward
-
+		
 		_, q_t, loss, summary_str = self.sess.run([self.mc_optim, self.mc_q,
-											 self.mc_loss, self.q_summary], {
+											 self.mc_loss, self.mc_q_summary], {
 			self.mc_target_q_t: target_q_t,
 			self.mc_action: goal,
 			self.mc_s_t: s_t,
@@ -171,58 +248,59 @@ class Agent(BaseModel):
 		self.writer.add_summary(summary_str, self.mc_step)
 		self.mc_total_loss += loss
 		self.mc_total_q += q_t.mean()
-		self.mc_update_count += 1
+		#self.mc_update_count += 1
 
 	def c_q_learning_mini_batch(self):
-		if self.memory.count < self.history_length:
+		if self.c_memory.count < self.c_history.length:
 			return
 		
-		s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+		s_t, action, int_reward, s_t_plus_1, terminal = self.c_memory.sample()
+			
+		#TODO: optimize goals in memory
+		g_t = np.vstack([g[0] for g in s_t[:, :, :self.env.goal_size]]) 
+		s_t = s_t[:, :, self.env.goal_size:]
 		
-		q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
-
-		terminal = np.array(terminal) + 0.
+		
+		g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.env.goal_size]])
+		s_t_plus_1 = s_t_plus_1[:, :, self.env.goal_size:]
+		
+		
+		for s,a,r,s1,t,g,g1 in zip(s_t, action, int_reward, s_t_plus_1, terminal,\
+						g_t, g_t_plus_1):
+			continue
+			print("__________________")
+			print("s_t\n",s)
+			print("g_t",g)
+			print("a",a)
+			print("s_t1\n",s1)
+			print("g_t1",g1)
+			print("r",r)
+			print("t",t)
+			sys.exit(0)
+		q_t_plus_1 = self.c_target_q.eval({
+									self.c_target_s_t: s_t_plus_1,
+									self.c_target_g_t: g_t_plus_1,
+									 })
+		
+		terminal = np.array(terminal) + 0. #Boolean to float
+	
 		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-		target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
+		target_q_t = (1. - terminal) * self.config.c_params.discount * max_q_t_plus_1 + int_reward
 
-		_, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
-											 self.loss, self.q_summary], {
-			self.target_q_t: target_q_t,
-			self.action: action,
-			self.s_t: s_t,
-			self.learning_rate_step: self.step,
+		_, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
+											 self.c_loss, self.c_q_summary], {
+			self.c_target_q_t: target_q_t,
+			self.c_action: action,
+			self.c_s_t: s_t,
+			self.c_g_t: g_t,
+			self.c_learning_rate_step: self.c_step,
 		})
-		self.writer.add_summary(summary_str, self.step)
-		self.total_loss += loss
-		self.total_q += q_t.mean()
+		self.writer.add_summary(summary_str, self.c_step)
+		self.c_total_loss += loss
+		self.c_total_q += q_t.mean()
 		self.update_count += 1
 
-	def observe(self, screen, reward, action, terminal, prefix):
-		prefix = prefix + "_"
-		#reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
-		history = getattr(self, prefix + 'history')
-		memory = getattr(self, prefix + 'memory')
-		step = getattr(self, prefix + 'step')
-		learn_start = getattr(self, prefix + 'learn_start')
-		train_frequency = getattr(self, prefix + 'train_frequency')
-		target_q_update_step = getattr(self, prefix + 'target_q_update_step')
-		update_target_q_network = getattr(self, prefix + 'update_target_q_network')
-		q_learning_mini_batch = getattr(self, prefix + 'q_learning_mini_batch')
-		
-		history.add(screen)
-		if prefix == 'c':
-			next_state = np.hstack([self.current_goal.one_hot, screen])
-		elif prefix == 'mc':
-			next_state = screen
-		memory.add(next_state, reward, action, terminal)
 
-		if step > learn_start:
-			if step % train_frequency == 0:
-				q_learning_mini_batch()
-
-			if step % target_q_update_step == target_q_update_step - 1:
-				update_target_q_network()		
-	
 	
 	def new_episode(self):
 		#screen, reward, action, terminal = self.env.new_random_game()
@@ -235,116 +313,98 @@ class Agent(BaseModel):
 	def train(self):
 		mc_params = self.config.mc_params
 		c_params = self.config.c_params
-		mc_start_step = 0#self.mc_step_op.eval()	
-		c_start_step = 0#self.c_step_op.eval()
+		mc_start_step = 0
+		c_start_step = 0
 		
 		self.mc_epsilon = Epsilon(mc_params, mc_start_step)
 		for key, goal in self.goals.items():
 			goal.setup_epsilon(c_params, c_start_step) #TODO load individual
 		
 		
-		num_game, self.update_count, ep_reward = 0, 0, 0.
-		total_reward, self.total_loss, self.total_q = 0., 0., 0.
-		max_avg_ep_reward = 0
-		ep_rewards, actions, goals = [], [], []
-
+		self.m = Metrics(self.config)
+		
+		
 		
 		self.new_episode()
-		t_0 = time.time()	
+			
 		
-		#metacontroller predicts
+		# Initial goal
 		self.current_goal = self.predict_next_goal()
 		
 		self.mc_step = mc_start_step
 		for self.c_step in tqdm(range(c_start_step, c_params.max_step),
 											  ncols=70, initial=c_start_step):
 			if self.c_step == c_params.learn_start:				
-				num_game, self.update_count, ep_reward = 0, 0, 0.
-				total_reward, self.total_loss, self.total_q = 0., 0., 0.
-				ep_rewards, actions, goals = [], [], []
-							
-			# 1. controller predicts
-			action = self.predict_next_action()	
+				self.m.restart()
 			
-			# 2. controller acts			
+			# Controller acts
+			action = self.predict_next_action()
+#			print(self.c_history.get()[-1],', g:',self.current_goal.n,', a:', action)
+				
 			screen, ext_reward, terminal = self.env.act(action, is_training = True)			
+			self.m.actions.append(action)
 			
 						
-			# 3. controller observes
-			goal_achieved = goal.is_achieved(screen)
-			int_reward = 1 if goal_achieved else 0
-			self.observe(screen, int_reward, action, terminal, 'c')
 			
-			ep_reward += ext_reward
+			# Controller learns
+#			print('s',screen)
+#			print('g',self.current_goal.one_hot)
+			goal_achieved = self.current_goal.is_achieved(screen)
+			int_reward = 1. if goal_achieved else 0.
+			self.c_observe(screen, int_reward, action, terminal)
+
+			
+			self.m.increment_rewards(int_reward, ext_reward)
 			
 			if terminal or goal_achieved:
-				#Controller observes
-				
-				self.observe(screen, ext_reward, goal.n, terminal, 'mc')
-				
+				# Meta-controller learns				
+				self.mc_observe(screen, ext_reward, self.current_goal.n, terminal)
+					
+				if goal_achieved:
+					pass#print("Achieved!!!")
 				if terminal:
+#					print(screen)
+					self.m.close_episode()
 					self.new_episode()
 					
-					num_game += 1
-					ep_rewards.append(ep_reward)
-					ep_reward = 0.
-				self.mc_step += 1					
+				self.mc_step += 1
+				
+				# Meta-controller sets goal
 				self.current_goal = self.predict_next_goal()
-				goals.append(self.current_goal.n)
+				self.m.goals.append(self.current_goal.n)
 				
 				
-			actions.append(action)
-			total_reward += ext_reward
-
-			if self.c_step >= self.c_learn_start:
+			
+#			print("ext",ext_reward,', int',int_reward)
+			if terminal:
+				pass#print("__________________________")
+			
+			
+			if self.c_step >= c_params.c_learn_start:
 				
 				if self.c_step % self.c_test_step == self.c_test_step - 1:
-					avg_reward = total_reward / self.test_step
-					avg_loss = self.total_loss / self.update_count
-					avg_q = self.total_q / self.update_count
-					t_1 = time.time()
-					time_, t_0 = t_1 - t_0, t_1
+					self.m.compute_test('c', self.c_update_count)
+					self.m.compute_test('mv', self.mc_update_count)
 					
-					try:
-						max_ep_reward = np.max(ep_rewards)
-						min_ep_reward = np.min(ep_rewards)
-						avg_ep_reward = np.mean(ep_rewards)
-					except Exception as e:
-						print(str(e))
-						max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
-					msg = ("\navg_r: {:.4f}, avg_l: {:.6f}, avg_q: {:.3f}, "+\
-							"avg_ep_r: {:.2f}, max_ep_r: {:.2f}, min_ep_r: "+\
-							"{:.2f}, secs: {:.1f}, #g: {}").format(
-									avg_reward, avg_loss, avg_q,
-									avg_ep_reward, max_ep_reward,
+					
+					msg = ("\nc_avg_l: {:.4f}, mc_avg_l: {:.6f}, c_avg_q: {:.3f}, "+\
+							"mc_avg_q: {:.3f}, c_avg_ep_r: {:.2f}, max_ep_r: {:.2f}, min_ep_r: "+\
+							"{:.2f}, ss: {:.1f}, #g: {}").format(
+									c_avg_loss, mc_avg_loss, c_avg_q,
+									mc_avg_q, avg_ep_reward, max_ep_reward,
 									min_ep_reward, time_, num_game)
 					print(msg)
 	
-					if max_avg_ep_reward * 0.9 <= avg_ep_reward:
-						self.step_assign_op.eval(
+					if self.m.mc_max_avg_ep_reward * 0.9 <= self.m.mc_avg_ep_reward:
+						self.c_step_assign_op.eval(
 								{self.step_input: self.step + 1})
 						self.save_model(self.step + 1)
 	
 						max_avg_ep_reward = max(max_avg_ep_reward,
 											    avg_ep_reward)
 	
-					if self.step > 10:
+					if self.c_step > 10:
 						
-						self.inject_summary({
-								'average.reward': avg_reward,
-								'average.loss': avg_loss,
-								'average.q': avg_q,
-								'time': time_,
-								'episode.max reward': max_ep_reward,
-								'episode.min reward': min_ep_reward,
-								'episode.avg reward': avg_ep_reward,
-								'num of game': num_game,
-								'episode.rewards': ep_rewards,
-								'actions': actions,
-								'training.learning_rate': \
-									self.learning_rate_op.eval(
-										{self.learning_rate_step: self.step}),
-							}, self.step)
 	
 					num_game = 0
 					total_reward = 0.
@@ -390,7 +450,7 @@ class Agent(BaseModel):
 
 			for idx in range(self.env.goal_size):
 				q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
-			self.q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
+			self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
 
 		# target network
 		self.create_target(config = config.mc_params)
@@ -464,7 +524,7 @@ class Agent(BaseModel):
 
 			for idx in range(self.env.action_size):
 				q_summary.append(tf.summary.histogram('c_q/%s' % idx, avg_q[idx]))
-			self.q_summary = tf.summary.merge(q_summary, 'c_q_summary')
+			self.c_q_summary = tf.summary.merge(q_summary, 'c_q_summary')
 
 		# target network
 		self.create_target(config.c_params)

@@ -51,7 +51,10 @@ def calc_gpu_fraction(fraction_string):
  
 
 def main(_):
-	flags_dict = flags.FLAGS.flag_values_dict()
+	try:
+		flags_dict = flags.FLAGS.flag_values_dict()
+	except AttributeError:
+		flags_dict = flags.FLAGS.__dict__['__flags']
 	if flags.FLAGS.agent == 'dqn':
 		config = configuration.DQNConfiguration()
 	elif flags.FLAGS.agent == 'hdqn':

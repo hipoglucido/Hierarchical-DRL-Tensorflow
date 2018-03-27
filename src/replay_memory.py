@@ -36,7 +36,7 @@ class ReplayMemory:
 		self.terminals[self.current] = terminal
 		self.count = max(self.count, self.current + 1)
 		self.current = (self.current + 1) % self.memory_size
-
+		
 
 	def getState(self, index):
 		assert self.count > 0, "replay memory is empy, use at least --random_steps 1"
@@ -70,6 +70,7 @@ class ReplayMemory:
 				# if wraps over episode end, then get new one
 				# NB! poststate (last screen) can be terminal state!
 				if self.terminals[(index - self.history_length):index].any():
+					#print(9, self.dims)
 					continue
 				# otherwise use this index
 				break

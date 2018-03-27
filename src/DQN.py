@@ -47,14 +47,14 @@ class Agent(BaseModel):
 		ep_rewards, actions = [], []
 
 		#screen, reward, action, terminal = self.env.new_random_game()
-		screen, _, _, _ = self.env.new_game(False)
-	
+		screen, _, _, _ = self.env.new_game(False)	
 			
 		self.history.fill_up(screen)
 		t_0 = time.time()
 		for self.step in tqdm(range(start_step, self.max_step), ncols=70,
 						initial=start_step):
 #		for self.step in range(start_step, self.max_step):
+			
 			self.epsilon.plus_one()
 			if self.step == self.learn_start:
 				

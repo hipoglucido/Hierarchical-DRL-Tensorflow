@@ -70,15 +70,15 @@ class GlobalConfiguration(Configuration):
 
 
 class ControllerParameters(Configuration):
-	scale = 1000
+	scale = 500
 	
-	history_length = 4	
+	history_length = 4
 	
 	memory_size = 100 * scale
 		
-	max_step = 5000 * scale
+	max_step = 500 * scale
 
-	batch_size = 32
+	batch_size = 8
 	random_start = 30
 
 	discount = 0.99
@@ -107,15 +107,15 @@ class ControllerParameters(Configuration):
 	
 	
 class MetaControllerParameters(Configuration):
-	scale = 1000
+	scale = 500
 	
-	history_length = 1	
+	history_length = 4	
 	
 	memory_size = 100 * scale
 		
-	max_step = 5000 * scale
+	#max_step = 5000 * scale
 
-	batch_size = 32
+	batch_size = 64
 	random_start = 30
 
 	discount = 0.99
@@ -153,7 +153,7 @@ class DQNConfiguration(GlobalConfiguration):
 	scale = 500
 
 	max_step = 100 * scale
-	memory_size = 100 * scale
+	memory_size = 5 * scale
 
 	batch_size = 32
 	random_start = 30
