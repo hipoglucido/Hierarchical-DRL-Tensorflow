@@ -14,96 +14,8 @@ from replay_memory import ReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 from goals import MDPGoal
+from metrics import Metrics
 
-class Metrics:
-	def __init__(self, config):
-		self.restart()
-		self.mc_params = config.mc_params
-		self.c_params = config.c_params
-	
-	def start_timer(self):
-		self.t0 = time.time()
-		
-	def restart_timer(self):
-		self.t1 = time.time()
-		time_, self.t0 = self.t1 - self.t0, self.t1
-		return time_
-	def restart_after():
-		pass
-	def restart(self):
-		self.num_game = 0
-		self.update_count = 0
-		
-		
-		#Scalars with c and mc versions
-		scalars = ['total_reward', 'ep_reward', 'total_q',
-				'total_loss']
-		for scalar in scalars:
-			for prefix in ['mc', 'c']:
-				setattr(self, prefix + "_" + scalar, 0)
-		
-		self.mc_ep_rewards = []
-		self.c_ep_rewards = []
-		self.actions, self.goals = [], []
-		
-		self.start_timer()
-		
-	def increment_rewards(self, internal, external):
-		self.c_total_reward += internal
-		self.c_ep_reward += internal
-		
-		self.mc_total_reward += external		
-		self.mc_ep_reward += external
-		
-	def c_inject_summaries(self, step):
-		self.inject_summary({
-				'average.reward': avg_reward,
-				'average.loss': avg_loss,
-				'average.q': avg_q,
-				'time': time_,
-				'episode.max reward': max_ep_reward,
-				'episode.min reward': min_ep_reward,
-				'episode.avg reward': avg_ep_reward,
-				'num of game': num_game,
-				'episode.rewards': ep_rewards,
-				'actions': actions,
-				'training.learning_rate': \
-					self.learning_rate_op.eval(
-						{self.learning_rate_step: self.step}),
-			}, self.step)
-		pass
-		
-	def mc_inject_summaries(self, step):
-		pass
-	
-	def compute_test(self, prefix, update_count):
-		assert prefix in ['c', 'mc']
-		prefix = '_' + prefix
-		config = getattr(self, prefix + 'params')
-		test_step = config.test_step
-		total_reward = getattr(self, prefix + 'total_reward')
-		setattr(self, prefix + 'avg_reward', total_reward / test_step)
-		total_loss = getattr(self, prefix + 'total_loss')
-		setattr(self, prefix + 'avg_loss', total_loss / update_count)
-		total_q = getattr(self, prefix + 'total_q')
-		setattr(self, prefix + 'avg_q', total_q / update_count)
-		
-		ep_rewards = getattr(self, prefix + 'ep_rewards')
-		
-		try:
-			setattr(self, prefix + 'max_ep_reward', np.max(ep_rewards))
-			setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
-			setattr(self, prefix + 'mean_ep_reward', np.mean(ep_rewards))
-		except Exception as e:
-			print(str(e))
-			for s in ['max', 'min', 'mean']:
-				setattr(self, prefix + s +'_ep_reward', 0.)
-			
-	def close_episode(self):
-		self.num_game += 1
-		self.mc_ep_rewards.append(self.mc_ep_reward)
-		self.c_ep_rewards.append(self.c_ep_reward)
-		self.mc_ep_reward, self.c_ep_reward = 0., 0.
 		
 class Agent(BaseModel):
 	def __init__(self, config, environment, sess):
@@ -128,21 +40,11 @@ class Agent(BaseModel):
 		self.c_memory = ReplayMemory(self.config.c_params, self.model_dir)
 		
 			
-	
+		self.m = Metrics(self.config, self.goals)
+		
 		self.build_hdqn(config)
 		
-		
-#	def is_goal_achieved(self, goal, state):
-#		return goal.achieved(state)
-	def one_hot_goal(self, goal):
-		one_hot_goal = np.zeros(self.env.goal_size)
-		one_hot_goal[goal.n] = 1
-		return one_hot_goal
-	def inverse_one_hot_goal(self, one_hot_goal):
-		n = np.where(one_hot_goal)[0][0]
-		goal = self.get_goal(n)
-		return goal
-	
+
 	def get_goal(self, n):
 		return self.goals[n]
 		
@@ -151,11 +53,10 @@ class Agent(BaseModel):
 		self.env.goal_size = self.env.state_size
 		
 		
-		
 		goals = {}
 		for n in range(self.env.goal_size):
 			if self.env.env_name in mdps:
-				goal_name = "s" + str(n)
+				goal_name = "g" + str(n)
 				goal = MDPGoal(n, goal_name, config.c_params)			
 				goal.setup_one_hot(self.env.goal_size)
 			elif 0:
@@ -199,6 +100,7 @@ class Agent(BaseModel):
 		
 		return action
 	def mc_observe(self, screen, ext_reward, goal, terminal):
+		
 		params = self.config.mc_params
 		self.mc_history.add(screen)
 		next_state = screen
@@ -246,9 +148,8 @@ class Agent(BaseModel):
 			self.mc_learning_rate_step: self.mc_step,
 		})
 		self.writer.add_summary(summary_str, self.mc_step)
-		self.mc_total_loss += loss
-		self.mc_total_q += q_t.mean()
-		#self.mc_update_count += 1
+	
+		self.m.mc_add_update(loss, q_t.mean())
 
 	def c_q_learning_mini_batch(self):
 		if self.c_memory.count < self.c_history.length:
@@ -267,7 +168,7 @@ class Agent(BaseModel):
 		
 		for s,a,r,s1,t,g,g1 in zip(s_t, action, int_reward, s_t_plus_1, terminal,\
 						g_t, g_t_plus_1):
-			continue
+			break
 			print("__________________")
 			print("s_t\n",s)
 			print("g_t",g)
@@ -296,21 +197,19 @@ class Agent(BaseModel):
 			self.c_learning_rate_step: self.c_step,
 		})
 		self.writer.add_summary(summary_str, self.c_step)
-		self.c_total_loss += loss
-		self.c_total_q += q_t.mean()
-		self.update_count += 1
+		self.m.c_add_update(loss, q_t.mean())
 
 
 	
 	def new_episode(self):
 		#screen, reward, action, terminal = self.env.new_random_game()
-		screen, _, _, _ = self.env.new_game(False)
-		
+		screen, _, _, _ = self.env.new_game(False)		
 		self.mc_history.fill_up(screen)
 		self.c_history.fill_up(screen)
 		return 
 	
 	def train(self):
+		
 		mc_params = self.config.mc_params
 		c_params = self.config.c_params
 		mc_start_step = 0
@@ -320,101 +219,118 @@ class Agent(BaseModel):
 		for key, goal in self.goals.items():
 			goal.setup_epsilon(c_params, c_start_step) #TODO load individual
 		
-		
-		self.m = Metrics(self.config)
-		
-		
-		
+	
 		self.new_episode()
 			
-		
+		self.m.start_timer()
 		# Initial goal
 		self.current_goal = self.predict_next_goal()
 		
 		self.mc_step = mc_start_step
-		for self.c_step in tqdm(range(c_start_step, c_params.max_step),
-											  ncols=70, initial=c_start_step):
+		if 0:			
+			iterator = tqdm(range(c_start_step, c_params.max_step),
+											  ncols=70, initial=c_start_step)
+		else:
+			iterator = range(c_start_step, c_params.max_step)
+		for self.c_step in iterator:
 			if self.c_step == c_params.learn_start:				
 				self.m.restart()
 			
 			# Controller acts
 			action = self.predict_next_action()
-#			print(self.c_history.get()[-1],', g:',self.current_goal.n,', a:', action)
+			if self.config.display:
+				print(self.c_history.get()[-1],', g:',self.current_goal.n,', a:', action)
 				
 			screen, ext_reward, terminal = self.env.act(action, is_training = True)			
-			self.m.actions.append(action)
+			self.m.c_actions.append(action)
 			
 						
 			
 			# Controller learns
-#			print('s',screen)
-#			print('g',self.current_goal.one_hot)
+#			if self.config.display:
+#				
+#				print('s', screen)
+#				print('g', self.current_goal.one_hot)
 			goal_achieved = self.current_goal.is_achieved(screen)
 			int_reward = 1. if goal_achieved else 0.
+			
 			self.c_observe(screen, int_reward, action, terminal)
 
 			
 			self.m.increment_rewards(int_reward, ext_reward)
 			
 			if terminal or goal_achieved:
+				
+				self.m.store_goal_result(self.current_goal, goal_achieved)
 				# Meta-controller learns				
-				self.mc_observe(screen, ext_reward, self.current_goal.n, terminal)
-					
-				if goal_achieved:
-					pass#print("Achieved!!!")
+				self.mc_observe(screen, self.m.mc_step_reward,
+												self.current_goal.n, terminal)
+				self.m.mc_step_reward = 0	
+				if goal_achieved and self.config.display:
+					print("Achieved!!!", self.current_goal.n)
 				if terminal:
-#					print(screen)
+					if self.config.display:
+						print(screen)
 					self.m.close_episode()
 					self.new_episode()
+#				print("This", self.m.mc_step_reward)
 					
 				self.mc_step += 1
 				
 				# Meta-controller sets goal
 				self.current_goal = self.predict_next_goal()
-				self.m.goals.append(self.current_goal.n)
+				self.m.mc_goals.append(self.current_goal.n)
 				
 				
+#			print('c', self.m.c_update_count, self.c_step)
+#			print('mc', self.m.mc_update_count, self.mc_step)
+			if self.config.display:
+				print("ext",ext_reward,', int',int_reward)
+			if terminal and self.config.display:
+				print("__________________________") 
 			
-#			print("ext",ext_reward,', int',int_reward)
-			if terminal:
-				pass#print("__________________________")
+			
+			if self.c_step < c_params.learn_start:
+				continue
+			if self.c_step % self.c_params.test_step != \
+												self.c_params.test_step - 1:
+				continue
+			assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
+			self.m.compute_test('c', self.m.c_update_count)
+			self.m.compute_test('mc', self.m.mc_update_count)
+			
+			self.m.compute_goal_results(self.goals)
+			
+			self.m.print('mc')
+			self.m.print('c')
 			
 			
-			if self.c_step >= c_params.c_learn_start:
+			if self.m.has_improved(prefix = 'mc'):
+				self.c_step_assign_op.eval(
+						{self.c_step_input: self.c_step + 1})
+				self.mc_step_assign_op.eval(
+						{self.mc_step_input: self.mc_step + 1})
+				self.save_model(self.c_step + 1)
+				self.save_model(self.mc_step + 1)
+				self.m.update_best_score()
 				
-				if self.c_step % self.c_test_step == self.c_test_step - 1:
-					self.m.compute_test('c', self.c_update_count)
-					self.m.compute_test('mv', self.mc_update_count)
-					
-					
-					msg = ("\nc_avg_l: {:.4f}, mc_avg_l: {:.6f}, c_avg_q: {:.3f}, "+\
-							"mc_avg_q: {:.3f}, c_avg_ep_r: {:.2f}, max_ep_r: {:.2f}, min_ep_r: "+\
-							"{:.2f}, ss: {:.1f}, #g: {}").format(
-									c_avg_loss, mc_avg_loss, c_avg_q,
-									mc_avg_q, avg_ep_reward, max_ep_reward,
-									min_ep_reward, time_, num_game)
-					print(msg)
-	
-					if self.m.mc_max_avg_ep_reward * 0.9 <= self.m.mc_avg_ep_reward:
-						self.c_step_assign_op.eval(
-								{self.step_input: self.step + 1})
-						self.save_model(self.step + 1)
-	
-						max_avg_ep_reward = max(max_avg_ep_reward,
-											    avg_ep_reward)
-	
-					if self.c_step > 10:
-						
-	
-					num_game = 0
-					total_reward = 0.
-					self.total_loss = 0.
-					self.total_q = 0.
-					self.update_count = 0
-					ep_reward = 0.
-					ep_rewards = []
-					actions = []		
 
+			if self.c_step > 50:
+				self.send_learning_rate_to_metrics()
+				global_summary, mc_summary, c_summary = \
+											self.m.get_summaries()
+				self.inject_summary(mc_summary, self.mc_step)
+				self.inject_summary(c_summary, self.c_step)
+				self.inject_summary(global_summary, self.c_step)
+
+			self.m.restart()
+			
+	def send_learning_rate_to_metrics(self):
+		self.m.mc_learning_rate = self.mc_learning_rate_op.eval(
+								{self.mc_learning_rate_step: self.mc_step})
+		self.m.c_learning_rate = self.c_learning_rate_op.eval(
+								{self.c_learning_rate_step: self.c_step})
+		
 	def set_interfaces_lengths(self, config):	
 		#TODO remove method, not useful anymore
 		config.mc_params.q_input_length = self.env.state_size
@@ -568,16 +484,17 @@ class Agent(BaseModel):
 			self.c_step_op = tf.Variable(0, trainable=False, name='c_step')
 			self.c_step_input = tf.placeholder('int32', None,
 												  name='c_step_input')
-			self.c_step_assign_op = self.c_step_op.assign(self.c_step_input)
+			self.c_step_assign_op = \
+						self.c_step_op.assign(self.c_step_input)
 			
 		with tf.variable_scope('mc_step'):
 			self.mc_step_op = tf.Variable(0, trainable=False,
 										    name='mc_step')
 			self.mc_step_input = tf.placeholder('int32', None,
 										   name='mc_step_input')
-			self.mc_step_assign_op = self.mc_step_op.assign(self.mc_step_input)
-		
-		
+			self.mc_step_assign_op = \
+						self.mc_step_op.assign(self.mc_step_input)
+				
 		self.set_interfaces_lengths(config)
 		print("Building meta-controller")
 		self.build_meta_controller(config)
@@ -601,19 +518,10 @@ class Agent(BaseModel):
 		self.c_update_target_q_network()
 		
 	def setup_summary(self):
-		scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
-					'test.time', 'episode.max reward', 'episode.min reward', \
-					 'episode.avg reward', 'test.num of game', 'learning_rate']
-		for k, goal in self.goals.items():
-			name = goal.name
-			rate_tag = name + '_success_rate'
-			frequency_tag = 'test_' + name + '_freq'
-			epsilon_tag = name + '_epsilon'
-			scalar_summary_tags += [rate_tag, frequency_tag, epsilon_tag]
-		
-		histogram_summary_tags = ['episode.rewards', 'actions', 'goals']
-		
-		super().setup_summary(scalar_summary_tags, histogram_summary_tags)
+				
+		super().setup_summary(self.m.scalar_tags, self.m.histogram_tags)
+		self.writer = tf.summary.FileWriter('./logs/%s' % \
+									      self.model_dir, self.sess.graph)
 		
 	def mc_update_target_q_network(self):	
 		for name in self.mc_w.keys():
@@ -652,53 +560,3 @@ class Agent(BaseModel):
 
 		self.update_target_q_network()
 
-	def inject_summary(self, tag_dict, step):
-		summary_str_lists = self.sess.run(
-					[self.summary_ops[tag] for tag in tag_dict.keys()],
-					{self.summary_placeholders[tag]: value for tag, value \
-														  in tag_dict.items()})
-		for summary_str in summary_str_lists:
-			self.writer.add_summary(summary_str, self.step)
-
-	def play(self, n_step=10000, n_episode=100, test_ep=None, render=False):
-		if test_ep == None:
-			test_ep = self.ep_end
-
-		test_history = History(self.config)
-
-		if not self.display:
-			gym_dir = '/tmp/%s-%s' % (self.env_name, get_time())
-			self.env.env.monitor.start(gym_dir)
-
-		best_reward, best_idx = 0, 0
-		for idx in range(n_episode):
-			screen, reward, action, terminal = self.env.new_random_game()
-			current_reward = 0
-
-			for _ in range(self.history_length):
-				test_history.add(screen)
-
-			for t in tqdm(range(n_step), ncols=70):
-				# 1. predict
-				action = self.predict(test_history.get(), test_ep)
-				# 2. act
-				screen, reward, terminal = self.env.act(action = action,
-														is_training=False)
-				# 3. observe
-				test_history.add(screen)
-
-				current_reward += reward
-				if terminal:
-					break
-
-			if current_reward > best_reward:
-				best_reward = current_reward
-				best_idx = idx
-
-			print("="*30)
-			print(" [%d] Best reward : %d" % (best_idx, best_reward))
-			print("="*30)
-
-		if not self.display:
-			self.env.env.monitor.close()
-			#gym.upload(gym_dir, writeup='https://github.com/devsisters/DQN-tensorflow', api_key='')

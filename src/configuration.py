@@ -96,8 +96,8 @@ class ControllerParameters(Configuration):
 	learn_start = 5. * scale
 
 	architecture = [200, 300, 100, 50]
-	_test_step = 5 * scale
-	_save_step = _test_step * 10
+	test_step = 5 * scale
+	save_step = test_step * 10
 	activation_fn = 'relu'
 	
 	ignore = ['ignore']
@@ -130,12 +130,12 @@ class MetaControllerParameters(Configuration):
 	ep_end_t = memory_size
 
 	train_frequency = 4
-	learn_start = 5. * scale
+	learn_start = 2. * scale
 
 	architecture = [50, 75, 100, 50, 25, 10]
 	
-	_test_step = 5 * scale
-	_save_step = _test_step * 10
+	test_step = 5 * scale
+	save_step = test_step * 10
 	activation_fn = 'relu'
 	
 	ignore = ['ignore']
@@ -176,8 +176,8 @@ class DQNConfiguration(GlobalConfiguration):
 	architecture = [500, 500, 500]
 
 
-	_test_step = 5 * scale
-	_save_step = _test_step * 10
+	test_step = 5 * scale
+	save_step = test_step * 10
 	
 	activation_fn = 'relu'
 	prefix = ''

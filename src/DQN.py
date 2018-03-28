@@ -301,14 +301,6 @@ class Agent(BaseModel):
 
 		self.update_target_q_network()
 
-	def inject_summary(self, tag_dict, step):
-		summary_str_lists = self.sess.run(
-					[self.summary_ops[tag] for tag in tag_dict.keys()], {
-			self.summary_placeholders[tag]:
-						value for tag, value in tag_dict.items()
-		})
-		for summary_str in summary_str_lists:
-			self.writer.add_summary(summary_str, self.step)
 
 	def play(self, n_step=10000, n_episode=100, test_ep=None, render=False):
 		if test_ep == None:

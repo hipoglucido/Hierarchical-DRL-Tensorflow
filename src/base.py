@@ -37,6 +37,7 @@ class BaseModel(object):
 		for k, v in inspect.getmembers(config):
 			name = k if not k.startswith('_') else k[1:]
 			setattr(self, name, v)
+			
 	def setup_summary(self, scalar_summary_tags, histogram_summary_tags):	
 		"""
 		average.X   : mean X per step
@@ -49,14 +50,12 @@ class BaseModel(object):
 
 			self.summary_placeholders = {}
 			self.summary_ops = {}
-
+			
 			for tag in scalar_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder(
 								'float32', None, name=tag.replace(' ', '_'))
 				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
-						(self.env_name, tag), self.summary_placeholders[tag])
-
-			
+						(self.env_name, tag), self.summary_placeholders[tag])			
 
 			for tag in histogram_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder('float32',
@@ -64,8 +63,16 @@ class BaseModel(object):
 				self.summary_ops[tag]	= tf.summary.histogram(tag,
 											self.summary_placeholders[tag])
 			print(self.model_dir)
-			self.writer = tf.summary.FileWriter('./logs/%s' % \
-									      self.model_dir, self.sess.graph)
+			print("Scalars: ", ", ".join(scalar_summary_tags))
+			print("Histograms: ", ", ".join(histogram_summary_tags))
+			
+	def inject_summary(self, tag_dict, step):
+		summary_str_lists = self.sess.run(
+					[self.summary_ops[tag] for tag in tag_dict.keys()],
+					{self.summary_placeholders[tag]: value for tag, value \
+														  in tag_dict.items()})
+		for summary_str in summary_str_lists:
+			self.writer.add_summary(summary_str, step)
 			
 	def add_dense_layers(self, config, input_layer, prefix):
 		last_layer = input_layer
@@ -191,10 +198,10 @@ class BaseModel(object):
 			
 	@property
 	def model_dir(self):
-		parts = self.config.as_list(ignore = True)
+		#parts = self.config.as_list(ignore = True)
 		
-		result = os.path.join(*parts)
-		
+		#result = os.path.join(*parts)
+		result = self.config.date + '_' + self.env.env_name
 		return result
 
 	@property
