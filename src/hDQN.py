@@ -43,7 +43,9 @@ class Agent(BaseModel):
 		self.m = Metrics(self.config, self.goals)
 		
 		self.build_hdqn(config)
-		
+	def aux(self, screen):
+		#Auxiliary function
+		return self.env.env.one_hot_inverse(screen)
 
 	def get_goal(self, n):
 		return self.goals[n]
@@ -69,14 +71,16 @@ class Agent(BaseModel):
 		return goals
 	
 	def predict_next_goal(self, test_ep = None):
-		s_t = self.mc_history.get()
-		ep = test_ep or self.mc_epsilon.value
-	
-		if random.random() < ep:
+		
+		ep = test_ep or self.mc_epsilon.value(self.mc_step)
+		self.m.update_epsilon(goal_name = None, value = ep)
+		if random.random() < ep or self.config.randomize:
 			n_goal = random.randrange(self.env.goal_size)
 		else:
-			n_goal = self.mc_q_goal.eval({self.s_t: [s_t]})[0]
-			
+			screens = self.mc_history.get()
+			n_goal = self.mc_q_goal.eval({self.mc_s_t: [screens]})[0]
+#		n_goal = 5
+		self.m.mc_goals.append(n_goal)
 		goal = self.get_goal(n_goal)
 		return goal
 	
@@ -87,24 +91,27 @@ class Agent(BaseModel):
 		
 		
 		#s_t should have goals and screens concatenated
-		ep = test_ep or self.current_goal.epsilon.value
-	
-		if random.random() < ep:
+		ep = test_ep or self.current_goal.epsilon
+		self.m.update_epsilon(goal_name = self.current_goal.name, value = ep)
+		if random.random() < ep or self.config.randomize:
 			action = random.randrange(self.env.action_size)
 		else:
 			screens = self.c_history.get()
 			
-			action = self.q_action.eval(
+			action = self.c_q_action.eval(
 							{self.c_s_t: [screens],
 							 self.c_g_t: [self.current_goal.one_hot]})[0]
-		
+#		action = int(self.aux(self.c_history.get()[-1]) < self.current_goal.n)
+#		print('**',self.aux(self.c_history.get()[-1]), self.current_goal.n, action)
+		self.m.c_actions.append(action)
 		return action
-	def mc_observe(self, screen, ext_reward, goal, terminal):
-		
+	def mc_observe(self, screen, ext_reward, goal_n, terminal):
+		if self.config.display:
+			pass#print("MC ", ext_reward, "while", self.aux(screen), "g:", goal_n)
 		params = self.config.mc_params
 		self.mc_history.add(screen)
 		next_state = screen
-		self.mc_memory.add(next_state, ext_reward, goal, terminal)
+		self.mc_memory.add(next_state, ext_reward, goal_n, terminal)
 
 		if self.mc_step >  params.learn_start:
 			if self.mc_step % params.train_frequency == 0:
@@ -115,6 +122,8 @@ class Agent(BaseModel):
 				self.mc_update_target_q_network()	
 	
 	def c_observe(self, screen, int_reward, action, terminal):
+		if self.config.display:
+			pass#print("C ", int_reward, "while", self.aux(screen), "a:", action)
 		params = self.config.c_params
 		self.c_history.add(screen)
 		next_state = np.hstack([self.current_goal.one_hot, screen])
@@ -132,6 +141,9 @@ class Agent(BaseModel):
 		if self.mc_memory.count < self.mc_history.length:
 			return
 		
+		if self.a == False:
+			print("MC at ", self.c_step)
+			self.a = True
 		s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
 		
 		q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
@@ -139,6 +151,17 @@ class Agent(BaseModel):
 		terminal = np.array(terminal) + 0.
 		max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
 		target_q_t = (1. - terminal) * self.config.mc_params.discount * max_q_t_plus_1 + ext_reward
+		
+		#print("SAAAAAMPLING")
+#		for s,g,r,s1,t in zip(s_t, goal, ext_reward, s_t_plus_1, terminal):
+#			if r == 0:
+#				continue
+#			print("******")
+#			print("s_t\n",s[-1])
+#			print("g",g)
+#			print("s_t1\n",s1[-1])
+#			print("r",r)
+#			print("t",t)
 		
 		_, q_t, loss, summary_str = self.sess.run([self.mc_optim, self.mc_q,
 											 self.mc_loss, self.mc_q_summary], {
@@ -150,13 +173,18 @@ class Agent(BaseModel):
 		self.writer.add_summary(summary_str, self.mc_step)
 	
 		self.m.mc_add_update(loss, q_t.mean())
+		
 
 	def c_q_learning_mini_batch(self):
 		if self.c_memory.count < self.c_history.length:
 			return
 		
+		
+		if self.b == False:
+			print("C at ", self.c_step)
+			self.b = True
 		s_t, action, int_reward, s_t_plus_1, terminal = self.c_memory.sample()
-			
+		
 		#TODO: optimize goals in memory
 		g_t = np.vstack([g[0] for g in s_t[:, :, :self.env.goal_size]]) 
 		s_t = s_t[:, :, self.env.goal_size:]
@@ -169,15 +197,17 @@ class Agent(BaseModel):
 		for s,a,r,s1,t,g,g1 in zip(s_t, action, int_reward, s_t_plus_1, terminal,\
 						g_t, g_t_plus_1):
 			break
-			print("__________________")
-			print("s_t\n",s)
+			if r == 0:
+				continue
+			print("******")
+			print("s_t\n",s[-1])
 			print("g_t",g)
 			print("a",a)
-			print("s_t1\n",s1)
+			print("s_t1\n",s1[-1])
 			print("g_t1",g1)
 			print("r",r)
 			print("t",t)
-			sys.exit(0)
+		
 		q_t_plus_1 = self.c_target_q.eval({
 									self.c_target_s_t: s_t_plus_1,
 									self.c_target_g_t: g_t_plus_1,
@@ -209,7 +239,7 @@ class Agent(BaseModel):
 		return 
 	
 	def train(self):
-		
+		self.a, self.b = False, False
 		mc_params = self.config.mc_params
 		c_params = self.config.c_params
 		mc_start_step = 0
@@ -217,16 +247,15 @@ class Agent(BaseModel):
 		
 		self.mc_epsilon = Epsilon(mc_params, mc_start_step)
 		for key, goal in self.goals.items():
-			goal.setup_epsilon(c_params, c_start_step) #TODO load individual
+			break#goal.setup_epsilon(c_params, c_start_step) #TODO load individual
 		
-	
 		self.new_episode()
 			
 		self.m.start_timer()
 		# Initial goal
+		self.mc_step = mc_start_step
 		self.current_goal = self.predict_next_goal()
 		
-		self.mc_step = mc_start_step
 		if 0:			
 			iterator = tqdm(range(c_start_step, c_params.max_step),
 											  ncols=70, initial=c_start_step)
@@ -239,7 +268,7 @@ class Agent(BaseModel):
 			# Controller acts
 			action = self.predict_next_action()
 			if self.config.display:
-				print(self.c_history.get()[-1],', g:',self.current_goal.n,', a:', action)
+				print(self.aux(self.c_history.get()[-1]),', g:',self.current_goal.n,', a:', action)
 				
 			screen, ext_reward, terminal = self.env.act(action, is_training = True)			
 			self.m.c_actions.append(action)
@@ -261,7 +290,7 @@ class Agent(BaseModel):
 			
 			if terminal or goal_achieved:
 				
-				self.m.store_goal_result(self.current_goal, goal_achieved)
+				self.current_goal.finished(self.m, goal_achieved)
 				# Meta-controller learns				
 				self.mc_observe(screen, self.m.mc_step_reward,
 												self.current_goal.n, terminal)
@@ -273,6 +302,7 @@ class Agent(BaseModel):
 						print(screen)
 					self.m.close_episode()
 					self.new_episode()
+					
 #				print("This", self.m.mc_step_reward)
 					
 				self.mc_step += 1
@@ -285,7 +315,7 @@ class Agent(BaseModel):
 #			print('c', self.m.c_update_count, self.c_step)
 #			print('mc', self.m.mc_update_count, self.mc_step)
 			if self.config.display:
-				print("ext",ext_reward,', int',int_reward)
+				pass#print("ext",ext_reward,', int',int_reward)
 			if terminal and self.config.display:
 				print("__________________________") 
 			
@@ -295,14 +325,15 @@ class Agent(BaseModel):
 			if self.c_step % self.c_params.test_step != \
 												self.c_params.test_step - 1:
 				continue
-			assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
+			#assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
+			#assert not (terminal and self.m.mc_ep_reward == 0.)
 			self.m.compute_test('c', self.m.c_update_count)
 			self.m.compute_test('mc', self.m.mc_update_count)
 			
 			self.m.compute_goal_results(self.goals)
 			
 			self.m.print('mc')
-			self.m.print('c')
+			self.m.c_print()
 			
 			
 			if self.m.has_improved(prefix = 'mc'):
@@ -317,11 +348,9 @@ class Agent(BaseModel):
 
 			if self.c_step > 50:
 				self.send_learning_rate_to_metrics()
-				global_summary, mc_summary, c_summary = \
-											self.m.get_summaries()
-				self.inject_summary(mc_summary, self.mc_step)
-				self.inject_summary(c_summary, self.c_step)
-				self.inject_summary(global_summary, self.c_step)
+				summary = self.m.get_summary()
+				self.m.filter_summary(summary)
+				self.inject_summary(summary, self.c_step)
 
 			self.m.restart()
 			

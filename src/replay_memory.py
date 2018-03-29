@@ -70,8 +70,8 @@ class ReplayMemory:
 				# if wraps over episode end, then get new one
 				# NB! poststate (last screen) can be terminal state!
 				if self.terminals[(index - self.history_length):index].any():
-					#print(9, self.dims)
-					continue
+					break
+					#continue
 				# otherwise use this index
 				break
 			

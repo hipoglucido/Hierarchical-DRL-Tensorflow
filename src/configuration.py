@@ -66,19 +66,19 @@ class GlobalConfiguration(Configuration):
 	
 	ignore = ['display','new_instance','envs_dirs','root_dir', 'ignore',
 		   'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
-	
+	randomize = False
 
 
 class ControllerParameters(Configuration):
 	scale = 500
 	
-	history_length = 4
+	history_length = 1
 	
 	memory_size = 100 * scale
 		
 	max_step = 500 * scale
 
-	batch_size = 8
+	batch_size = 32
 	random_start = 30
 
 	discount = 0.99
@@ -109,7 +109,7 @@ class ControllerParameters(Configuration):
 class MetaControllerParameters(Configuration):
 	scale = 500
 	
-	history_length = 4	
+	history_length = 1	
 	
 	memory_size = 100 * scale
 		
@@ -130,7 +130,7 @@ class MetaControllerParameters(Configuration):
 	ep_end_t = memory_size
 
 	train_frequency = 4
-	learn_start = 2. * scale
+	learn_start = 5. * scale
 
 	architecture = [50, 75, 100, 50, 25, 10]
 	

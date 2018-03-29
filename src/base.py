@@ -19,15 +19,14 @@ class Epsilon():
 		
 		self.learn_start = config.learn_start
 		self.step = start_step
-	@property
-	def value(self):
+	
+	def value(self, step):
 		epsilon = self.end + \
 				max(0., (self.start - self.end) * \
-				 (self.end_t -max(0., self.step - self.learn_start)) / self.end_t)
+				 (self.end_t -max(0., step - self.learn_start)) / self.end_t)
 		return epsilon
 	
-	def plus_one(self):
-		self.step += 1
+	
 
 class BaseModel(object):
 	"""Abstract object representing an Reader model."""
@@ -53,13 +52,13 @@ class BaseModel(object):
 			
 			for tag in scalar_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder(
-								'float32', None, name=tag.replace(' ', '_'))
+								'float32', None, name=tag)
 				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
 						(self.env_name, tag), self.summary_placeholders[tag])			
 
 			for tag in histogram_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder('float32',
-										 None, name=tag.replace(' ', '_'))
+										 None, name=tag)
 				self.summary_ops[tag]	= tf.summary.histogram(tag,
 											self.summary_placeholders[tag])
 			print(self.model_dir)

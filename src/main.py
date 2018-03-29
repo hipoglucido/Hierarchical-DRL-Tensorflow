@@ -31,7 +31,7 @@ flags.DEFINE_string('mode', None, 'Whether to do training, testing or just seein
 flags.DEFINE_integer('random_seed', None, 'Value of random seed')
 #flags.DEFINE_integer('just_graph', None, 'Whether to just write the graph to TB or not')
 #flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
-
+flags.DEFINE_boolean('randomize', None, 'Whether to use a random agent or not')
 #
 
 
