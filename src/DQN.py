@@ -7,7 +7,7 @@ from tqdm import tqdm
 from functools import reduce
 import tensorflow as tf
 import sys
-
+from metrics import Metrics
 
 from base import BaseModel, Epsilon
 from history import History
@@ -33,6 +33,8 @@ class Agent(BaseModel):
 			
 		config.q_input_length = self.env.state_size
 		config.q_output_length = self.env.action_size		
+		
+		self.m = Metrics(self.config)
 		
 		self.build_dqn(config)
 

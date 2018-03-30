@@ -4,16 +4,17 @@ import time
 import re
 
 class Metrics:
-	def __init__(self, config, goals):
+	def __init__(self, config, goals = {}):
 		self.mc_max_avg_ep_reward = 0
 		self.c_max_avg_ep_reward = 0 #Not used for now
-		self.define_metrics(goals)
+		self.config = config
+		self._define_metrics(goals)
 		self.restart()
 		self.mc_params = config.mc_params
 		self.c_params = config.c_params
-		
+		self.error_value = -1.
 
-	def define_metrics(self, goals):
+	def _define_metrics(self, goals):
 		self.scalar_global_tags = ['elapsed_time', 'games',
 								 'avg_ep_elapsed_time','steps_per_episode']
 		self.mc_scalar_tags = ['mc_step_reward', 'mc_epsilon']
@@ -29,11 +30,13 @@ class Metrics:
 			self.c_scalar_tags.append("c_" + tag)
 			
 		
-		self.histogram_global_tags = []
+		self.histogram_global_tags = ['state_visits']
 		self.mc_histogram_tags = ['mc_goals', 'mc_ep_rewards']
 		self.c_histogram_tags = ['c_actions', 'c_ep_rewards']	
 		
 		self.goal_tags = []
+		self.state_tags = []
+		self.state_names = []
 		for k, goal in goals.items():
 			name = goal.name
 			avg_steps_tag = name + '_avg_steps'
@@ -45,7 +48,13 @@ class Metrics:
 			self.goal_tags += [successes_tag, frequency_tag, success_rate_tag,
 							     relative_frequency_tag, epsilon_tag,
 								 avg_steps_tag]
+		for state_id in range(self.config.state_size):
+			state_name = "s" + str(state_id)
+			self.state_names.append(state_name)
+			self.state_tags.append(state_name + "_freq")
+			self.state_tags.append(state_name + "_rfreq")
 		
+		self.scalar_global_tags += self.state_tags
 		self.mc_scalar_tags += self.goal_tags
 		self.scalar_tags = self.mc_scalar_tags + self.c_scalar_tags + self.scalar_global_tags
 		self.histogram_tags = self.histogram_global_tags + self.mc_histogram_tags + \
@@ -92,7 +101,7 @@ class Metrics:
 			try:
 				success_rate = successes / frequency
 			except ZeroDivisionError:				
-				success_rate = 0.
+				success_rate = self.error_value
 			setattr(self, name + '_success_rate', success_rate)
 			total_goals_set += frequency
 			total_achieved_goals += successes
@@ -102,11 +111,27 @@ class Metrics:
 			try:
 				rfreq = frequency / total_goals_set
 			except ZeroDivisionError:
-				rfreq = 0
+				rfreq = self.error_value
 			setattr(self, name + "_rfreq", rfreq)
-		setattr(self,'c_avg_goal_success',total_achieved_goals/total_goals_set)
+		try:
+			c_avg_goal_success = total_achieved_goals/total_goals_set
+		except ZeroDivisionError:
+			c_avg_goal_success = self.error_value
+		setattr(self,'c_avg_goal_success', c_avg_goal_success)
 		
-#			print(name + '_success_rate', getattr(self, name + '_success_rate'))
+	def compute_state_visits(self):
+		total_visits = 0
+		for state_name in self.state_names:
+			visits = getattr(self, state_name + "_freq")
+			total_visits += visits
+		for state_name in self.state_names:
+			visits = getattr(self, state_name + "_freq")
+			try:
+				relative_visits = visits / total_visits
+			except ZeroDivisionError:
+				relative_visits = 0
+			setattr(self, state_name + "_rfreq", relative_visits)
+		
 	def update_best_score(self):
 		self.mc_max_avg_ep_reward = max(self.mc_max_avg_ep_reward,
 									  self.mc_avg_ep_reward)
@@ -168,10 +193,10 @@ class Metrics:
 		
 		exclude_inside = []
 		exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward']
-		exclude_regex = ['g[0-9]_epsilon', 'g[0-9]_successes','g[0-9]_freq']		
+		exclude_regex = []#['g[0-9]_epsilon', 'g[0-9]_successes','g[0-9]_freq']		
 		
 		for key in list(summary):
-			break
+			
 			delete = False
 			if any([ei in key for ei in exclude_inside]):
 				delete = True
@@ -181,7 +206,6 @@ class Metrics:
 				delete = True
 			if delete:
 				del summary[key]
-				#print("Delete",key)
 		   
 
 		
@@ -218,7 +242,12 @@ class Metrics:
 			for s in ['max', 'min', 'avg']:
 				setattr(self, prefix + s +'_ep_reward', 0.)
 		
-	
+	def add_act(self, action, state):
+		self.c_actions.append(action)
+		self.state_visits.append(state)
+		state_freq_tag = 's' + str(state) + "_freq"
+		visits = getattr(self, state_freq_tag)
+		setattr(self, state_freq_tag, visits + 1)
 		
 	def mc_add_update(self, loss, q):
 		self.mc_total_loss += loss

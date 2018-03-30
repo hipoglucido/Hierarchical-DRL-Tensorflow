@@ -7,20 +7,21 @@ class Goal(metaclass = ABCMeta):
 	def __init__(self, n, name, config):
 		self.n = n
 		self.name = str(name)
+		self.steps_counter = 0
 		self.set_counter = 0
 		self.achieved_counter = 0		
 		
 	def setup_epsilon(self, config, start_step):
-		assert False, 'Not used'
-		self.epsilon = Epsilon(config, start_step)
+		
+		self._epsilon = Epsilon(config, start_step)
 		
 	@property
 	def epsilon(self):
-		try:
-			epsilon = 1 - self.achieved_counter / self.achieved_counter
-		except ZeroDivisionError:
-			epsilon = 1
-		return epsilon
+#		return self._epsilon.mixed_value(self.steps_counter,
+#								    self.set_counter,
+#									self.achieved_counter)
+		return self._epsilon.successes_value(attempts = self.set_counter,
+										    successes = self.achieved_counter)
 	
 	def setup_one_hot(self, length):
 		one_hot = np.zeros(length)
@@ -30,9 +31,10 @@ class Goal(metaclass = ABCMeta):
 	@abstractmethod
 	def is_achieved(self):
 		pass
+
 	
 	def finished(self, metrics, is_achieved):
-		self.set_counter += 1
+		
 		self.achieved_counter += int(is_achieved)
 		metrics.store_goal_result(self, is_achieved)
 	

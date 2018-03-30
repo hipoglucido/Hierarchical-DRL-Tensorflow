@@ -30,8 +30,10 @@ flags.DEFINE_boolean('display', None, 'Whether to do display the game screen or 
 flags.DEFINE_string('mode', None, 'Whether to do training, testing or just seeing the graph')
 flags.DEFINE_integer('random_seed', None, 'Value of random seed')
 #flags.DEFINE_integer('just_graph', None, 'Whether to just write the graph to TB or not')
-#flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
+flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
 flags.DEFINE_boolean('randomize', None, 'Whether to use a random agent or not')
+flags.DEFINE_float('display_episode_prob', None, 'Whether to use a random agent or not')
+
 #
 
 
@@ -56,9 +58,9 @@ def main(_):
 	except AttributeError:
 		flags_dict = flags.FLAGS.__dict__['__flags']
 	if flags.FLAGS.agent == 'dqn':
-		config = configuration.DQNConfiguration()
+		config = configuration.DQNConfiguration(flags_dict['scale'])
 	elif flags.FLAGS.agent == 'hdqn':
-		config = configuration.hDQNConfiguration()
+		config = configuration.hDQNConfiguration(flags_dict['scale'])
 	else:
 		raise ValueError("Wrong agent")
 	config.update(flags_dict)

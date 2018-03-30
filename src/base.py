@@ -20,20 +20,35 @@ class Epsilon():
 		self.learn_start = config.learn_start
 		self.step = start_step
 	
-	def value(self, step):
+	def steps_value(self, step):
 		epsilon = self.end + \
 				max(0., (self.start - self.end) * \
 				 (self.end_t -max(0., step - self.learn_start)) / self.end_t)
+		assert epsilon > 0
 		return epsilon
 	
+	def successes_value(self, successes, attempts):
+		try:
+			epsilon = 1. - successes / (attempts + 1)
+		except ZeroDivisionError:
+			epsilon = 1.
+		assert epsilon > 0, str(epsilon) + ', '+ str(successes) + ', ' + str(attempts)
+#		print('99999',str(epsilon) + ', '+ str(successes) + ', ' + str(attempts))
+		return epsilon		
 	
-
+	def mixed_value(self, successes, attempts):
+		successes_value = self.successes_value(successes, attempts)
+		#steps_value = self.steps_value(step)
+		return max(successes_value, .1)
+		
+	
 class BaseModel(object):
 	"""Abstract object representing an Reader model."""
 	def __init__(self, config):
 		self._saver = None
 		self.config = config
 		for k, v in inspect.getmembers(config):
+			break
 			name = k if not k.startswith('_') else k[1:]
 			setattr(self, name, v)
 			
@@ -54,7 +69,7 @@ class BaseModel(object):
 				self.summary_placeholders[tag] = tf.placeholder(
 								'float32', None, name=tag)
 				self.summary_ops[tag]	= tf.summary.scalar("%s-/%s" % \
-						(self.env_name, tag), self.summary_placeholders[tag])			
+						(self.env.env_name, tag), self.summary_placeholders[tag])			
 
 			for tag in histogram_summary_tags:
 				self.summary_placeholders[tag] = tf.placeholder('float32',
