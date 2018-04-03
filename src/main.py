@@ -26,11 +26,11 @@ flags.DEFINE_integer('action_repeat', None, 'The number of action to be repeated
 # Etc
 flags.DEFINE_boolean('use_gpu', None, 'Whether to use gpu or not')
 flags.DEFINE_string('gpu_fraction', '1/1', 'idx / # of gpu fraction e.g. 1/3, 2/3, 3/3')
-flags.DEFINE_boolean('display', None, 'Whether to do display the game screen or not')
+#flags.DEFINE_boolean('display', None, 'Whether to do display the game screen or not')
 flags.DEFINE_string('mode', None, 'Whether to do training, testing or just seeing the graph')
 flags.DEFINE_integer('random_seed', None, 'Value of random seed')
 #flags.DEFINE_integer('just_graph', None, 'Whether to just write the graph to TB or not')
-flags.DEFINE_integer('scale', None, 'Scale to apply in configuration')
+flags.DEFINE_integer('scale', 100, 'Scale to apply in configuration')
 flags.DEFINE_boolean('randomize', None, 'Whether to use a random agent or not')
 flags.DEFINE_float('display_episode_prob', None, 'Whether to use a random agent or not')
 

@@ -53,7 +53,8 @@ class Agent(BaseModel):
 		return self.goals[n]
 		
 	def define_goals(self, config):
-		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0"]
+		mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0", "stochastic_mdp-v1",
+		"key_mdp-v0"]
 		self.env.goal_size = self.env.state_size
 		
 		
@@ -265,7 +266,7 @@ class Agent(BaseModel):
 		self.mc_step = mc_start_step
 		self.set_next_goal()
 		
-		if self.config.display_episode_prob < .01:			
+		if self.config.display_episode_prob < .011:			
 			iterator = tqdm(range(c_start_step, c_params.max_step),
 											  ncols=70, initial=c_start_step)
 		else:
@@ -277,7 +278,7 @@ class Agent(BaseModel):
 			# Controller acts
 			action = self.predict_next_action()
 			if self.display_episode:
-				print(self.aux(self.c_history.get()[-1]),', g:',self.current_goal.n,', a:', action)
+				print('s:',self.aux(self.c_history.get()[-1]),', g:',self.current_goal.n,', a:', action)
 				
 			screen, ext_reward, terminal = self.env.act(action, is_training = True)			
 			self.m.add_act(action, self.env.env.one_hot_inverse(screen))
@@ -311,6 +312,7 @@ class Agent(BaseModel):
 				if terminal:
 					if self.display_episode:
 						print(self.aux(screen), success)
+						
 					self.m.close_episode()
 					self.new_episode()
 					
