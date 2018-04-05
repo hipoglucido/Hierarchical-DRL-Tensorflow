@@ -36,34 +36,6 @@ def get_timestamp():
 
 
 
-
-class Logger:
-	# Using the existing Logger library was throwing some issues when developing on Spyder
-	def __init__(self):
-		return
-	
-	def print(self, text):
-		lines = text.split('\n')
-		ts = get_timestamp()
-		output = '\n'.join([ts + " -" + self.mode +"- " + l for l in lines])
-		print(output)
-		 
-	def warn(self, text):
-		self.mode = 'WARNING'
-		self.print(text)
-		 
-	def info(self, text):
-		self.mode = 'info'
-		self.print(text)
-
-def info(text): logger.info(text)
-def warn(text): logger.warn(text)
-
-def get_env(env_name):
-	import gym_stochastic_mdp			
-	env = gym.make(env_name)
-	
-	return env.env
 	
 
 #Auxiliary
