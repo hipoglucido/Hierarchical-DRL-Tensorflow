@@ -34,20 +34,12 @@ def get_timestamp():
 	return time.strftime("%Ss%Hh%Mm%b%d")
 
 
-
-
+def insert_dirs(dirs):
+    for dir_ in dirs:
+            sys.path.insert(0, dir_)
+            print("Added", dir_)
+            
 	
-
-#Auxiliary
-#logger = Logger()
-#Session timestamp
-#SESSION_TS = get_timestamp()
-#
-#
-#if USE_TB:
-#	TB_DIR = os.path.join(DATA_DIR, 'tensorboard', SESSION_TS)
-#	os.makedirs(TB_DIR)
-#	logger.info("TB folder created " + TB_DIR)
 
 #Envs
 #insert_envs_paths()
@@ -63,44 +55,44 @@ import numpy as np
 
 
 if (sys.version_info[0]==2):
-  import cPickle
+    import cPickle
 elif (sys.version_info[0]==3):
-  import _pickle as cPickle
+    import _pickle as cPickle
 
 
 def timeit(f):
-  def timed(*args, **kwargs):
-    start_time = time.time()
-    result = f(*args, **kwargs)
-    end_time = time.time()
+    def timed(*args, **kwargs):
+        start_time = time.time()
+        result = f(*args, **kwargs)
+        end_time = time.time()
 
-    print("   [-] %s : %2.5f sec" % (f.__name__, end_time - start_time))
-    return result
-  return timed
+        print("     [-] %s : %2.5f sec" % (f.__name__, end_time - start_time))
+        return result
+    return timed
 
 def get_time():
-  return time.strftime("%Y-%m-%d_%H:%M:%S", time.gmtime())
+    return time.strftime("%Y-%m-%d_%H:%M:%S", time.gmtime())
 
 @timeit
 def save_pkl(obj, path):
-  with open(path, 'w') as f:
-    cPickle.dump(obj, f)
-    print("  [*] save %s" % path)
+    with open(path, 'w') as f:
+        cPickle.dump(obj, f)
+        print("    [*] save %s" % path)
 
 @timeit
 def load_pkl(path):
-  with open(path) as f:
-    obj = cPickle.load(f)
-    print("  [*] load %s" % path)
-    return obj
+    with open(path) as f:
+        obj = cPickle.load(f)
+        print("    [*] load %s" % path)
+        return obj
 
 @timeit
 def save_npy(obj, path):
-  np.save(path, obj)
-  print("  [*] save %s" % path)
+    np.save(path, obj)
+    print("    [*] save %s" % path)
 
 @timeit
 def load_npy(path):
-  obj = np.load(path)
-  print("  [*] load %s" % path)
-  return obj
+    obj = np.load(path)
+    print("    [*] load %s" % path)
+    return obj

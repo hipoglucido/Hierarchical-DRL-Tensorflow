@@ -2,7 +2,7 @@
 
 import os
 import random
-import logging
+
 import numpy as np
 import sys
 sys.path.insert(0, '..')

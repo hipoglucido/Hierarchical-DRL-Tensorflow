@@ -1,6 +1,6 @@
 import os
 import pprint
-from configuration import MetaControllerParameters, ControllerParameters
+#from configuration import MetaControllerParameters, ControllerParameters
 import inspect
 import tensorflow as tf
 import numpy as np

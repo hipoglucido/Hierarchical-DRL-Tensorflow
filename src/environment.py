@@ -6,38 +6,42 @@ import cv2
 import gym
 import utils
 import logging
-logger = logging.getLogger(__name__)
+
 
 def get_gym(env_name):
-    import gym_stochastic_mdp            
-    env = gym.make(env_name)
-    
+    import gym_stochastic_mdp  
+    import space_fortress
+    env = gym.make(env_name).env
+    logging.debug("Gym %s built", env_name)
     return env
-class Environment():
-    def __init__(self, ag_config, env_config):
-        self.env_name = env_config.env_name
-        self.gym = get_gym(env_config.env_name)
-        
-        self.action_size = self.gym.action_size
-        self.state_size = self.gym.state_size
-        self.action_repeat, self.random_start = \
-                env_config.action_repeat, env_config.random_start
 
-        self.display = env_config.display
+class Environment():
+    def __init__(self, cnf):
+        self.env_name = cnf.env.env_name
+        self.gym = get_gym(cnf.env.env_name)
+        self.gym.configure(cnf.env)
+        print(type(self.gym), vars(self.gym))
+        self.action_size = self.gym.action_space.n
+        self.state_size = self.gym.state_space.n
+        self.action_repeat, self.random_start = \
+                cnf.env.action_repeat, cnf.env.random_start
+
         
         self._screen = None
         self.reward = 0
         self.terminal = True
         
         #Update configuration
-        ag_config.state_size = self.state_size
-        ag_config.action_size = self.action_size
+        cnf.ag.update({"state_size" : self.state_size,
+                       "action_size": self.action_size}, add = True)
+        
+        
         
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
         self._screen = self.gym.reset()
         self.render()
-        return self.screen, 0, 0, self.terminal
+        return self.screen, 0., 0., self.terminal
 
     def new_random_game(self):
         self.new_game(True)
@@ -70,8 +74,7 @@ class Environment():
         return self.screen, self.reward, self.terminal
 
     def render(self):
-        if self.display:
-            self.gym.render()
+        self.gym.render()
 
     def after_act(self, action):        
         self.render()
