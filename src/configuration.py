@@ -11,7 +11,7 @@ from pprint import pformat
 class Constants:
     SF_envs = ['SFS-v0', 'SF-v0', 'SFC-v0', 'AIM-v0']
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0']
-    
+    env_names = SF_envs + MDP_envs
 class Configuration:
     def __init__(self):
         pass
@@ -53,7 +53,7 @@ class GenericSettings():
         if type(new_attrs) is dict:
             for key, value in new_attrs.items():
                 
-                if (value is None or not hasattr(self, key)) and not add:
+                if value is None or (not hasattr(self, key) and not add):
                     """When new_attrs is flags set through command line
                     parameters the default value is None so in those cases
                     we keep the instance value"""
@@ -119,7 +119,6 @@ class GlobalSettings(GenericSettings):
         self.action_repeat = 1
         self.use_gpu = True
         self.gpu_fraction = '1/1'
-        self.mode = 'train'
         self.random_seed = 7
         self.root_dir = os.path.normpath(os.path.join(os.path.dirname(
                                         os.path.realpath(__file__)), ".."))
@@ -137,10 +136,12 @@ class GlobalSettings(GenericSettings):
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
         self.randomize = False
         self.update(new_attrs)
+        
 
 class AgentSettings(GenericSettings):
     def __init__(self, scale):
         self.scale = scale
+        self.mode = 'train'
         
     
     def scale_attrs(self, attr_list):
@@ -155,7 +156,7 @@ class DQNSettings(AgentSettings):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+        self.agent_type = 'dqn'
         self.max_step = 100 * self.scale
         self.memory_size = 5 * self.scale
         
@@ -193,6 +194,7 @@ class hDQNSettings(AgentSettings):
     Configuration
     """
     def __init__(self, *args, **kwargs):
+        self.agent_type = 'hdqn'
         self.mc_params = MetaControllerSettings(*args, **kwargs)
         self.c_params = ControllerSettings(*args, **kwargs)
         self.random_start = 30

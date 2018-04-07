@@ -40,7 +40,13 @@ def insert_dirs(dirs):
             print("Added", dir_)
             
 	
-
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 #Envs
 #insert_envs_paths()
 
@@ -49,7 +55,13 @@ sys.path.insert(0, os.path.join(ROOT_DIR, 'agents'))
 ################################
 #	 FROM DQN REPO
 ################################
+def calc_gpu_fraction(fraction_string):
+    idx, num = fraction_string.split('/')
+    idx, num = float(idx), float(num)
 
+    fraction = 1 / (num - idx + 1)
+    print(" [*] GPU : %.4f" % fraction)
+    return fraction
 
 import numpy as np
 

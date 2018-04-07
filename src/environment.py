@@ -2,23 +2,16 @@
 import random
 import numpy as np
 import sys
-import cv2
 import gym
 import utils
 import logging
+from configuration import Constants as CT
 
-
-def get_gym(env_name):
-    import gym_stochastic_mdp  
-    import space_fortress
-    env = gym.make(env_name).env
-    logging.debug("Gym %s built", env_name)
-    return env
 
 class Environment():
     def __init__(self, cnf):
         self.env_name = cnf.env.env_name
-        self.gym = get_gym(cnf.env.env_name)
+        self.gym = self.load_gym()
         self.gym.configure(cnf.env)
         print(type(self.gym), vars(self.gym))
         self.action_size = self.gym.action_space.n
@@ -36,7 +29,16 @@ class Environment():
                        "action_size": self.action_size}, add = True)
         
         
-        
+    def load_gym(self):
+        if self.env_name in CT.MDP_envs:
+            import gym_stochastic_mdp
+        elif self.env_name in CT.SF_envs:
+            import space_fortress
+        gym_env = gym.make(self.env_name).env
+        logging.debug("Gym %s built", self.env_name)
+        return gym_env
+    
+    
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
         self._screen = self.gym.reset()
