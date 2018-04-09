@@ -2,11 +2,11 @@ import numpy as np
 #from configuration import DQNConfiguration, ControllerParameters, MetaControllerParameters
 
 class History:
-	def __init__(self, config):
+	def __init__(self, length_, size):
 		
 		
 		self.history = np.zeros(
-				[config.history_length, config.state_size], dtype=np.float32)
+				[length_, size], dtype=np.float32)
 	@property
 	def length(self):
 		return self.get().shape[0]

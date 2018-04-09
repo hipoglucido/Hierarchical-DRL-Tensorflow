@@ -19,13 +19,13 @@ class Environment():
         self.action_repeat, self.random_start = \
                 cnf.env.action_repeat, cnf.env.random_start
 
-        
+        self.display_prob = cnf.gl.display_prob
         self._screen = None
         self.reward = 0
         self.terminal = True
         
         #Update configuration
-        cnf.ag.update({"state_size" : self.state_size,
+        cnf.env.update({"state_size" : self.state_size,
                        "action_size": self.action_size}, add = True)
         
         
@@ -41,16 +41,11 @@ class Environment():
     
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
+        self.display_current_episode = random.random() < self.display_prob
         self._screen = self.gym.reset()
-        self.render()
+        
         return self.screen, 0., 0., self.terminal
 
-    def new_random_game(self):
-        self.new_game(True)
-        for _ in range(random.randint(0, self.random_start - 1)):
-            self._step(0)
-        self.render()
-        return self.screen, 0, 0, self.terminal
 
     def _step(self, action):
         self._screen, self.reward, self.terminal, _ = self.gym.step(action)
@@ -78,8 +73,9 @@ class Environment():
     def render(self):
         self.gym.render()
 
-    def after_act(self, action):        
-        self.render()
+    def after_act(self, action):
+        if self.display_current_episode:
+            pass#self.render()
         
     def act(self, action, is_training=True):
             cumulated_reward = 0

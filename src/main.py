@@ -5,8 +5,7 @@ import tensorflow as tf
 
 from environment import Environment
 
-import DQN
-import hDQN
+
 import configuration
 from configuration import Constants as CT
 
@@ -14,6 +13,8 @@ import utils
 import sys
 import argparse
 from pprint import pformat
+from hDQN_agent import HDQNAgent
+from DQN_agent import DQNAgent
 
 parser = argparse.ArgumentParser()
 
@@ -81,7 +82,7 @@ else:
 cnf.set_environment_settings(env_st)
 environment = Environment(cnf)
 
-cnf.print()
+
 
 tf.set_random_seed(gl_st.random_seed)
 random.seed(gl_st.random_seed)
@@ -97,9 +98,12 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         raise Exception("use_gpu flag is true when no GPUs are available")
     
     if ag_st.agent_type == 'dqn':
-        agent = DQN.Agent(cnf, environment, sess)
+        
+        agent = DQNAgent(cnf, environment, sess)
+        
     elif ag_st.agent_type == 'hdqn':         
-        agent = hDQN.Agent(cnf, environment, sess)
+        agent = HDQNAgent(cnf, environment, sess)
+        
     else:
         raise ValueError("Wrong agent %s".format())
         

@@ -29,8 +29,8 @@ class Configuration:
         for settings in ['ag', 'env', 'gl']:
             try:
                 dictionary[settings] = getattr(self, settings).to_dict()
-            except:
-                pass
+            except Exception as e:
+                print(e)
                 
         return dictionary
     
@@ -69,42 +69,20 @@ class GenericSettings():
         else:
             raise ValueError
                 
-    def to_dict(self): return vars(self)
+    def to_dict(self): return vars(self).copy()
     def to_str(self): return pformat(self.to_dict())
         
     def print(self):
         msg =  "\n" + self.to_str()
         #print(msg)
         logging.info(msg)
-        
-    def as_list_old(self, ignore = True):
-        ignore = self.ignore if ignore else []
-        def aux(k, v, p): return "%s%s-%s" % (p, k, ",".join([str(i) for i in v])
-                                                    if type(v) == list else v)
-        if not self.new_instance:
-            self.ignore.append('date')
-        parts = [self.env_name]
-        for k, v in inspect.getmembers(self):
-            if isinstance(v, ControllerSettings):
-                for k_, v_ in inspect.getmembers(v):
-                    if k_.startswith("__"):
-                        continue
-                    parts = parts + [aux(k_, v_, 'C-')] if k_ not in v.ignore else parts                    
-            elif isinstance(v, MetaControllerSettings):
-                for k_, v_ in inspect.getmembers(v):
-                    if k_.startswith("__"):
-                        continue
-                    parts = parts + [aux(k_, v_, 'MC-')] if k_ not in v.ignore else parts                    
-            elif callable(v) or k in ignore or k.startswith('__'):
-                continue
-            else:
-                parts.append(aux(k, v, ''))        
-        return parts
-    def print_old(self):
-        elements = self.as_list(ignore = False)
-        elements = [e for e in elements if e is not None]
-        out = 'Configuration:\n' + '\n\t'.join(elements)
-        print(out)
+            
+    
+    def to_disk(self, file_path):
+        #TODO test this method
+        content = self.to_str()
+        with open(filepath) as fp:
+            fp.write(content)
 
     
 class GlobalSettings(GenericSettings):
@@ -134,6 +112,9 @@ class GlobalSettings(GenericSettings):
         
         self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
+        self.checkpoint_dir = '' #TODO
+        self.logs_dir = '' #TODO
+        self.settings_dir = '' #TODO
         self.randomize = False
         self.update(new_attrs)
         
@@ -194,11 +175,20 @@ class hDQNSettings(AgentSettings):
     Configuration
     """
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-        self.mc_params = MetaControllerSettings(*args, **kwargs)
-        self.c_params = ControllerSettings(*args, **kwargs)
+        self.mc = MetaControllerSettings(*args, **kwargs)
+        self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
+    
+
+    def to_dict(self):       
+        dictionary = vars(self).copy()
+        dictionary['mc'] = self.mc.to_dict()
+        dictionary['c'] = self.c.to_dict()
+        return dictionary
         
+
 
 
 class ControllerSettings(AgentSettings):
@@ -286,7 +276,7 @@ class MDPSettings(EnvironmentSettings):
         super().__init__()
         self.total_states = 6
         self.initial_state = 1
-        self.final_states = [0]
+        self.terminal_states = [0]
         self.total_actions = 2
         self.right_failure_prob = .5
         self.update(new_attrs)

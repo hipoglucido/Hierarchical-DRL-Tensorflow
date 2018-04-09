@@ -8,71 +8,81 @@ from functools import reduce
 import tensorflow as tf
 import sys
 
-from base import BaseModel, Epsilon
+from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 from goals import MDPGoal
 from metrics import Metrics
+from configuration import Constants as CT
 
         
-class Agent(BaseModel):
+class HDQNAgent(Agent):
     def __init__(self, config, environment, sess):
-        super(Agent, self).__init__(config)
+        super().__init__(config)
         self.sess = sess
         self.weight_dir = 'weights'
 
-        self.env = environment
-        self.goals = self.define_goals(config)
-        print(self.goals)
+        self.config = config
+        self.ag = self.config.ag
+        self.c = self.ag.c
+        self.mc = self.ag.mc
+        self.gl = self.config.gl
+        #print(self.mc)
+        self.environment = environment
+        self.goals = self.define_goals()
         
-        #Update controller config with goal size
-        self.config.c_params.input_size = self.env.goal_size + self.env.state_size
-        self.config.c_params.state_size = self.env.state_size
-        self.config.c_params.action_size = self.env.action_size
-        self.config.mc_params.input_size = self.env.state_size
-        self.config.mc_params.state_size = self.env.state_size
-        self.config.mc_params.action_size = self.env.action_size
+        self.mc.update({"q_output_length" : self.ag.goal_size}, add = True)
+        self.c.update({"q_output_length" : self.environment.action_size}, add = True)
         
+  
         
+        self.mc_history = History(length_ = self.mc.history_length,
+                                  size    = self.environment.state_size)
         
-        self.mc_history = History(self.config.mc_params)
-        self.c_history = History(self.config.c_params)
+        self.c_history = History(length_ = self.c.history_length,
+                                 size    = self.environment.state_size)
         
-        self.mc_memory = ReplayMemory(self.config.mc_params, self.model_dir)
-        self.c_memory = ReplayMemory(self.config.c_params, self.model_dir)
+        self.mc_memory = ReplayMemory(config      = self.mc,
+                                      model_dir  = self.model_dir,
+                                      screen_size = self.environment.state_size)
+        self.c_memory = ReplayMemory(config      = self.c,
+                                      model_dir  = self.model_dir,
+                                      screen_size = self.environment.state_size + \
+                                      self.ag.goal_size)
+
         
             
         self.m = Metrics(self.config, self.goals)
         
-        self.build_hdqn(config)
+        self.config.print()
+        self.build_hdqn()
     
     
     def aux(self, screen):
         #Auxiliary function
-        return self.env.gym.one_hot_inverse(screen)
+        return self.environment.gym.one_hot_inverse(screen)
 
     def get_goal(self, n):
         return self.goals[n]
         
-    def define_goals(self, config):
-        mdps = ["stochastic_mdp-v0","ez_mdp-v0","trap_mdp-v0", "stochastic_mdp-v1",
-        "key_mdp-v0"]
-        self.env.goal_size = self.env.state_size
+    def define_goals(self):
+        
+        self.ag.goal_size = self.environment.state_size
         
         
         goals = {}
-        for n in range(self.env.goal_size):
-            if self.env.env_name in mdps:
+        for n in range(self.ag.goal_size):
+            if self.environment.env_name in CT.MDP_envs:
                 goal_name = "g" + str(n)
-                goal = MDPGoal(n, goal_name, config.c_params)            
-                goal.setup_one_hot(self.env.goal_size)
+                goal = MDPGoal(n, goal_name, self.c)            
+                goal.setup_one_hot(self.ag.goal_size)
             elif 0:
                 #Space Fortress
                 pass
             else:
-                raise ValueError("No prior goals for " + self.env.env_name)
+                raise ValueError("No prior goals for " + self.environment.env_name)
             goals[goal.n] = goal
         
         return goals
@@ -81,8 +91,8 @@ class Agent(BaseModel):
         
         ep = test_ep or self.mc_epsilon.steps_value(self.mc_step)
         self.m.update_epsilon(goal_name = None, value = ep)
-        if random.random() < ep or self.config.randomize:
-            n_goal = random.randrange(self.env.goal_size)
+        if random.random() < ep or self.gl.randomize:
+            n_goal = random.randrange(self.ag.goal_size)
         else:
             screens = self.mc_history.get()
             n_goal = self.mc_q_goal.eval({self.mc_s_t: [screens]})[0]
@@ -91,8 +101,6 @@ class Agent(BaseModel):
         goal = self.get_goal(n_goal)
         goal.set_counter += 1
         self.current_goal = goal
-    
-
         
     def predict_next_action(self, test_ep = None):
         
@@ -103,8 +111,8 @@ class Agent(BaseModel):
         
         self.m.update_epsilon(goal_name = self.current_goal.name, value = ep)
         
-        if random.random() < ep or self.config.randomize:
-            action = random.randrange(self.env.action_size)
+        if random.random() < ep or self.gl.randomize:
+            action = random.randrange(self.environment.action_size)
             
         else:
             screens = self.c_history.get()
@@ -119,33 +127,33 @@ class Agent(BaseModel):
     def mc_observe(self, screen, ext_reward, goal_n, terminal):
         if self.display_episode:
             pass#print("MC ", ext_reward, "while", self.aux(screen), "g:", goal_n)
-        params = self.config.mc_params
+        
         self.mc_history.add(screen)
         next_state = screen
         self.mc_memory.add(next_state, ext_reward, goal_n, terminal)
 
-        if self.mc_step >  params.learn_start:
-            if self.mc_step % params.train_frequency == 0:
+        if self.mc_step >  self.mc.learn_start:
+            if self.mc_step % self.mc.train_frequency == 0:
                 self.mc_q_learning_mini_batch()
 
-            if self.mc_step % params.target_q_update_step ==\
-                        params.target_q_update_step - 1:
+            if self.mc_step % self.mc.target_q_update_step ==\
+                        self.mc.target_q_update_step - 1:
                 self.mc_update_target_q_network()    
     
     def c_observe(self, screen, int_reward, action, terminal):
         if self.display_episode:
             pass#print("C ", int_reward, "while", self.aux(screen), "a:", action)
-        params = self.config.c_params
+       
         self.c_history.add(screen)
         next_state = np.hstack([self.current_goal.one_hot, screen])
 
         self.c_memory.add(next_state, int_reward, action, terminal)
         
-        if self.c_step > params.learn_start:
-            if self.c_step % params.train_frequency == 0:
+        if self.c_step > self.c.learn_start:
+            if self.c_step % self.c.train_frequency == 0:
                 self.c_q_learning_mini_batch()
 
-            if self.c_step % params.target_q_update_step == params.target_q_update_step - 1:
+            if self.c_step % self.c.target_q_update_step == self.c.target_q_update_step - 1:
                 self.c_update_target_q_network()
 
     def mc_q_learning_mini_batch(self):
@@ -161,7 +169,7 @@ class Agent(BaseModel):
 
         terminal = np.array(terminal) + 0.
         max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-        target_q_t = (1. - terminal) * self.config.mc_params.discount * max_q_t_plus_1 + ext_reward
+        target_q_t = (1. - terminal) * self.mc.discount * max_q_t_plus_1 + ext_reward
         
         #print("SAAAAAMPLING")
 #        for s,g,r,s1,t in zip(s_t, goal, ext_reward, s_t_plus_1, terminal):
@@ -197,12 +205,12 @@ class Agent(BaseModel):
         s_t, action, int_reward, s_t_plus_1, terminal = self.c_memory.sample()
         
         #TODO: optimize goals in memory
-        g_t = np.vstack([g[0] for g in s_t[:, :, :self.env.goal_size]]) 
-        s_t = s_t[:, :, self.env.goal_size:]
+        g_t = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]]) 
+        s_t = s_t[:, :, self.ag.goal_size:]
         
         
-        g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.env.goal_size]])
-        s_t_plus_1 = s_t_plus_1[:, :, self.env.goal_size:]
+        g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]])
+        s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
         
         
         for s,a,r,s1,t,g,g1 in zip(s_t, action, int_reward, s_t_plus_1, terminal,\
@@ -227,7 +235,7 @@ class Agent(BaseModel):
         terminal = np.array(terminal) + 0. #Boolean to float
     
         max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-        target_q_t = (1. - terminal) * self.config.c_params.discount * max_q_t_plus_1 + int_reward
+        target_q_t = (1. - terminal) * self.c.discount * max_q_t_plus_1 + int_reward
 
         _, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
                                              self.c_loss, self.c_q_summary], {
@@ -243,25 +251,25 @@ class Agent(BaseModel):
 
     
     def new_episode(self):
-        #screen, reward, action, terminal = self.env.new_random_game()
-        screen, _, _, _ = self.env.new_game(False)        
+        #screen, reward, action, terminal = self.environment.new_random_game()
+        screen, _, _, _ = self.environment.new_game(False)        
         self.mc_history.fill_up(screen)
         self.c_history.fill_up(screen)
-        self.display_episode = random.random() < self.config.display_episode_prob
+        self.display_episode = random.random() < self.gl.display_prob
+      
         return 
     
     def train(self):
         self.a, self.b = False, False
-        mc_params = self.config.mc_params
-        c_params = self.config.c_params
+        
         
         
         mc_start_step = 0
         c_start_step = 0
         
-        self.mc_epsilon = Epsilon(mc_params, mc_start_step)
+        self.mc_epsilon = Epsilon(self.mc, mc_start_step)
         for key, goal in self.goals.items():
-            goal.setup_epsilon(c_params, c_start_step) #TODO load individual
+            goal.setup_epsilon(self.c, c_start_step) #TODO load individual
         
         self.new_episode()
             
@@ -270,13 +278,13 @@ class Agent(BaseModel):
         self.mc_step = mc_start_step
         self.set_next_goal()
         
-        if self.config.display_episode_prob < .011:            
-            iterator = tqdm(range(c_start_step, c_params.max_step),
+        if self.gl.display_prob < .011:            
+            iterator = tqdm(range(c_start_step, self.c.max_step),
                                               ncols=70, initial=c_start_step)
         else:
-            iterator = range(c_start_step, c_params.max_step)
+            iterator = range(c_start_step, self.c.max_step)
         for self.c_step in iterator:
-            if self.c_step == c_params.learn_start:                
+            if self.c_step == self.c.learn_start:                
                 self.m.restart()
             
             # Controller acts
@@ -284,8 +292,8 @@ class Agent(BaseModel):
             if self.display_episode:
                 print('s:',self.aux(self.c_history.get()[-1]),', g:',self.current_goal.n,', a:', action)
                 
-            screen, ext_reward, terminal = self.env.act(action, is_training = True)            
-            self.m.add_act(action, self.env.gym.one_hot_inverse(screen))
+            screen, ext_reward, terminal = self.environment.act(action, is_training = True)            
+            self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
             
             
                         
@@ -337,9 +345,9 @@ class Agent(BaseModel):
                 print("__________________________") 
             
             
-            if self.c_step < c_params.learn_start:
+            if self.c_step < self.c.learn_start:
                 continue
-            if self.c_step % c_params.test_step != c_params.test_step - 1:
+            if self.c_step % self.c.test_step != self.c.test_step - 1:
                 continue
             #assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
             #assert not (terminal and self.m.mc_ep_reward == 0.)
@@ -377,32 +385,28 @@ class Agent(BaseModel):
         self.m.c_learning_rate = self.c_learning_rate_op.eval(
                                 {self.c_learning_rate_step: self.c_step})
         
-    def set_interfaces_lengths(self, config):    
-        #TODO remove method, not useful anymore
-        config.mc_params.q_input_length = self.env.state_size
-        config.mc_params.q_output_length = self.env.goal_size
-        config.c_params.q_input_length = self.env.state_size
-        config.c_params.q_output_length = self.env.action_size
+
         
-    def build_meta_controller(self, config):
+    def build_meta_controller(self):
         self.mc_w = {}
         self.mc_target_w = {}
         # training meta-controller network
         with tf.variable_scope('mc_prediction'):
             # tf Graph input
             self.mc_s_t = tf.placeholder("float",
-                        [None, self.mc_history.length, self.env.state_size],
+                        [None, self.mc_history.length, self.environment.state_size],
                         name='mc_s_t')
+            print(self.mc_s_t)
             shape = self.mc_s_t.get_shape().as_list()
             self.mc_s_t_flat = tf.reshape(self.mc_s_t, [-1, reduce(
                                             lambda x, y: x * y, shape[1:])])            
             
             last_layer = self.mc_s_t_flat
-            last_layer = self.add_dense_layers(config = config.mc_params,
+            last_layer = self.add_dense_layers(config = self.mc,
                                                input_layer = last_layer,
                                                prefix = 'mc')
             self.mc_q, self.mc_w['q_w'], self.mc_w['q_b'] = linear(last_layer,
-                                                  self.env.goal_size,
+                                                  self.ag.goal_size,
                                                   name='mc_q')
             self.mc_q_goal= tf.argmax(self.mc_q, axis=1)
             
@@ -410,12 +414,12 @@ class Agent(BaseModel):
             avg_q = tf.reduce_mean(self.mc_q, 0)
             
 
-            for idx in range(self.env.goal_size):
+            for idx in range(self.mc.q_output_length):
                 q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
             self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
 
         # target network
-        self.create_target(config = config.mc_params)
+        self.create_target(config = self.mc)
 
         #Meta Controller optimizer
         with tf.variable_scope('mc_optimizer'):
@@ -423,7 +427,7 @@ class Agent(BaseModel):
                                                name='mc_target_q_t')
             self.mc_action = tf.placeholder('int64', [None], name='mc_action')
 
-            mc_action_one_hot = tf.one_hot(self.mc_action, self.env.goal_size,
+            mc_action_one_hot = tf.one_hot(self.mc_action, self.ag.goal_size,
                                        1.0, 0.0, name = 'mc_action_one_hot')
             mc_q_acted = tf.reduce_sum(self.mc_q * mc_action_one_hot,
                                    reduction_indices = 1, name = 'mc_q_acted')
@@ -437,32 +441,32 @@ class Agent(BaseModel):
             self.mc_learning_rate_step = tf.placeholder('int64', None,
                                             name='mc_learning_rate_step')
             self.mc_learning_rate_op = tf.maximum(
-                    config.mc_params.learning_rate_minimum,
+                    self.mc.learning_rate_minimum,
                     tf.train.exponential_decay(
-                        learning_rate = config.mc_params.learning_rate,
+                        learning_rate = self.mc.learning_rate,
                         global_step   = self.mc_learning_rate_step,
-                        decay_steps   = config.mc_params.learning_rate_decay_step,
-                        decay_rate    = config.mc_params.learning_rate_decay,
+                        decay_steps   = self.mc.learning_rate_decay_step,
+                        decay_rate    = self.mc.learning_rate_decay,
                         staircase     = True))
             self.mc_optim = tf.train.RMSPropOptimizer(
                                 learning_rate = self.mc_learning_rate_op,
                                 momentum      = 0.95,
                                 epsilon       = 0.01).minimize(self.mc_loss)
 
-    def build_controller(self, config):
+    def build_controller(self):
         self.c_w = {}
         self.c_target_w = {}
     
         with tf.variable_scope('c_prediction'):
-            #input_size = self.env.state_size + self.env.goal_size
+            #input_size = self.environment.state_size + self.ag.goal_size
             self.c_s_t = tf.placeholder("float",
-                                [None, self.c_history.length, self.env.state_size],
+                                [None, self.c_history.length, self.environment.state_size],
                                 name = 'c_s_t')
             shape = self.c_s_t.get_shape().as_list()
             self.c_s_t_flat = tf.reshape(self.c_s_t, [-1, reduce(
                     lambda x, y: x * y, shape[1:])])
             self.c_g_t = tf.placeholder("float",
-                               [None, self.env.goal_size],
+                               [None, self.ag.goal_size],
                                name = 'c_g_t')
             self.c_gs_t = tf.concat([self.c_g_t, self.c_s_t_flat],
                            axis = 1,
@@ -471,11 +475,11 @@ class Agent(BaseModel):
             print(self.c_s_t_flat)
             last_layer = self.c_gs_t
             print(last_layer)
-            last_layer = self.add_dense_layers(config = config.c_params,
+            last_layer = self.add_dense_layers(config = self.c,
                                                input_layer = last_layer,
                                                prefix = 'c')
             self.c_q, self.c_w['q_w'], self.c_w['q_b'] = linear(last_layer,
-                                                  self.env.action_size,
+                                                  self.environment.action_size,
                                                   name='c_q')
             print(self.c_q)
             self.c_q_action= tf.argmax(self.c_q, axis=1)
@@ -484,12 +488,12 @@ class Agent(BaseModel):
             avg_q = tf.reduce_mean(self.c_q, 0)
             
 
-            for idx in range(self.env.action_size):
+            for idx in range(self.c.q_output_length):
                 q_summary.append(tf.summary.histogram('c_q/%s' % idx, avg_q[idx]))
             self.c_q_summary = tf.summary.merge(q_summary, 'c_q_summary')
 
         # target network
-        self.create_target(config.c_params)
+        self.create_target(self.c)
         
         
         #Controller optimizer
@@ -498,7 +502,7 @@ class Agent(BaseModel):
                                                name='c_target_q_t')
             self.c_action = tf.placeholder('int64', [None], name='c_action')
 
-            c_action_one_hot = tf.one_hot(self.c_action, self.env.action_size,
+            c_action_one_hot = tf.one_hot(self.c_action, self.environment.action_size,
                                        1.0, 0.0, name = 'c_action_one_hot')
             c_q_acted = tf.reduce_sum(self.c_q * c_action_one_hot,
                                    reduction_indices = 1, name = 'c_q_acted')
@@ -512,18 +516,18 @@ class Agent(BaseModel):
             self.c_learning_rate_step = tf.placeholder('int64', None,
                                             name='c_learning_rate_step')
             self.c_learning_rate_op = tf.maximum(
-                    config.c_params.learning_rate_minimum,
+                    self.c.learning_rate_minimum,
                     tf.train.exponential_decay(
-                        learning_rate = config.c_params.learning_rate,
+                        learning_rate = self.c.learning_rate,
                         global_step   = self.c_learning_rate_step,
-                        decay_steps   = config.c_params.learning_rate_decay_step,
-                        decay_rate    = config.c_params.learning_rate_decay,
+                        decay_steps   = self.c.learning_rate_decay_step,
+                        decay_rate    = self.c.learning_rate_decay,
                         staircase     = True))
             self.c_optim = tf.train.RMSPropOptimizer(
                                 learning_rate = self.c_learning_rate_op,
                                 momentum      = 0.95,
                                 epsilon       = 0.01).minimize(self.c_loss)
-    def build_hdqn(self, config):
+    def build_hdqn(self):
 
         
         with tf.variable_scope('c_step'):
@@ -541,14 +545,14 @@ class Agent(BaseModel):
             self.mc_step_assign_op = \
                         self.mc_step_op.assign(self.mc_step_input)
                 
-        self.set_interfaces_lengths(config)
+        
         print("Building meta-controller")
-        self.build_meta_controller(config)
+        self.build_meta_controller()
         print("Building controller")
         
-        self.build_controller(config)
+        self.build_controller()
         
-        self.setup_summary()
+        self.setup_summary(self.m.scalar_tags, self.m.histogram_tags)
             
         tf.global_variables_initializer().run()
         
@@ -563,11 +567,11 @@ class Agent(BaseModel):
         self.mc_update_target_q_network()
         self.c_update_target_q_network()
         
-    def setup_summary(self):
+    # def setup_summary(self):
                 
-        super().setup_summary(self.m.scalar_tags, self.m.histogram_tags)
-        self.writer = tf.summary.FileWriter('./logs/%s' % \
-                                          self.model_dir, self.sess.graph)
+        # super().setup_summary(self.m.scalar_tags, self.m.histogram_tags)
+        # self.writer = tf.summary.FileWriter('./logs/%s' % \
+                                          # self.model_dir, self.sess.graph)
         
     def mc_update_target_q_network(self):    
         for name in self.mc_w.keys():
