@@ -304,14 +304,16 @@ class Metrics:
         
         ep_rewards = getattr(self, prefix + 'ep_rewards')
         
+    
         try:
             setattr(self, prefix + 'max_ep_reward', np.max(ep_rewards))
             setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
             setattr(self, prefix + 'avg_ep_reward', np.mean(ep_rewards))
         except Exception as e:
-            print(str(e))
+            print(prefix + ", " + str(e))
+            
             for s in ['max', 'min', 'avg']:
-                setattr(self, prefix + s +'_ep_reward', 0.)
+                setattr(self, prefix + s +'_ep_reward', self.error_value)
         total_episodes = len(ep_rewards)
         setattr(self, 'total_episodes', total_episodes)
         try:

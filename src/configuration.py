@@ -265,7 +265,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = self.memory_size
         
         self.train_frequency = 4
-        self.learn_start = 5. * self.scale
+        self.learn_start = 1. * self.scale
         
         self.architecture = [500, 500, 500]
         
@@ -296,8 +296,8 @@ class Key_MDPSettings(EnvironmentSettings):
      def __init__(self, new_attrs): 
         super().__init__()
         self.factor = 3
-        self.initial_state = 4
         self.total_states = self.factor ** 2
+        self.initial_state = int(self.total_states / 2)
         self.update(new_attrs)
         
         
