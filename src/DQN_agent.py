@@ -42,9 +42,7 @@ class DQNAgent(Agent):
         self.build_dqn()
         self.config.print()
 
-    def aux(self, screen):
-        #Auxiliary function
-        return self.environment.gym.one_hot_inverse(screen)    
+   
     def train(self):
         start_step = 0    
         self.epsilon = Epsilon(self.ag, start_step)
@@ -69,15 +67,18 @@ class DQNAgent(Agent):
             screen, reward, terminal = self.environment.act(action, is_training = True)
             self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
             if self.display_episode:
-                print('s:',self.aux(self.history.get()[-1]), ', a:', action)
+                self.console_print(action)
+                
                 
             # 3. observe
             self.observe(screen, reward, action, terminal)
             self.m.increment_external_reward(reward)
+            if self.display_episode:
+                print(reward)
             if terminal:
                 if self.display_episode:
                     success = reward == 1
-                    print('s:',self.aux(screen), success)
+                    print('s:',screen, success)
                     print("__________________________")
                 self.m.mc_step_reward = 0
                 self.m.close_episode()
@@ -130,7 +131,8 @@ class DQNAgent(Agent):
 
     def observe(self, screen, reward, action, terminal):
         #reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
-
+        
+        assert np.sum(np.isnan(screen)) == 0, screen
         self.history.add(screen)
         self.memory.add(screen, reward, action, terminal)
 

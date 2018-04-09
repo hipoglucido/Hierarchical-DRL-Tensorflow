@@ -59,10 +59,6 @@ class HDQNAgent(Agent):
         self.config.print()
         #TODO turn config inmutable
     
-    
-    def aux(self, screen):
-        #Auxiliary function
-        return self.environment.gym.one_hot_inverse(screen)
 
     def get_goal(self, n):
         return self.goals[n]
@@ -282,7 +278,7 @@ class HDQNAgent(Agent):
             # Controller acts
             action = self.predict_next_action()
             if self.display_episode:
-                print('s:',self.aux(self.c_history.get()[-1]),', g:',self.current_goal.n,', a:', action)
+                self.console_print(action)
                 
             screen, ext_reward, terminal = self.environment.act(action, is_training = True)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
@@ -315,7 +311,7 @@ class HDQNAgent(Agent):
                     pass#print("Achieved!!!", self.current_goal.n)
                 if terminal:
                     if self.display_episode:
-                        print(self.aux(screen), success)
+                        print(screen, success)
                         
                     self.m.close_episode()
                     self.new_episode()

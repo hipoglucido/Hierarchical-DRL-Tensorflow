@@ -82,6 +82,9 @@ elif args['env_name'] == 'stochastic_mdp-v0':
 elif args['env_name'] == 'ez_mdp-v0':
     #MDP
     env_st = configuration.EZ_MDPSettings(new_attrs = args)
+elif args['env_name'] == 'key_mdp-v0':
+    #MDP
+    env_st = configuration.Key_MDPSettings(new_attrs = args)
 elif args['env_name'] == 'trap_mdp-v0':
     #MDP
     env_st = configuration.Trap_MDPSettings(new_attrs = args)

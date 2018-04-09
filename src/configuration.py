@@ -10,7 +10,7 @@ from pprint import pformat
 
 class Constants:
     SF_envs = ['SFS-v0', 'SF-v0', 'SFC-v0', 'AIM-v0']
-    MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0']
+    MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     env_names = SF_envs + MDP_envs
     
    
@@ -150,7 +150,7 @@ class DQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
         self.max_step = 500 * self.scale
-        self.memory_size = 100 * self.scale
+        self.memory_size = 500 * self.scale
         
         self.batch_size = 32
         self.random_start = 30
@@ -208,7 +208,7 @@ class ControllerSettings(AgentSettings):
         
         self.history_length = 1
         
-        self.memory_size = 100 * self.scale
+        self.memory_size = 500 * self.scale
         
         self.max_step = 500 * self.scale
         
@@ -246,7 +246,7 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 100 * self.scale
+        self.memory_size = 500 * self.scale
          
         #max_step = 5000 * scale
         
@@ -292,7 +292,14 @@ class EZ_MDPSettings(EnvironmentSettings):
         self.right_failure_prob = 0.
         self.update(new_attrs)
        
-      
+class Key_MDPSettings(EnvironmentSettings):
+     def __init__(self, new_attrs): 
+        super().__init__()
+        self.factor = 3
+        self.initial_state = 4
+        self.total_states = self.factor ** 2
+        self.update(new_attrs)
+        
         
 class Stochastic_MDPSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
@@ -303,7 +310,7 @@ class Stochastic_MDPSettings(EnvironmentSettings):
         self.total_actions = 2
         self.right_failure_prob = 0.5
         self.update(new_attrs)
-            
+           
         
           
 class Trap_MDPSettings(EnvironmentSettings):
