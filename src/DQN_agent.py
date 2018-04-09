@@ -40,6 +40,7 @@ class DQNAgent(Agent):
         self.m = Metrics(self.config)
         
         self.build_dqn()
+        self.config.print()
 
     def aux(self, screen):
         #Auxiliary function
@@ -74,14 +75,14 @@ class DQNAgent(Agent):
             self.observe(screen, reward, action, terminal)
             self.m.increment_external_reward(reward)
             if terminal:
+                if self.display_episode:
+                    success = reward == 1
+                    print('s:',self.aux(screen), success)
+                    print("__________________________")
                 self.m.mc_step_reward = 0
                 self.m.close_episode()
-                self.new_episode()      
-            if self.display_episode:
-                pass#print("ext",ext_reward,', int',int_reward)
-            if terminal and self.display_episode:
-                print("__________________________") 
-            
+                self.new_episode()
+
             
             if self.step < self.ag.learn_start:
                 continue
@@ -94,7 +95,7 @@ class DQNAgent(Agent):
                 self.step_assign_op.eval(
                         {self.step_input: self.step + 1})
      
-                self.save_model(self.step + 1)
+#                self.save_model(self.step + 1)
 
                 self.m.update_best_score()
                 
@@ -119,6 +120,7 @@ class DQNAgent(Agent):
     def predict_next_action(self, test_ep = None):
         s_t = self.history.get()
         ep = test_ep or self.epsilon.steps_value(self.step)
+        self.m.update_epsilon(value = ep)
         if random.random() < ep:
             action = random.randrange(self.environment.action_size)
         else:

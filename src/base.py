@@ -28,10 +28,8 @@ class Epsilon():
         return epsilon
     
     def successes_value(self, successes, attempts):
-        try:
-            epsilon = 1. - successes / (attempts + 1)
-        except ZeroDivisionError:
-            epsilon = 1.
+        epsilon = 1. - successes / (attempts + 1)
+        
         assert epsilon > 0, str(epsilon) + ', '+ str(successes) + ', ' + str(attempts)
 #        print('99999',str(epsilon) + ', '+ str(successes) + ', ' + str(attempts))
         return epsilon        
@@ -79,6 +77,7 @@ class Agent(object):
                                            self.model_dir, self.sess.graph)
             
     def inject_summary(self, tag_dict, step):
+
         summary_str_lists = self.sess.run(
                     [self.summary_ops[tag] for tag in tag_dict.keys()],
                     {self.summary_placeholders[tag]: value for tag, value \
@@ -211,10 +210,12 @@ class Agent(object):
             
     @property
     def model_dir(self):
-        #parts = self.config.as_list(ignore = True)
-        
-        #result = os.path.join(*parts)
-        result = self.config.gl.date + '_' + self.environment.env_name
+        attrs = []
+        for attr_fullname in self.config.gl.attrs_in_dir:
+            [attr_type, attr_name] = attr_fullname.split('.')
+            attr_value = getattr(getattr(self.config, attr_type), attr_name)
+            attrs.append(str(attr_value))
+        result = '_'.join(attrs)
         return result
 
     @property

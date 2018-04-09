@@ -32,9 +32,10 @@ class Environment():
     def load_gym(self):
         if self.env_name in CT.MDP_envs:
             import gym_stochastic_mdp
+            gym_env = gym.make(self.env_name).env
         elif self.env_name in CT.SF_envs:
             import space_fortress
-        gym_env = gym.make(self.env_name).env
+            gym_env = gym.make(self.env_name)#.env
         logging.debug("Gym %s built", self.env_name)
         return gym_env
     

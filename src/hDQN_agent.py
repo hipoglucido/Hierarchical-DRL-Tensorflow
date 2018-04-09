@@ -36,8 +36,7 @@ class HDQNAgent(Agent):
         self.mc.update({"q_output_length" : self.ag.goal_size}, add = True)
         self.c.update({"q_output_length" : self.environment.action_size}, add = True)
         
-  
-        
+      
         self.mc_history = History(length_ = self.mc.history_length,
                                   size    = self.environment.state_size)
         
@@ -56,8 +55,9 @@ class HDQNAgent(Agent):
             
         self.m = Metrics(self.config, self.goals)
         
-        self.config.print()
         self.build_hdqn()
+        self.config.print()
+        #TODO turn config inmutable
     
     
     def aux(self, screen):
@@ -108,8 +108,9 @@ class HDQNAgent(Agent):
         
         #s_t should have goals and screens concatenated
         ep = test_ep or self.current_goal.epsilon
+#        assert ep > 0
+#        print(ep)
         
-        self.m.update_epsilon(goal_name = self.current_goal.name, value = ep)
         
         if random.random() < ep or self.gl.randomize:
             action = random.randrange(self.environment.action_size)
@@ -160,9 +161,7 @@ class HDQNAgent(Agent):
         if self.mc_memory.count < self.mc_history.length:
             return
         
-        if self.a == False:
-            print("MC at ", self.c_step)
-            self.a = True
+   
         s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
         
         q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
@@ -198,10 +197,6 @@ class HDQNAgent(Agent):
         if self.c_memory.count < self.c_history.length:
             return
         
-        
-        if self.b == False:
-            print("C at ", self.c_step)
-            self.b = True
         s_t, action, int_reward, s_t_plus_1, terminal = self.c_memory.sample()
         
         #TODO: optimize goals in memory
@@ -260,10 +255,7 @@ class HDQNAgent(Agent):
         return 
     
     def train(self):
-        self.a, self.b = False, False
-        
-        
-        
+
         mc_start_step = 0
         c_start_step = 0
         
@@ -357,8 +349,8 @@ class HDQNAgent(Agent):
             self.m.compute_goal_results(self.goals)
             self.m.compute_state_visits()
             
-            self.m.print('mc')
-            self.m.c_print()
+#            self.m.print('mc')
+#            self.m.c_print()
             
             
             if self.m.has_improved(prefix = 'mc'):
@@ -366,8 +358,8 @@ class HDQNAgent(Agent):
                         {self.c_step_input: self.c_step + 1})
                 self.mc_step_assign_op.eval(
                         {self.mc_step_input: self.mc_step + 1})
-                self.save_model(self.c_step + 1)
-                self.save_model(self.mc_step + 1)
+#                self.save_model(self.c_step + 1)
+#                self.save_model(self.mc_step + 1)
                 self.m.update_best_score()
                 
 

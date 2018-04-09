@@ -5,16 +5,22 @@ import sys
 import glob
 import utils
 import logging
-
+from abc import ABCMeta, abstractmethod, abstractproperty
 from pprint import pformat
 
 class Constants:
     SF_envs = ['SFS-v0', 'SF-v0', 'SFC-v0', 'AIM-v0']
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0']
     env_names = SF_envs + MDP_envs
+    
+   
+    
 class Configuration:
     def __init__(self):
-        pass
+        self.gl = None      #Global settings
+        self.ag = None      #Agent settings
+        self.env = None     #Environment settings
+        
     def set_agent_settings(self, settings):
         self.ag = settings
         
@@ -78,7 +84,7 @@ class GenericSettings():
         logging.info(msg)
             
     
-    def to_disk(self, file_path):
+    def to_disk(self, filepath):
         #TODO test this method
         content = self.to_str()
         with open(filepath) as fp:
@@ -86,10 +92,7 @@ class GenericSettings():
 
     
 class GlobalSettings(GenericSettings):
-    def __init__(self, new_attrs = {}):
-        
-        
-#        self.env_name = 'trap_mdp-v0'
+    def __init__(self, new_attrs = {}):        
         self.display_prob = .01
         self.log_level = 'INFO'
         self.new_instance = True
@@ -105,13 +108,16 @@ class GlobalSettings(GenericSettings):
             os.path.join(self.root_dir, '..', 'Environments','gym-stochastic-mdp',
                                                'gym_stochastic_mdp','envs'),
             os.path.join(self.root_dir, '..', 'Environments','SpaceFortress',
-                                               'gym','envs'),
+                                               'gym_space_fortress','envs'),
             os.path.join(self.root_dir, '..', 'Environments','SpaceFortress',
-                                               'gym'),
+                                               'gym_space_fortress', 'envs',
+                                               'space_fortress'),
             os.path.join(self.root_dir, '..', 'Environments','SpaceFortress')]
-        
+        #TODO clean path loadings
         self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
+        self.attrs_in_dir = ['gl.date','env.env_name','ag.agent_type',
+                             'env.right_failure_prob', 'env.total_states']
         self.checkpoint_dir = '' #TODO
         self.logs_dir = '' #TODO
         self.settings_dir = '' #TODO
@@ -130,6 +136,11 @@ class AgentSettings(GenericSettings):
             normal = getattr(self, attr)
             scaled = self.scale * normal
             setattr(self, attr, scaled)
+            
+class HumanSettings(GenericSettings):
+    def _init_(self):
+       pass 
+        
         
 class DQNSettings(AgentSettings):
     """
@@ -138,8 +149,8 @@ class DQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
-        self.max_step = 100 * self.scale
-        self.memory_size = 5 * self.scale
+        self.max_step = 500 * self.scale
+        self.memory_size = 100 * self.scale
         
         self.batch_size = 32
         self.random_start = 30
@@ -155,7 +166,7 @@ class DQNSettings(AgentSettings):
         self.ep_start = 1.
         self.ep_end_t = self.memory_size
         
-        self.history_length = 4
+        self.history_length = 1
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
@@ -267,23 +278,47 @@ class MetaControllerSettings(AgentSettings):
     
 class EnvironmentSettings(GenericSettings):
     def __init__(self):
-        self.env_name = ''
+        self.env_name = ''   
+        self.random_start = False 
+        self.action_repeat = 1     
+        self.right_failure_prob = 0.
+class EZ_MDPSettings(EnvironmentSettings):
+    def __init__(self, new_attrs):
+        super().__init__()
+        self.total_states = 6
+        self.initial_state = 1
+        self.terminal_states = [0, 5]
+        self.total_actions = 2
+        self.right_failure_prob = 0.
+        self.update(new_attrs)
+       
+      
         
-
-    
-class MDPSettings(EnvironmentSettings):
+class Stochastic_MDPSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
         self.total_states = 6
         self.initial_state = 1
         self.terminal_states = [0]
         self.total_actions = 2
-        self.right_failure_prob = .5
+        self.right_failure_prob = 0.5
         self.update(new_attrs)
-        self.action_repeat = 1
-        self.random_start = False
-
-
+            
+        
+          
+class Trap_MDPSettings(EnvironmentSettings):
+    def __init__(self, new_attrs):
+        super().__init__()
+        self.total_states = 6
+        self.initial_state = 1
+        self.terminal_states = [0, 5]
+        self.total_actions = 2
+        self.update(new_attrs)
+     
+        self.trap_states = [3, 4]
+        
+        
+    
 class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
@@ -293,8 +328,6 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.screen_width = 84
         self.screen_height = 84
         self.update(new_attrs)
-
-
 
 
 

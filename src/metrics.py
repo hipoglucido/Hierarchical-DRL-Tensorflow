@@ -27,14 +27,15 @@ class Metrics:
 
     def _define_metrics(self, goals):
         self.scalar_global_tags = ['elapsed_time', 'games',
-                                 'avg_ep_elapsed_time','steps_per_episode']
+                                 'avg_ep_elapsed_time','steps_per_episode',
+                                 'total_episodes', 'debug_states_rfreq_sum']
                                  
                                            
         if self.is_hdqn:
             #hDQN
             self.mc_scalar_tags = ['mc_step_reward', 'mc_epsilon']
             self.c_scalar_tags = ['c_avg_goal_success', 'c_steps_by_goal']
-            
+            self.scalar_global_tags.append('debug_goals_rfreq_sum')
         else:
             #DQN
             self.ag_scalar_tags = ['step_reward', 'epsilon']
@@ -113,12 +114,17 @@ class Metrics:
         except AttributeError:
             self.start_timer()
         
-    def update_epsilon(self, goal_name, value):
+    def update_epsilon(self, value, goal_name = None):
         if goal_name is None:
-            #Meta-Controller
-            self.mc_epsilon = value
+            if self.is_hdqn:
+                #Meta-Controller
+                self.mc_epsilon = value
+            else:
+                self.epsilon = value
         else:
-            setattr(self, goal_name + "_epsilon", value)
+            #Controller epsilons are not updated here
+            #TODO clean
+            pass
         
         
     def store_goal_result(self, goal, achieved):
@@ -141,16 +147,21 @@ class Metrics:
             except ZeroDivisionError:                
                 success_rate = self.error_value
             setattr(self, name + '_success_rate', success_rate)
+            
             total_goals_set += frequency
             total_achieved_goals += successes
+            setattr(self, name + "_epsilon", goal.epsilon)
+        debug_goals_rfreq_sum = 0
         for _, goal in goals.items():
             name = goal.name
             frequency = getattr(self, name + "_freq")
             try:
                 rfreq = frequency / total_goals_set
+                debug_goals_rfreq_sum += rfreq
             except ZeroDivisionError:
                 rfreq = self.error_value
             setattr(self, name + "_rfreq", rfreq)
+        setattr(self, 'debug_goals_rfreq_sum', debug_goals_rfreq_sum)   
         try:
             c_avg_goal_success = total_achieved_goals/total_goals_set
         except ZeroDivisionError:
@@ -162,14 +173,19 @@ class Metrics:
         for state_name in self.state_names:
             visits = getattr(self, state_name + "_freq")
             total_visits += visits
+        debug_states_rfreq_sum = 0
         for state_name in self.state_names:
             visits = getattr(self, state_name + "_freq")
             try:
                 relative_visits = visits / total_visits
+                debug_states_rfreq_sum += relative_visits
             except ZeroDivisionError:
-                relative_visits = 0
+                relative_visits = self.error_value
+                
+            
             setattr(self, state_name + "_rfreq", relative_visits)
-        
+        setattr(self, 'debug_states_rfreq_sum', debug_states_rfreq_sum)
+         
     def update_best_score(self):
         if self.is_hdqn:
             self.mc_max_avg_ep_reward = max(self.mc_max_avg_ep_reward,
@@ -245,7 +261,8 @@ class Metrics:
     def filter_summary(self, summary):
         
         exclude_inside = []
-        exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward']
+        exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward',
+                          'ep_reward', 'step_reward']
         exclude_regex = []#['g[0-9]_epsilon', 'g[0-9]_successes','g[0-9]_freq']        
         
         for key in list(summary):
@@ -267,6 +284,7 @@ class Metrics:
         tags = self.scalar_tags + self.histogram_tags
         for tag in tags:
             summary[tag] = getattr(self, tag)
+          
         return summary
     
     def compute_test(self, prefix, update_count):
@@ -294,6 +312,13 @@ class Metrics:
             print(str(e))
             for s in ['max', 'min', 'avg']:
                 setattr(self, prefix + s +'_ep_reward', 0.)
+        total_episodes = len(ep_rewards)
+        setattr(self, 'total_episodes', total_episodes)
+        try:
+            steps_per_episode = test_step / total_episodes
+        except ZeroDivisionError:
+            steps_per_episode = self.error_value
+        setattr(self, 'steps_per_episode', steps_per_episode)
         
     def add_act(self, action, state):
         if self.is_hdqn:

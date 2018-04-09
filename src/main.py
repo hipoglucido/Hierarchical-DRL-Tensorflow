@@ -4,7 +4,7 @@ import random
 import tensorflow as tf
 
 from environment import Environment
-
+import os
 
 import configuration
 from configuration import Constants as CT
@@ -31,12 +31,13 @@ gl_args.add_argument("--display_prob", default = None, type = float)
 env_args = parser.add_argument_group('Environment')
 env_args.add_argument("--mdp_prob", default = None)
 env_args.add_argument("--env_name", choices = CT.env_names ,default = "ez_mdp-v0")
-env_args.add_argument("--right_failure_prob", default = None)
+env_args.add_argument("--right_failure_prob", default = None, type = float)
+env_args.add_argument("--total_states", default = None, type = int)
 # AGENT PARAMETERS
 ag_args = parser.add_argument_group('Agent')
 ag_args.add_argument("--scale", default = 50, type = int)
-ag_args.add_argument("--agent_type", default = None, type = str)
-ag_args.add_argument("--train", default = None, type = bool)
+ag_args.add_argument("--agent_type", choices = ['dqn', 'hdqn', 'human', None], default = None, type = str)
+ag_args.add_argument("--mode", choices = ['train', 'play', 'graph'], default = 'train', type = str)
 
 #
 args = vars(parser.parse_args())
@@ -59,6 +60,8 @@ if args['agent_type'] == 'dqn':
     ag_st = configuration.DQNSettings(args['scale'])
 elif args['agent_type'] == 'hdqn':
     ag_st = configuration.hDQNSettings(args['scale'])
+elif args['agent_type'] == 'human':
+    ag_st = configuration.HumanSettings()
 else:
     raise ValueError("Wrong agent")
     
@@ -73,11 +76,18 @@ if args['env_name'] in CT.SF_envs:
     #Space Fortress
     env_st = configuration.SpaceFortressSettings(new_attrs = args)
     
-elif args['env_name'] in CT.MDP_envs:
+elif args['env_name'] == 'stochastic_mdp-v0':
     #MDP
-    env_st = configuration.MDPSettings(new_attrs = args)
+    env_st = configuration.Stochastic_MDPSettings(new_attrs = args)
+elif args['env_name'] == 'ez_mdp-v0':
+    #MDP
+    env_st = configuration.EZ_MDPSettings(new_attrs = args)
+elif args['env_name'] == 'trap_mdp-v0':
+    #MDP
+    env_st = configuration.Trap_MDPSettings(new_attrs = args)
 else:
-    raise ValueError("Wrong env_name %s".format(args['env_name']))
+    raise ValueError("Wrong env_name %s, (env_names: s%)"\
+                     .format(args['env_name'], ', '.join(CT.env_names)))
 
 cnf.set_environment_settings(env_st)
 environment = Environment(cnf)
@@ -90,6 +100,8 @@ random.seed(gl_st.random_seed)
 if gl_st.gpu_fraction == '':
     raise ValueError("--gpu_fraction should be defined")
 
+if not gl_st.use_gpu:
+    os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
 frac = utils.calc_gpu_fraction(gl_st.gpu_fraction)
 gpu_options = tf.GPUOptions(
         per_process_gpu_memory_fraction=frac)
@@ -104,6 +116,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     elif ag_st.agent_type == 'hdqn':         
         agent = HDQNAgent(cnf, environment, sess)
         
+    elif ag_st.agent_type == 'human':
+        pass
     else:
         raise ValueError("Wrong agent %s".format())
         
@@ -116,6 +130,6 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     elif ag_st.mode == 'graph':
         sys.exit(0)
     else:
-        raise ValueError("Wrong mode " + str(gl.mode))
+        raise ValueError("Wrong mode " + str(gl_st.mode))
 #if __name__ == '__main__':
 #    tf.app.run()

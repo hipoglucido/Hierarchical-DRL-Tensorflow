@@ -5,6 +5,7 @@ import numpy as np
 from random import random
 import cv2 # remove at one point
 from time import sleep
+from environment import Environment
 from pynput.keyboard import KeyCode, Key, Listener
 from constants import GAME, Games, SCRIPTS, ScriptsAIM_3_All, LIBRARY_PATH, EnableScripts,\
     LIBRARY_NAME, FRAMESKIP, ScriptsSF_9, RECORD, RENDER_SPEED, RenderMode,\
