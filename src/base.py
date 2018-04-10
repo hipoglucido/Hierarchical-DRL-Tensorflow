@@ -58,6 +58,24 @@ class Agent(object):
         if self.ag.agent_type == 'hdqn':
             msg = msg + ', G: ' + str(self.current_goal.n)
         print(msg)
+    def console_print_terminal(self, reward):
+        if self.m.is_hdqn:
+            observation = self.c_history.get()[-1]
+        else:
+            observation = self.history.get()[-1]
+        if self.environment.env_name == 'key_mdp-v0':
+            out =  observation.reshape(self.environment.gym.shape) 
+        else:
+            out = self.environment.gym.one_hot_inverse(observation)
+        msg = 'S:\n' + str(out) + '\nR: ' + str(reward)
+        if reward == 1:
+            msg += "\tSUCCESS"
+        print(msg)
+        print("__________________________________")
+#        assert reward != 1
+        
+
+            
     def setup_summary(self, scalar_summary_tags, histogram_summary_tags):    
         """
         average.X   : mean X per step

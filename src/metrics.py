@@ -28,7 +28,8 @@ class Metrics:
     def _define_metrics(self, goals):
         self.scalar_global_tags = ['elapsed_time', 'games',
                                  'avg_ep_elapsed_time','steps_per_episode',
-                                 'total_episodes', 'debug_states_rfreq_sum']
+                                 'total_episodes', 'debug_states_rfreq_sum',
+                                 'debug_no_ep_error']
                                  
                                            
         if self.is_hdqn:
@@ -304,18 +305,19 @@ class Metrics:
         
         ep_rewards = getattr(self, prefix + 'ep_rewards')
         
-    
+        debug_no_ep_error = 0
         try:
             setattr(self, prefix + 'max_ep_reward', np.max(ep_rewards))
             setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
             setattr(self, prefix + 'avg_ep_reward', np.mean(ep_rewards))
         except Exception as e:
-            print(prefix + ", " + str(e))
-            
+            #print(prefix + ", " + str(e))
+            debug_no_ep_error = 1
             for s in ['max', 'min', 'avg']:
                 setattr(self, prefix + s +'_ep_reward', self.error_value)
         total_episodes = len(ep_rewards)
         setattr(self, 'total_episodes', total_episodes)
+        setattr(self, 'debug_no_ep_error', debug_no_ep_error)
         try:
             steps_per_episode = test_step / total_episodes
         except ZeroDivisionError:

@@ -126,7 +126,7 @@ class GlobalSettings(GenericSettings):
         
 
 class AgentSettings(GenericSettings):
-    def __init__(self, scale):
+    def __init__(self, scale = 1):
         self.scale = scale
         self.mode = 'train'
         
@@ -137,9 +137,10 @@ class AgentSettings(GenericSettings):
             scaled = self.scale * normal
             setattr(self, attr, scaled)
             
-class HumanSettings(GenericSettings):
-    def _init_(self):
-       pass 
+class HumanSettings(AgentSettings):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent_type = 'human'
         
         
 class DQNSettings(AgentSettings):
@@ -170,7 +171,7 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [500, 500, 500]
+        self.architecture = [100, 100, 100]
         
         
         self.test_step = 5 * self.scale
@@ -229,7 +230,7 @@ class ControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [500, 500, 500, 500, 500, 500, 500, 500]
+        self.architecture = [100, 100, 100]
         self.test_step = 5 * self.scale
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
@@ -267,7 +268,7 @@ class MetaControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 1. * self.scale
         
-        self.architecture = [500, 500, 500]
+        self.architecture = [100, 100, 100]
         
         self.test_step = 5 * self.scale
         self.save_step = self.test_step * 10
@@ -296,9 +297,9 @@ class Key_MDPSettings(EnvironmentSettings):
      def __init__(self, new_attrs): 
         super().__init__()
         self.factor = 3
+        self.update(new_attrs)
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
-        self.update(new_attrs)
         
         
 class Stochastic_MDPSettings(EnvironmentSettings):
@@ -323,8 +324,13 @@ class Trap_MDPSettings(EnvironmentSettings):
         self.update(new_attrs)
      
         self.trap_states = [3, 4]
-        
-        
+from enum import Enum        
+class RenderSpeed(Enum):
+	# actually more of a render delay than speed 
+	DEBUG=0
+	SLOW=42
+	MEDIUM=20
+	FAST=8        
     
 class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
@@ -334,6 +340,10 @@ class SpaceFortressSettings(EnvironmentSettings):
         
         self.screen_width = 84
         self.screen_height = 84
+        self.render_mode = "human" #minimal, rgb_array
+        self.render_speed = RenderSpeed.FAST
+        self.frameskip = 1
+        self.default_render_mode = 'rgb_array'
         self.update(new_attrs)
 
 

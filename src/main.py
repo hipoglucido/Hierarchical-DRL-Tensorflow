@@ -15,7 +15,7 @@ import argparse
 from pprint import pformat
 from hDQN_agent import HDQNAgent
 from DQN_agent import DQNAgent
-
+from human_agent import HumanAgent
 parser = argparse.ArgumentParser()
 
 
@@ -33,6 +33,8 @@ env_args.add_argument("--mdp_prob", default = None)
 env_args.add_argument("--env_name", choices = CT.env_names ,default = "ez_mdp-v0")
 env_args.add_argument("--right_failure_prob", default = None, type = float)
 env_args.add_argument("--total_states", default = None, type = int)
+env_args.add_argument("--factor", default = None, type = int)
+
 # AGENT PARAMETERS
 ag_args = parser.add_argument_group('Agent')
 ag_args.add_argument("--scale", default = 50, type = int)
@@ -64,7 +66,8 @@ elif args['agent_type'] == 'human':
     ag_st = configuration.HumanSettings()
 else:
     raise ValueError("Wrong agent")
-    
+ 
+
 ag_st.update(args)
 cnf.set_agent_settings(ag_st)
 
@@ -96,7 +99,6 @@ cnf.set_environment_settings(env_st)
 environment = Environment(cnf)
 
 
-
 tf.set_random_seed(gl_st.random_seed)
 random.seed(gl_st.random_seed)
 
@@ -120,7 +122,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         agent = HDQNAgent(cnf, environment, sess)
         
     elif ag_st.agent_type == 'human':
-        pass
+        agent = HumanAgent(cnf, environment)
     else:
         raise ValueError("Wrong agent %s".format())
         

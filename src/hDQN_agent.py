@@ -84,8 +84,11 @@ class HDQNAgent(Agent):
         return goals
     
     def set_next_goal(self, test_ep = None):
-        
-        ep = test_ep or self.mc_epsilon.steps_value(self.mc_step)
+        try:
+            step = self.c_step #TODO think about this
+        except:
+            step = 0
+        ep = test_ep or self.mc_epsilon.steps_value(step)
         self.m.update_epsilon(goal_name = None, value = ep)
         if random.random() < ep or self.gl.randomize:
             n_goal = random.randrange(self.ag.goal_size)
@@ -305,14 +308,13 @@ class HDQNAgent(Agent):
                 # Meta-controller learns                
                 self.mc_observe(screen, self.m.mc_step_reward,
                                                 self.current_goal.n, terminal)
-                success = self.m.mc_step_reward == 1
+                reward = self.m.mc_step_reward
                 self.m.mc_step_reward = 0    
                 if goal_achieved and self.display_episode:
                     pass#print("Achieved!!!", self.current_goal.n)
                 if terminal:
                     if self.display_episode:
-                        print(screen, success)
-                        
+                        self.console_print_terminal(reward)
                     self.m.close_episode()
                     self.new_episode()
                     
@@ -329,8 +331,8 @@ class HDQNAgent(Agent):
 #            print('mc', self.m.mc_update_count, self.mc_step)
             if self.display_episode:
                 pass#print("ext",ext_reward,', int',int_reward)
-            if terminal and self.display_episode:
-                print("__________________________") 
+#            if terminal and self.display_episode:
+#                print("__________________________") 
             
             
             if self.c_step < self.c.learn_start:

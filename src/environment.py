@@ -28,7 +28,7 @@ class Environment():
         cnf.env.update({"state_size" : self.state_size,
                        "action_size": self.action_size}, add = True)
         
-        
+      
     def load_gym(self):
         if self.env_name in CT.MDP_envs:
             import gym_stochastic_mdp
@@ -75,8 +75,9 @@ class Environment():
         self.gym.render()
 
     def after_act(self, action):
-        if self.display_current_episode:
-            pass#self.render()
+        pass
+#        if self.display_current_episode:
+#            pass#self.render()
         
     def act(self, action, is_training=True):
             cumulated_reward = 0
