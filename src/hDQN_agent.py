@@ -269,11 +269,11 @@ class HDQNAgent(Agent):
         self.mc_step = mc_start_step
         self.set_next_goal()
         
-        if self.gl.display_prob < .011:            
-            iterator = tqdm(range(c_start_step, self.c.max_step),
+        if self.gl.display_prob < .011 and 0:            
+            iterator = tqdm(range(c_start_step, self.ag.max_step),
                                               ncols=70, initial=c_start_step)
         else:
-            iterator = range(c_start_step, self.c.max_step)
+            iterator = range(c_start_step, self.ag.max_step)
         for self.c_step in iterator:
             if self.c_step == self.c.learn_start:                
                 self.m.restart()

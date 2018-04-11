@@ -6,3 +6,4 @@ The initial approach is to use [**h-DQN**](https://arxiv.org/abs/1604.06057)
 Starting code:
  - https://github.com/EthanMacdonald/h-DQN
  - https://github.com/devsisters/DQN-tensorflow
+ - https://github.com/DerkBarten/SpaceFortress

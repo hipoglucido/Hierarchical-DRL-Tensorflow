@@ -61,8 +61,10 @@ class Agent(object):
     def console_print_terminal(self, reward):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
+            perc = round(100 * self.c_step / self.c.max_step, 4)
         else:
             observation = self.history.get()[-1]
+            perc = round(100 * self.step / self.max_step, 4)
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
         else:
@@ -71,7 +73,7 @@ class Agent(object):
         if reward == 1:
             msg += "\tSUCCESS"
         print(msg)
-        print("__________________________________")
+        print("________________ " + str(perc) + "% ________________"[:150])
 #        assert reward != 1
         
 

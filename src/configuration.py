@@ -7,13 +7,40 @@ import utils
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pprint import pformat
-
+from pynput.keyboard import Key
 class Constants:
-    SF_envs = ['SFS-v0', 'SF-v0', 'SFC-v0', 'AIM-v0']
+    
+
+    key_to_sf = {
+        'Key.up'     : 65362,
+        'Key.right'  : 65362,
+        'Key.down'   : 65364,
+        'Key.left'  : 65361,
+        'Key.space'  : 32,
+        'Key.esc'    : -1,
+        'wait'     : 0
+    }
+    
+    SF_action_spaces = {
+        'SFC-v0'   : [Key.up, Key.right, Key.left, 'wait'],
+        'SF-v0'    : [],
+        'SFS-v0'   : [],
+        'AIM-v0'   : []
+            }
+    SF_envs = list(SF_action_spaces.keys())
+    key_to_action = {}
+    action_to_sf = {}
+    a = 4
+    for game in SF_envs:
+        key_to_action[game] = {str(k) : i for i, k in enumerate(SF_action_spaces[game])}
+        action_to_sf[game] = {}
+        for i, v in enumerate(SF_action_spaces[game]):
+            action_to_sf[game][i] = key_to_sf[str(v)]
+
+    print(key_to_action)
+    print(action_to_sf)
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     env_names = SF_envs + MDP_envs
-    
-   
     
 class Configuration:
     def __init__(self):
@@ -97,22 +124,24 @@ class GlobalSettings(GenericSettings):
         self.log_level = 'INFO'
         self.new_instance = True
         self.date = utils.get_timestamp()
-        self.action_repeat = 1
+
         self.use_gpu = True
         self.gpu_fraction = '1/1'
         self.random_seed = 7
         self.root_dir = os.path.normpath(os.path.join(os.path.dirname(
                                         os.path.realpath(__file__)), ".."))
+        self.environments_dir = os.path.join(self.root_dir, 'Environments')
+        
         self.env_dirs = [
-            os.path.join(self.root_dir, '..', 'Environments','gym-stochastic-mdp'),
-            os.path.join(self.root_dir, '..', 'Environments','gym-stochastic-mdp',
+            os.path.join(self.root_dir, 'Environments','gym-stochastic-mdp'),
+            os.path.join(self.root_dir,  'Environments','gym-stochastic-mdp',
                                                'gym_stochastic_mdp','envs'),
-            os.path.join(self.root_dir, '..', 'Environments','SpaceFortress',
+            os.path.join(self.root_dir,  'Environments','SpaceFortress',
                                                'gym_space_fortress','envs'),
-            os.path.join(self.root_dir, '..', 'Environments','SpaceFortress',
+            os.path.join(self.root_dir,  'Environments','SpaceFortress',
                                                'gym_space_fortress', 'envs',
                                                'space_fortress'),
-            os.path.join(self.root_dir, '..', 'Environments','SpaceFortress')]
+            os.path.join(self.root_dir,  'Environments','SpaceFortress')]
         #TODO clean path loadings
         self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
@@ -129,6 +158,7 @@ class AgentSettings(GenericSettings):
     def __init__(self, scale = 1):
         self.scale = scale
         self.mode = 'train'
+        self.max_step = self.scale * 5000
         
     
     def scale_attrs(self, attr_list):
@@ -150,8 +180,8 @@ class DQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
-        self.max_step = 500 * self.scale
-        self.memory_size = 500 * self.scale
+        #self.max_step = 500 * self.scale
+        self.memory_size = 100 * self.scale
         
         self.batch_size = 32
         self.random_start = 30
@@ -163,9 +193,9 @@ class DQNSettings(AgentSettings):
         self.learning_rate_decay = 0.93
         self.learning_rate_decay_step = 5 * self.scale
         
-        self.ep_end = 0.1
+        self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = self.memory_size
+        self.ep_end_t = int(self.max_step / 2)
         
         self.history_length = 1
         self.train_frequency = 4
@@ -174,7 +204,7 @@ class DQNSettings(AgentSettings):
         self.architecture = [100, 100, 100]
         
         
-        self.test_step = 5 * self.scale
+        self.test_step = 1000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -189,10 +219,11 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
+       
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
-    
+        
 
     def to_dict(self):       
         dictionary = vars(self).copy()
@@ -209,9 +240,9 @@ class ControllerSettings(AgentSettings):
         
         self.history_length = 1
         
-        self.memory_size = 500 * self.scale
+        self.memory_size = 100 * self.scale
         
-        self.max_step = 500 * self.scale
+#        self.max_step = 500 * self.scale
         
         self.batch_size = 32
         self.random_start = 30
@@ -228,10 +259,10 @@ class ControllerSettings(AgentSettings):
         self.ep_end_t = self.memory_size
         
         self.train_frequency = 4
-        self.learn_start = 5. * self.scale
+        self.learn_start = min(5. * self.scale, 100)
         
         self.architecture = [100, 100, 100]
-        self.test_step = 5 * self.scale
+        self.test_step = min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -247,11 +278,11 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 500 * self.scale
+        self.memory_size = 100 * self.scale
          
         #max_step = 5000 * scale
         
-        self.batch_size = 64
+        self.batch_size = 32
         self.random_start = 30
         
         self.discount = 0.99
@@ -261,16 +292,16 @@ class MetaControllerSettings(AgentSettings):
         self.learning_rate_decay = 0.94
         self.learning_rate_decay_step = 5 * self.scale
         
-        self.ep_end = 0.1
+        self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = self.memory_size
+        self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 1. * self.scale
+        self.learn_start = min(5. * self.scale, 20000)
         
         self.architecture = [100, 100, 100]
         
-        self.test_step = 5 * self.scale
+        self.test_step = min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -283,6 +314,7 @@ class EnvironmentSettings(GenericSettings):
         self.random_start = False 
         self.action_repeat = 1     
         self.right_failure_prob = 0.
+        
 class EZ_MDPSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
@@ -324,8 +356,8 @@ class Trap_MDPSettings(EnvironmentSettings):
         self.update(new_attrs)
      
         self.trap_states = [3, 4]
-from enum import Enum        
-class RenderSpeed(Enum):
+       
+class RenderSpeed():
 	# actually more of a render delay than speed 
 	DEBUG=0
 	SLOW=42
@@ -336,17 +368,20 @@ class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
         self.no_direction = False
+        self.library_path = '/home/victorgarcia/work/Hierarchical-DRL-Tensorflow/Environments/SpaceFortress/gym_space_fortress/envs/space_fortress/shared'
         self.libsuffix = ""
         
         self.screen_width = 84
         self.screen_height = 84
         self.render_mode = "human" #minimal, rgb_array
-        self.render_speed = RenderSpeed.FAST
-        self.frameskip = 1
+        self.render_delay = 0
+
+        self.record = False
+        self.stats = False
         self.default_render_mode = 'rgb_array'
         self.update(new_attrs)
 
-
+        
 
 
 

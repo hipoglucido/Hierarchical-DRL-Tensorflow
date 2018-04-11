@@ -12,7 +12,7 @@ class Environment():
     def __init__(self, cnf):
         self.env_name = cnf.env.env_name
         self.gym = self.load_gym()
-        self.gym.configure(cnf.env)
+        self.gym.configure(cnf)
         print(type(self.gym), vars(self.gym))
         self.action_size = self.gym.action_space.n
         self.state_size = self.gym.state_space.n
