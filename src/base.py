@@ -45,18 +45,24 @@ class Agent(object):
     def __init__(self, config):
         self._saver = None
         self.config = config
+        self.output = ''
+    
+    def add_output(self, txt):
+        self.output += txt
     def console_print(self, action):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
         else:
             observation = self.history.get()[-1]
+     
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = 'S:\n' + str(out) + '\nA: ' + str(action)
-        if self.ag.agent_type == 'hdqn':
+        msg = '\nS:\n' + str(out) + '\nA: ' + str(action)
+        if self.m.is_hdqn:
             msg = msg + ', G: ' + str(self.current_goal.n)
+        self.add_output(msg)
         print(msg)
     def console_print_terminal(self, reward):
         if self.m.is_hdqn:
@@ -64,16 +70,18 @@ class Agent(object):
             perc = round(100 * self.c_step / self.c.max_step, 4)
         else:
             observation = self.history.get()[-1]
-            perc = round(100 * self.step / self.max_step, 4)
+            perc = round(100 * self.step / self.ag.max_step, 4)
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = 'S:\n' + str(out) + '\nR: ' + str(reward)
+        msg = '\nS:\n' + str(out) + '\nR: ' + str(reward)
         if reward == 1:
             msg += "\tSUCCESS"
+        msg += "\n________________ " + str(perc) + "% ________________"[:150]
+        self.add_output(msg)
         print(msg)
-        print("________________ " + str(perc) + "% ________________"[:150])
+        
 #        assert reward != 1
         
 
@@ -107,7 +115,7 @@ class Agent(object):
             print("Histograms: ", ", ".join(histogram_summary_tags))
         self.writer = tf.summary.FileWriter('./logs/%s' % \
                                            self.model_dir, self.sess.graph)
-            
+         
     def inject_summary(self, tag_dict, step):
 
         summary_str_lists = self.sess.run(
@@ -156,6 +164,9 @@ class Agent(object):
         aux3 = aux1 + '_w'                               # mc_target_w
         aux4 = aux1 + '_q'                               # mc_target_q
         aux5 = 'w' if prefix == '' else prefix + 'w'     # mc_w
+        aux6 = aux4 + '_idx'                             # mc_target_q_idx        
+        aux7 = aux4 + '_with_idx'                        # mc_target_q_with_idx
+        aux8 = prefix + 'outputs_idx'                    # mc_outputs_idx
         target_w = {}
         
         
@@ -186,12 +197,19 @@ class Agent(object):
             
             target_q, weights, biases = \
                         linear(last_layer,
-                               config.q_output_length, name=aux4)
+                               config.q_output_length, name=aux4)                     
             print(target_q)
+            
             setattr(self, aux2, target_s_t)
             getattr(self, aux3)['q_w'] = weights
             getattr(self, aux3)['q_b'] = biases
             setattr(self, aux4, target_q)
+            if self.config.ag.double_q:               
+                #Double DQN                  
+                target_q_idx = tf.placeholder('int32', [None, None], aux8)
+                target_q_with_idx = tf.gather_nd(target_q, target_q_idx)
+                setattr(self, aux6, target_q_idx)
+                setattr(self, aux7, target_q_with_idx)
     
 
         with tf.variable_scope(prefix + 'pred_to_target'):
@@ -234,7 +252,18 @@ class Agent(object):
         else:
             print(" [!] Load FAILED: %s" % self.checkpoint_dir)
             return False
-
+        
+    def write_configuration(self):
+        filename = self.model_dir + "_" + "cnf.txt"
+        filepath = os.path.join(self.gl.logs_dir,self.model_dir, filename)
+        with open(filepath, 'w') as fp:
+            fp.write(self.config.to_str())
+    def write_output(self):
+        filename = self.model_dir + "_" + "episodes.txt"
+        filepath = os.path.join(self.gl.logs_dir,self.model_dir, filename)
+        with open(filepath, 'w') as fp:
+            fp.write(self.output)
+        
     @property
     def checkpoint_dir(self):
         return os.path.join('checkpoints', self.model_dir)
@@ -246,7 +275,11 @@ class Agent(object):
         for attr_fullname in self.config.gl.attrs_in_dir:
             [attr_type, attr_name] = attr_fullname.split('.')
             attr_value = getattr(getattr(self.config, attr_type), attr_name)
-            attrs.append(str(attr_value))
+            if 'architecture' in attr_name:
+                value = '-'.join([str(l) for l in attr_value])
+            else:
+                value = str(attr_value)
+            attrs.append(str(value))
         result = '_'.join(attrs)
         return result
 

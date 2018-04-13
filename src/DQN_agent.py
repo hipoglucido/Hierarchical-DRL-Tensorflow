@@ -41,7 +41,7 @@ class DQNAgent(Agent):
         
         self.build_dqn()
         self.config.print()
-
+        self.write_configuration()
    
     def train(self):
         start_step = 0    
@@ -51,11 +51,9 @@ class DQNAgent(Agent):
 
         self.m.start_timer()
             
-        if self.gl.display_prob < .011:            
-            iterator = tqdm(range(start_step, self.ag.max_step),
-                                              ncols=70, initial=start_step)
-        else:
-            iterator = range(start_step, self.ag.max_step)
+#        iterator = tqdm(range(start_step, self.ag.max_step),
+#                                              ncols=70, initial=start_step)
+        iterator = range(start_step, self.ag.max_step)
         for self.step in iterator:
             if self.step == self.ag.learn_start:                
                 self.m.restart()
@@ -70,16 +68,14 @@ class DQNAgent(Agent):
                 self.console_print(action)
                 
                 
+                
             # 3. observe
             self.observe(screen, reward, action, terminal)
             self.m.increment_external_reward(reward)
-            if self.display_episode:
-                print(reward)
+            
             if terminal:
                 if self.display_episode:
-                    success = reward == 1
-                    print('s:',screen, success)
-                    print("__________________________")
+                    self.console_print_terminal(reward)
                 self.m.mc_step_reward = 0
                 self.m.close_episode()
                 self.new_episode()
@@ -107,15 +103,16 @@ class DQNAgent(Agent):
                 summary = self.m.get_summary()
                 self.m.filter_summary(summary)
                 self.inject_summary(summary, self.step)
+                self.write_output()
 
             self.m.restart()
             
     def new_episode(self):
         #screen, reward, action, terminal = self.environment.new_random_game()
-        screen, _, _, _ = self.environment.new_game(False)        
+        screen, _, _, _ = self.environment.new_game()        
         self.history.fill_up(screen)
         self.display_episode = random.random() < self.gl.display_prob
-      
+        
         return 
     
     def predict_next_action(self, test_ep = None):
@@ -150,11 +147,21 @@ class DQNAgent(Agent):
         
         s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
         
-        q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
-
-        terminal = np.array(terminal) + 0.
-        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-        target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
+        
+        if self.config.ag.double_q:
+            pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
+            q_t_plus_1_with_pred_action = self.target_q_with_idx.eval({
+            self.target_s_t: s_t_plus_1,
+            self.target_q_idx: [[idx, pred_a] for idx, pred_a in enumerate(pred_action)]
+          })
+            target_q_t = (1. - terminal) * self.ag.discount * \
+                                        q_t_plus_1_with_pred_action + reward
+        else:
+            terminal = np.array(terminal) + 0.
+            q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
+    
+            max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+            target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
 
         _, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
                                              self.loss, self.q_summary], {
@@ -163,7 +170,7 @@ class DQNAgent(Agent):
             self.s_t: s_t,
             self.learning_rate_step: self.step,
         })
-        self.writer.add_summary(summary_str, self.step)
+        self.writer.add_summary(summary_str, self.step) #TODO what does this do?
 
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        
@@ -319,3 +326,30 @@ class DQNAgent(Agent):
         if not self.display:
             self.env.env.monitor.close()
             #gym.upload(gym_dir, writeup='https://github.com/devsisters/DQN-tensorflow', api_key='')
+
+"""
+    def q_learning_mini_batch(self):
+        if self.memory.count < self.history.length:
+            return
+        
+        s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+        
+        q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
+
+        terminal = np.array(terminal) + 0.
+        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+        target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
+
+        _, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
+                                             self.loss, self.q_summary], {
+            self.target_q_t: target_q_t,
+            self.action: action,
+            self.s_t: s_t,
+            self.learning_rate_step: self.step,
+        })
+        self.writer.add_summary(summary_str, self.step)
+
+        self.m.total_loss += loss
+        self.m.total_q += q_t.mean()        
+        self.m.update_count += 1
+"""

@@ -57,6 +57,7 @@ class HDQNAgent(Agent):
         
         self.build_hdqn()
         self.config.print()
+        self.write_configuration()
         #TODO turn config inmutable
     
 
@@ -366,6 +367,7 @@ class HDQNAgent(Agent):
                 summary = self.m.get_summary()
                 self.m.filter_summary(summary)
                 self.inject_summary(summary, self.c_step)
+                self.write_output()
 
             self.m.restart()
             

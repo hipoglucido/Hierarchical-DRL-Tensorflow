@@ -27,7 +27,7 @@ class Metrics:
 
     def _define_metrics(self, goals):
         self.scalar_global_tags = ['elapsed_time', 'games',
-                                 'avg_ep_elapsed_time','steps_per_episode',
+                                 'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
                                  'debug_no_ep_error']
                                  
@@ -263,7 +263,7 @@ class Metrics:
         
         exclude_inside = []
         exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward',
-                          'ep_reward', 'step_reward']
+                          'ep_reward', 'step_reward', 'avg_reward']
         exclude_regex = []#['g[0-9]_epsilon', 'g[0-9]_successes','g[0-9]_freq']        
         
         for key in list(summary):

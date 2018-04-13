@@ -9,6 +9,7 @@ import glob
 import gym
 import sys
 import inspect
+import argparse
 ################################
 #	 CONFIGURATION SETTINGS
 ################################
@@ -31,7 +32,8 @@ ENVS_DIR = os.path.join(ROOT_DIR, '..', 'Environments')
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 def get_timestamp():
-	return time.strftime("%Ss%Hh%Mm%b%d")
+#	return time.strftime("%Ss%Hh%Mm%b%d")
+	return time.strftime("%Hh%Mm%Ss")
 
 
 def insert_dirs(dirs):

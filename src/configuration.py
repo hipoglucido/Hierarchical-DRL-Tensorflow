@@ -30,17 +30,19 @@ class Constants:
     SF_envs = list(SF_action_spaces.keys())
     key_to_action = {}
     action_to_sf = {}
-    a = 4
+    
     for game in SF_envs:
         key_to_action[game] = {str(k) : i for i, k in enumerate(SF_action_spaces[game])}
         action_to_sf[game] = {}
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]
 
-    print(key_to_action)
-    print(action_to_sf)
+#    print(key_to_action)
+#    print(action_to_sf)
+    
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
-    env_names = SF_envs + MDP_envs
+    GYM_envs = ['CartPole-v0']
+    env_names = SF_envs + MDP_envs + GYM_envs
     
 class Configuration:
     def __init__(self):
@@ -131,9 +133,10 @@ class GlobalSettings(GenericSettings):
         self.root_dir = os.path.normpath(os.path.join(os.path.dirname(
                                         os.path.realpath(__file__)), ".."))
         self.environments_dir = os.path.join(self.root_dir, 'Environments')
-        
+    
         self.env_dirs = [
             os.path.join(self.root_dir, 'Environments','gym-stochastic-mdp'),
+            os.path.join(self.root_dir, 'src','rainbow'),
             os.path.join(self.root_dir,  'Environments','gym-stochastic-mdp',
                                                'gym_stochastic_mdp','envs'),
             os.path.join(self.root_dir,  'Environments','SpaceFortress',
@@ -145,10 +148,18 @@ class GlobalSettings(GenericSettings):
         #TODO clean path loadings
         self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
-        self.attrs_in_dir = ['gl.date','env.env_name','ag.agent_type',
-                             'env.right_failure_prob', 'env.total_states']
+        self.attrs_in_dir = [
+                 'env.factor',
+                 'gl.date',
+                 'env.env_name',
+                 'ag.agent_type',
+#                 'env.right_failure_prob', 
+#                 'env.total_states',
+                 'ag.architecture',
+                 'ag.double_q'
+                 ]
         self.checkpoint_dir = '' #TODO
-        self.logs_dir = '' #TODO
+        self.logs_dir = os.path.join(self.root_dir, 'src', 'logs') #TODO
         self.settings_dir = '' #TODO
         self.randomize = False
         self.update(new_attrs)
@@ -159,7 +170,7 @@ class AgentSettings(GenericSettings):
         self.scale = scale
         self.mode = 'train'
         self.max_step = self.scale * 5000
-        
+        self.double_q = True
     
     def scale_attrs(self, attr_list):
         for attr in attr_list:
@@ -201,7 +212,7 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [100, 100, 100]
+        self.architecture = [25, 25, 25]
         
         
         self.test_step = 1000#int(self.max_step / 10)
@@ -219,12 +230,16 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-       
+        self.architecture = [25, 25]
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         
-
+    def update(self, *args, **kwargs):
+        super().update(*args, **kwargs)
+        self.mc.architecture = self.architecture
+        self.c.architecture = self.architecture
+        
     def to_dict(self):       
         dictionary = vars(self).copy()
         dictionary['mc'] = self.mc.to_dict()
@@ -261,7 +276,7 @@ class ControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = min(5. * self.scale, 100)
         
-        self.architecture = [100, 100, 100]
+        self.architecture = []
         self.test_step = min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
@@ -299,7 +314,7 @@ class MetaControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = min(5. * self.scale, 20000)
         
-        self.architecture = [100, 100, 100]
+        self.architecture = []
         
         self.test_step = min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
@@ -332,6 +347,7 @@ class Key_MDPSettings(EnvironmentSettings):
         self.update(new_attrs)
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
+        self.random_reset = True
         
         
 class Stochastic_MDPSettings(EnvironmentSettings):
@@ -356,7 +372,13 @@ class Trap_MDPSettings(EnvironmentSettings):
         self.update(new_attrs)
      
         self.trap_states = [3, 4]
-       
+        
+class CartPoleSettings(EnvironmentSettings):
+    def __init__(self, new_attrs):
+        super().__init__()
+        self.update(new_attrs)
+        self.total_states = 4
+     
 class RenderSpeed():
 	# actually more of a render delay than speed 
 	DEBUG=0
