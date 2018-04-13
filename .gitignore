@@ -5,6 +5,7 @@ src/checkpoints/
 Environments/SpaceFortress/gym_space_fortress/__pycache__/
 Environments/SpaceFortress/gym_space_fortress/monitoring/__pycache__/
 Environments/SpaceFortress/gym_space_fortress/envs/space_fortress/__pycache__/
+*.pyc
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
