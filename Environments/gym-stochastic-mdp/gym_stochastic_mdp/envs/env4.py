@@ -17,7 +17,7 @@ class Key_MDPEnv(MDP):
                         2 : (self.apply_down, 'down'),
                         3 : (self.apply_left, 'left')}
         self.big_reward = 1
-        self.small_reward = 0
+        self.small_reward = 1
         self.negative_reward = -1
         
     def reset(self):
@@ -55,6 +55,7 @@ class Key_MDPEnv(MDP):
         self.action_space = gym.spaces.Discrete(4)
         self.state_space = gym.spaces.Discrete(self.factor ** 2)
         self.random_reset = cnf.env.random_reset
+        self.time_penalty = cnf.env.time_penalty
         self.reset()   
     def is_key_here(self, state):
         i, j = self.get_coords(state)
@@ -130,6 +131,7 @@ class Key_MDPEnv(MDP):
             reward, terminal = self.small_reward, True
         else:
             reward, terminal = 0, False
+        reward = reward - self.time_penalty
         observation = self.current_state.flatten()
         return observation, reward, terminal, info
         

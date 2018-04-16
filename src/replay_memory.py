@@ -14,8 +14,8 @@ class ReplayMemory:
 		self.model_dir = model_dir	 #TODO remove parameter
 		self.memory_size = config.memory_size
 		self.actions = np.empty(self.memory_size, dtype = np.uint8)
-		self.rewards = np.empty(self.memory_size, dtype = np.integer)
-		self.screens = np.empty((self.memory_size, screen_size), dtype = np.float16)
+		self.rewards = np.empty(self.memory_size, dtype = np.float16)
+		self.screens = np.empty((self.memory_size, screen_size), dtype = np.uint8)
 		self.terminals = np.empty(self.memory_size, dtype = np.bool)
 		self.history_length = config.history_length
 		self.dims = (screen_size,)
@@ -70,8 +70,7 @@ class ReplayMemory:
 				# if wraps over episode end, then get new one
 				# NB! poststate (last screen) can be terminal state!
 				if self.terminals[(index - self.history_length):index].any():
-					break
-					#continue
+					continue
 				# otherwise use this index
 				break
 			

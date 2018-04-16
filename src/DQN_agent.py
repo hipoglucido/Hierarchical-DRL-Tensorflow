@@ -65,7 +65,7 @@ class DQNAgent(Agent):
             screen, reward, terminal = self.environment.act(action, is_training = True)
             self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
             if self.display_episode:
-                self.console_print(action)
+                self.console_print(action, reward)
                 
                 
                 
@@ -104,7 +104,8 @@ class DQNAgent(Agent):
                 self.m.filter_summary(summary)
                 self.inject_summary(summary, self.step)
                 self.write_output()
-
+            if self.step > self.ag.max_step / 3:
+                pass#
             self.m.restart()
             
     def new_episode(self):
@@ -128,11 +129,16 @@ class DQNAgent(Agent):
 
     def observe(self, screen, reward, action, terminal):
         #reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
-        
+        # NB! screen is post-state, after action and reward
         assert np.sum(np.isnan(screen)) == 0, screen
+#        print("______________________________________")
+#        print("s_t\n",self.history.get().reshape(3,3))
+#        print("A",action)
+#        print("s_t_plus_one\n",screen.reshape(3,3))
+#        print("R", reward)
+#        print("terminal", terminal + 0)
         self.history.add(screen)
         self.memory.add(screen, reward, action, terminal)
-
         if self.step > self.ag.learn_start:
             if self.step % self.ag.train_frequency == 0:
                 self.q_learning_mini_batch()
@@ -146,9 +152,15 @@ class DQNAgent(Agent):
             return
         
         s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
-        
-        
+#        print("______________________________________")
+#        print("s_t\n",s_t[0].reshape(3,3))
+#        print("A",action[0])
+#        print("R", reward[0])
+#        print("s_t_plus_1\n", s_t_plus_1[0].reshape(3,3))
+#        print("terminal", terminal[0] + 0)
+#        assert reward[0] == 0 and not terminal[0]
         if self.config.ag.double_q:
+            
             pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
             q_t_plus_1_with_pred_action = self.target_q_with_idx.eval({
             self.target_s_t: s_t_plus_1,
@@ -175,9 +187,40 @@ class DQNAgent(Agent):
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        
         self.m.update_count += 1
-
+        
+    def add_dueling(self, prefix, input_layer):
+       
+        if prefix in ['', 'target_q']:
+            architecture = self.config.ag.architecture_duel
+        else:
+            if prefix == 'mc':
+                architecture = self.mc.architecture_duel
+            else:
+                architecture = self.c.architecture_duel
+            prefix = prefix + "_"
+      
+        last_layer = input_layer
+        
+        
+        value_hid = self.add_dense_layers(
+                        architecture, last_layer, prefix + 'value_hid')
+        adv_hid = self.add_dense_layers(
+                        architecture, last_layer, prefix + 'adv_hid')
+        value, w_val, b_val = linear(value_hid, 1, name= prefix + 'value_out')
+        adv, w_adv, b_adv = linear(adv_hid, self.environment.action_size,
+                                           name= prefix + 'adv_out')
+        
+        q = value + (adv - tf.reduce_mean(adv, reduction_indices = 1,
+                                          keepdims = True))
+        print(q)
+        return q
+        
+        
+        
     def build_dqn(self):
         self.w = {}
+        if self.ag.dueling:
+            self.value_hid_w, self.adv_hid_w = {}, {}
         with tf.variable_scope('step'):
             self.step_op = tf.Variable(0, trainable=False, name='step')
             self.step_input = tf.placeholder('int32', None, name='step_input')
@@ -196,12 +239,16 @@ class DQNAgent(Agent):
                                             lambda x, y: x * y, shape[1:])])
             
             last_layer = self.s_t_flat
-            last_layer = self.add_dense_layers(config = self.ag,
+            last_layer = self.add_dense_layers(architecture = self.ag.architecture,
                                                input_layer = last_layer,
                                                prefix = '')
-            self.q, self.w['q_w'], self.w['q_b'] = linear(last_layer,
-                                                  self.environment.action_size,
-                                                  name='q')
+            if self.ag.dueling:
+                self.q = self.add_dueling(prefix = '', input_layer = last_layer)
+            else:
+                self.q, self.w['q_w'], self.w['q_b'] = linear(last_layer,
+                                                      self.environment.action_size,
+                                                      name='q')
+            
             self.q_action = tf.argmax(self.q, axis=1)
             
             q_summary = []
@@ -237,11 +284,11 @@ class DQNAgent(Agent):
             self.learning_rate_op = tf.maximum(#*
                     self.ag.learning_rate_minimum,
                     tf.train.exponential_decay(
-                            self.ag.learning_rate,
-                            self.learning_rate_step,
-                            self.ag.learning_rate_decay_step,
-                            self.ag.learning_rate_decay,
-                            staircase=True))
+                            learning_rate = self.ag.learning_rate,
+                            global_step = self.learning_rate_step,
+                            decay_steps = self.ag.learning_rate_decay_step,
+                            decay_rate = self.ag.learning_rate_decay,
+                            staircase  = True))
             self.optim = tf.train.RMSPropOptimizer(
                                 self.learning_rate_op, momentum=0.95,
                                 epsilon=0.01).minimize(self.loss)

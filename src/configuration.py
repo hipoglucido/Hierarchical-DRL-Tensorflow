@@ -152,11 +152,14 @@ class GlobalSettings(GenericSettings):
                  'env.factor',
                  'gl.date',
                  'env.env_name',
-                 'ag.agent_type',
+#                 'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
                  'ag.architecture',
                  'ag.double_q'
+#                 'ag.learning_rate_minimum',
+#                 'ag.learning_rate',
+#                 'ag.learning_rate_decay'
                  ]
         self.checkpoint_dir = '' #TODO
         self.logs_dir = os.path.join(self.root_dir, 'src', 'logs') #TODO
@@ -170,7 +173,8 @@ class AgentSettings(GenericSettings):
         self.scale = scale
         self.mode = 'train'
         self.max_step = self.scale * 5000
-        self.double_q = True
+        self.double_q = False
+        self.dueling = False
     
     def scale_attrs(self, attr_list):
         for attr in attr_list:
@@ -198,11 +202,11 @@ class DQNSettings(AgentSettings):
         self.random_start = 30
         
         self.discount = 0.99
-        self.target_q_update_step = 1 * self.scale
-        self.learning_rate = 0.001
+        self.target_q_update_step = 10 * self.scale
+        self.learning_rate = 0.0005
         self.learning_rate_minimum = 0.00025
-        self.learning_rate_decay = 0.93
-        self.learning_rate_decay_step = 5 * self.scale
+        self.learning_rate_decay = 0.96
+        self.learning_rate_decay_step = int(.01 * self.max_step)
         
         self.ep_end = 0.05
         self.ep_start = 1.
@@ -212,8 +216,8 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [25, 25, 25]
-        
+        self.architecture = [25, 25]
+        self.architecture_duel = [10, 10]
         
         self.test_step = 1000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -264,20 +268,20 @@ class ControllerSettings(AgentSettings):
         
         self.discount = 0.99
         self.target_q_update_step = 1 * self.scale
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0005
         self.learning_rate_minimum = 0.00025
-        self.learning_rate_decay = 0.94
-        self.learning_rate_decay_step = 5 * self.scale
+        self.learning_rate_decay = 0.96
+        self.learning_rate_decay_step = int(.01 * self.max_step)
         
-        self.ep_end = 0.1
+        self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = self.memory_size
+        self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
         self.learn_start = min(5. * self.scale, 100)
         
         self.architecture = []
-        self.test_step = min(5 * self.scale, 500)
+        self.test_step = 1000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -314,13 +318,13 @@ class MetaControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = min(5. * self.scale, 20000)
         
-        self.architecture = []
+        self.architecture = None
         
-        self.test_step = min(5 * self.scale, 500)
-        self.save_step = self.test_step * 10
+#        self.test_step = min(5 * self.scale, 500)
+#        self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
-        self.ignore = ['ignore']
+#        self.ignore = ['ignore']
         self.prefix = 'mc'
     
 class EnvironmentSettings(GenericSettings):
@@ -348,6 +352,7 @@ class Key_MDPSettings(EnvironmentSettings):
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
         self.random_reset = True
+        self.time_penalty = 0.
         
         
 class Stochastic_MDPSettings(EnvironmentSettings):

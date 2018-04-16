@@ -41,6 +41,11 @@ ag_args.add_argument("--scale", default = 50, type = int)
 ag_args.add_argument("--agent_type", choices = ['dqn', 'hdqn', 'human', None], default = None, type = str)
 ag_args.add_argument("--architecture", default = None, type = str)
 ag_args.add_argument("--mode", default = 'train', type = str)
+ag_args.add_argument("--learning_rate", default = None, type = float)
+ag_args.add_argument("--learning_rate_minimum", default = None, type = float)
+ag_args.add_argument("--learning_rate_decay", default = None, type = float)
+ag_args.add_argument("--double_q", default = None, type = utils.str2bool)
+ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 
 #
 args = vars(parser.parse_args())
@@ -77,7 +82,7 @@ for args in args_list:
     else:
         raise ValueError("Wrong agent %s" % args['agent_type'])
      
-    
+    print(args)
     ag_st.update(args)
     cnf.set_agent_settings(ag_st)
     
@@ -127,7 +132,6 @@ for args in args_list:
 
         
         if ag_st.agent_type == 'dqn':
-            from rain import agent
             agent = DQNAgent(cnf, environment, sess)
             
         elif ag_st.agent_type == 'hdqn':         

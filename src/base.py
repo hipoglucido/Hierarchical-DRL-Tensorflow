@@ -49,7 +49,7 @@ class Agent(object):
     
     def add_output(self, txt):
         self.output += txt
-    def console_print(self, action):
+    def console_print(self, action, reward):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
         else:
@@ -59,7 +59,7 @@ class Agent(object):
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = '\nS:\n' + str(out) + '\nA: ' + str(action)
+        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
         if self.m.is_hdqn:
             msg = msg + ', G: ' + str(self.current_goal.n)
         self.add_output(msg)
@@ -68,14 +68,16 @@ class Agent(object):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
             perc = round(100 * self.c_step / self.c.max_step, 4)
+            ep_r = self.mc_ep_reward
         else:
             observation = self.history.get()[-1]
             perc = round(100 * self.step / self.ag.max_step, 4)
+            ep_r = self.m.ep_reward
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = '\nS:\n' + str(out) + '\nR: ' + str(reward)
+        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
         if reward == 1:
             msg += "\tSUCCESS"
         msg += "\n________________ " + str(perc) + "% ________________"[:150]
@@ -125,24 +127,20 @@ class Agent(object):
         for summary_str in summary_str_lists:
             self.writer.add_summary(summary_str, step)
             
-    def add_dense_layers(self, config, input_layer, prefix):
-        #TODO Maybe ommit prefix passing specific config
+    def add_dense_layers(self, architecture, input_layer, prefix):
+        #TODO delete config parameter
         last_layer = input_layer
         print(last_layer)
         prefix = prefix + "_" if prefix != '' else prefix
         
-        if config.activation_fn == 'relu':
-            activation_fn = tf.nn.relu
-        else:
-            raise ValueError("Wrong activaction function")
-            
-        for i, neurons in enumerate(config.architecture):
+
+        for i, neurons in enumerate(architecture):
             number = 'l' + str(i + 1)
             layer_name = prefix + number
             layer, weights, biases = \
                 ops.linear(input_ = last_layer,
                        output_size = neurons,
-                       activation_fn = activation_fn,
+                       activation_fn = tf.nn.relu,
                        name = layer_name)
             setattr(self, layer_name, layer)
             getattr(self, prefix + 'w')[number + "_w"] = weights
@@ -189,15 +187,21 @@ class Agent(object):
                 last_layer = self.target_gs_t
             else:
                 last_layer = target_s_t_flat
-            last_layer = self.add_dense_layers(config = config,
+                
+                
+            last_layer = self.add_dense_layers(architecture = config.architecture,
                                                input_layer = last_layer,
                                                prefix = aux1)
             
             
             
-            target_q, weights, biases = \
-                        linear(last_layer,
-                               config.q_output_length, name=aux4)                     
+            if self.ag.dueling:
+                print(aux4)
+                target_q = self.add_dueling(prefix = aux4, input_layer = last_layer)
+            else:
+                target_q, weights, biases = \
+                            linear(last_layer,
+                                   config.q_output_length, name=aux4)                     
             print(target_q)
             
             setattr(self, aux2, target_s_t)
@@ -271,7 +275,7 @@ class Agent(object):
             
     @property
     def model_dir(self):
-        attrs = []
+        chain = []
         for attr_fullname in self.config.gl.attrs_in_dir:
             [attr_type, attr_name] = attr_fullname.split('.')
             attr_value = getattr(getattr(self.config, attr_type), attr_name)
@@ -279,8 +283,10 @@ class Agent(object):
                 value = '-'.join([str(l) for l in attr_value])
             else:
                 value = str(attr_value)
-            attrs.append(str(value))
-        result = '_'.join(attrs)
+            attr_name_initials = ''.join([word[0] for word in attr_name.split('_')])
+            part = attr_name_initials + str(value)
+            chain.append(part)
+        result = '_'.join(chain)
         return result
 
     @property
