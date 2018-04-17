@@ -66,21 +66,23 @@ class Experiment():
         elif name == 'exp4':
             #HYPERPARAMETER SEARCH
             architectures = [
-                    [10],
-                    [25, 25],
-                    [100],
-                    [100, 100]                    
+                    [25],
+                    [5, 5, 5, 5],
+                    [25, 25]                  
                     ]
-            
+            duelings = [1, 0]
+            double_qs = [1, 0]
             hyperparameter_space = {
-                    'learning_rate_minimums' : [0.00025, 0.0001],
-                    'learning_rates'         : [0.001, 0.1, 0.0005],
-                    'architectures'          : architectures
+#                    'learning_rate_minimums' : [0.00025, 0.0001],
+#                    'learning_rates'         : [0.001, 0.1, 0.0005],
+                    'architectures'          : architectures,
+                    'duelings'               : duelings,
+                    'double_qs'              : double_qs
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 25,
-                    'factor'                : 3,
+                    'scale'                 : 100,
+                    'factor'                : 7,
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.05,
                     'use_gpu'               : True,

@@ -149,9 +149,11 @@ for args in args_list:
         elif ag_st.mode == 'play':
             agent.play()
         elif ag_st.mode == 'graph':
-            sys.exit(0)
+            pass
         else:
             raise ValueError("Wrong mode " + str(gl_st.mode))
+        
+        agent.show_attrs()
     tf.reset_default_graph()
     #if __name__ == '__main__':
     #    tf.app.run()

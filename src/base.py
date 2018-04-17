@@ -126,29 +126,40 @@ class Agent(object):
                                                           in tag_dict.items()})
         for summary_str in summary_str_lists:
             self.writer.add_summary(summary_str, step)
-            
-    def add_dense_layers(self, architecture, input_layer, prefix):
+    def show_attrs(self):
+        import pprint
+        attrs = vars(self).copy()
+        try:
+            del attrs['output']
+        except:
+            pass
+        pprint.pprint(attrs)
+    def add_dense_layers(self, architecture, input_layer, parameters, name_aux):
         #TODO delete config parameter
         last_layer = input_layer
-        print(last_layer)
-        prefix = prefix + "_" if prefix != '' else prefix
-        
-
+        print(last_layer, "as input")
+#        prefix = prefix + "_" if prefix != '' else prefix
+#        
+#        parameters = getattr(self, prefix + 'w')
+        histograms = []
         for i, neurons in enumerate(architecture):
             number = 'l' + str(i + 1)
-            layer_name = prefix + number
+            layer_name = name_aux + number
             layer, weights, biases = \
                 ops.linear(input_ = last_layer,
                        output_size = neurons,
                        activation_fn = tf.nn.relu,
                        name = layer_name)
-            setattr(self, layer_name, layer)
-            getattr(self, prefix + 'w')[number + "_w"] = weights
-            getattr(self, prefix + 'w')[number + "_b"] = biases
+            histograms += [tf.summary.histogram("w_" + layer_name, weights),
+                           tf.summary.histogram("b_" + layer_name, biases)]
+#                           tf.summary.histogram("o_" + layer_name, layer)]
+            #setattr(self, layer_name, layer)
+            parameters[layer_name + "_w"] = weights
+            parameters[layer_name + "_b"] = biases
             last_layer = layer
 #            print(layer_name, layer.get_shape().as_list(), 'added')        
-            print(layer, 'added')
-        return last_layer
+            print(layer, 'added', layer_name)
+        return last_layer, histograms
 
     def create_target(self, config):
         print("Creating target...")
@@ -188,25 +199,27 @@ class Agent(object):
             else:
                 last_layer = target_s_t_flat
                 
-                
-            last_layer = self.add_dense_layers(architecture = config.architecture,
-                                               input_layer = last_layer,
-                                               prefix = aux1)
+#            histograms_ = getattr(self, prefix + 'histograms')
             
+            last_layer, _ = self.add_dense_layers(architecture = config.architecture,
+                                               input_layer = last_layer,
+                                               parameters = target_w,
+                                               name_aux = prefix)
+#            histograms_ += histograms
             
             
             if self.ag.dueling:
                 print(aux4)
-                target_q = self.add_dueling(prefix = aux4, input_layer = last_layer)
+                target_q = self.add_dueling(prefix = aux1, input_layer = last_layer)
             else:
                 target_q, weights, biases = \
                             linear(last_layer,
-                                   config.q_output_length, name=aux4)                     
+                                   config.q_output_length, name=aux4)  
+                getattr(self, aux3)['q_w'] = weights
+                getattr(self, aux3)['q_b'] = biases                   
             print(target_q)
             
             setattr(self, aux2, target_s_t)
-            getattr(self, aux3)['q_w'] = weights
-            getattr(self, aux3)['q_b'] = biases
             setattr(self, aux4, target_q)
             if self.config.ag.double_q:               
                 #Double DQN                  
@@ -215,7 +228,7 @@ class Agent(object):
                 setattr(self, aux6, target_q_idx)
                 setattr(self, aux7, target_q_with_idx)
     
-
+        self.show_attrs()
         with tf.variable_scope(prefix + 'pred_to_target'):
             target_w_input = {}
             target_w_assign_op = {}

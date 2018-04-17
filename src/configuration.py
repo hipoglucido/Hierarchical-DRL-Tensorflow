@@ -156,7 +156,8 @@ class GlobalSettings(GenericSettings):
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
                  'ag.architecture',
-                 'ag.double_q'
+                 'ag.double_q',
+                 'ag.dueling'
 #                 'ag.learning_rate_minimum',
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
@@ -203,10 +204,10 @@ class DQNSettings(AgentSettings):
         
         self.discount = 0.99
         self.target_q_update_step = 10 * self.scale
-        self.learning_rate = 0.0005
-        self.learning_rate_minimum = 0.00025
+        self.learning_rate = 0.00025
+        self.learning_rate_minimum = 0.000025
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = int(.01 * self.max_step)
+        self.learning_rate_decay_step = int(.001 * self.max_step)
         
         self.ep_end = 0.05
         self.ep_start = 1.
@@ -216,8 +217,8 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [25, 25]
-        self.architecture_duel = [10, 10]
+        self.architecture = [5, 5, 5, 5]
+        self.architecture_duel = [5]
         
         self.test_step = 1000#int(self.max_step / 10)
         self.save_step = self.test_step * 10

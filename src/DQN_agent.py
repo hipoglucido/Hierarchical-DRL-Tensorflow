@@ -40,7 +40,7 @@ class DQNAgent(Agent):
         self.m = Metrics(self.config)
         
         self.build_dqn()
-        self.config.print()
+#        self.config.print()
         self.write_configuration()
    
     def train(self):
@@ -87,7 +87,7 @@ class DQNAgent(Agent):
                 continue   
             self.m.compute_test(prefix = '', update_count = self.m.update_count)
             self.m.compute_state_visits()
-            self.m.print('')
+#            self.m.print('')
             if self.m.has_improved(prefix = ''):
                 self.step_assign_op.eval(
                         {self.step_input: self.step + 1})
@@ -159,6 +159,10 @@ class DQNAgent(Agent):
 #        print("s_t_plus_1\n", s_t_plus_1[0].reshape(3,3))
 #        print("terminal", terminal[0] + 0)
 #        assert reward[0] == 0 and not terminal[0]
+
+
+        
+        
         if self.config.ag.double_q:
             
             pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
@@ -189,27 +193,42 @@ class DQNAgent(Agent):
         self.m.update_count += 1
         
     def add_dueling(self, prefix, input_layer):
-       
-        if prefix in ['', 'target_q']:
+        print("ADDING due", prefix)
+        if prefix in ['', 'target']:
             architecture = self.config.ag.architecture_duel
         else:
             if prefix == 'mc':
                 architecture = self.mc.architecture_duel
-            else:
+            elif prefix == 'c':
                 architecture = self.c.architecture_duel
-            prefix = prefix + "_"
-      
+            else:
+                assert 0
+        prefix = prefix + "_" if prefix != '' else prefix
+        parameters = getattr(self, prefix + 'w')
+        prefix = prefix.replace("target_", "")
         last_layer = input_layer
         
+        print("adding dense into ", prefix+'w')
+        value_hid, histograms_v = self.add_dense_layers(
+                        architecture = architecture,
+                        input_layer = last_layer,
+                        parameters = parameters,
+                        name_aux = prefix + 'value_hid')
+        adv_hid, histograms_a = self.add_dense_layers(
+                        architecture = architecture,
+                        input_layer = last_layer,
+                        parameters = parameters,
+                        name_aux = prefix + 'adv_hid')
+        aux1 = 'value_out'
+        aux2 = 'adv_out'
         
-        value_hid = self.add_dense_layers(
-                        architecture, last_layer, prefix + 'value_hid')
-        adv_hid = self.add_dense_layers(
-                        architecture, last_layer, prefix + 'adv_hid')
-        value, w_val, b_val = linear(value_hid, 1, name= prefix + 'value_out')
+        value, w_val, b_val = linear(value_hid, 1, name= aux1)
         adv, w_adv, b_adv = linear(adv_hid, self.environment.action_size,
-                                           name= prefix + 'adv_out')
-        
+                                           name= aux2)
+        parameters[aux1 + "_w"] = w_val
+        parameters[aux1 + "_b"] = b_val
+        parameters[aux2 + "_w"] = w_adv
+        parameters[aux2 + "_b"] = b_adv
         q = value + (adv - tf.reduce_mean(adv, reduction_indices = 1,
                                           keepdims = True))
         print(q)
@@ -219,8 +238,7 @@ class DQNAgent(Agent):
         
     def build_dqn(self):
         self.w = {}
-        if self.ag.dueling:
-            self.value_hid_w, self.adv_hid_w = {}, {}
+        
         with tf.variable_scope('step'):
             self.step_op = tf.Variable(0, trainable=False, name='step')
             self.step_input = tf.placeholder('int32', None, name='step_input')
@@ -239,9 +257,10 @@ class DQNAgent(Agent):
                                             lambda x, y: x * y, shape[1:])])
             
             last_layer = self.s_t_flat
-            last_layer = self.add_dense_layers(architecture = self.ag.architecture,
+            last_layer, histograms = self.add_dense_layers(architecture = self.ag.architecture,
                                                input_layer = last_layer,
-                                               prefix = '')
+                                               parameters = self.w,
+                                               name_aux = '')
             if self.ag.dueling:
                 self.q = self.add_dueling(prefix = '', input_layer = last_layer)
             else:
@@ -251,7 +270,7 @@ class DQNAgent(Agent):
             
             self.q_action = tf.argmax(self.q, axis=1)
             
-            q_summary = []
+            q_summary = histograms
             avg_q = tf.reduce_mean(self.q, 0)
     
             
@@ -302,9 +321,23 @@ class DQNAgent(Agent):
         self.update_target_q_network()
 
     def update_target_q_network(self):
+#        print("_____________________")
+#        for name in self.w.keys():
+#            print(name)
+#            parameters = self.w[name].eval()
+#            parameters_target = self.target_w[name].eval()
+##            print(parameters)
+##            print(parameters_target)
+#            print(abs(parameters - parameters_target).sum())
         for name in self.w.keys():
+#            print(name)
+            parameters = self.w[name].eval()
+#            parameters_target = self.target_w[name].eval()
+#            print(parameters)
+#            print("******")
+#            print(parameters_target)
             self.target_w_assign_op[name].eval(
-                            {self.target_w_input[name]:self.w[name].eval()})
+                            {self.target_w_input[name]: parameters})
 
     def save_weight_to_pkl(self):
         if not os.path.exists(self.weight_dir):
