@@ -67,11 +67,19 @@ class Experiment():
             #HYPERPARAMETER SEARCH
             architectures = [
                     [25],
-                    [5, 5, 5, 5],
-                    [25, 25]                  
+                    [100, 100],
+#                    [5, 5, 5, 5],
+                    [10, 10, 10]
+#                    [25, 25]                  
                     ]
-            duelings = [1, 0]
-            double_qs = [1, 0]
+            duelings = [
+#                    1,
+                    0
+                    ]
+            double_qs = [
+                    1,
+                    0
+                    ]
             hyperparameter_space = {
 #                    'learning_rate_minimums' : [0.00025, 0.0001],
 #                    'learning_rates'         : [0.001, 0.1, 0.0005],
@@ -81,8 +89,8 @@ class Experiment():
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 100,
-                    'factor'                : 7,
+                    'scale'                 : 20,
+                    'factor'                : 3,
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.05,
                     'use_gpu'               : True,

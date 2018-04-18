@@ -40,7 +40,7 @@ class DQNAgent(Agent):
         self.m = Metrics(self.config)
         
         self.build_dqn()
-#        self.config.print()
+        self.config.print()
         self.write_configuration()
    
     def train(self):
@@ -147,6 +147,7 @@ class DQNAgent(Agent):
                                             self.ag.target_q_update_step - 1:
                 self.update_target_q_network()
 
+
     def q_learning_mini_batch(self):
         if self.memory.count < self.history.length:
             return
@@ -163,22 +164,25 @@ class DQNAgent(Agent):
 
         
         
-        if self.config.ag.double_q:
-            
-            pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
-            q_t_plus_1_with_pred_action = self.target_q_with_idx.eval({
-            self.target_s_t: s_t_plus_1,
-            self.target_q_idx: [[idx, pred_a] for idx, pred_a in enumerate(pred_action)]
-          })
-            target_q_t = (1. - terminal) * self.ag.discount * \
-                                        q_t_plus_1_with_pred_action + reward
-        else:
-            terminal = np.array(terminal) + 0.
-            q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
-    
-            max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-            target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
-
+#        if self.config.ag.double_q:
+#            
+#            pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
+#            q_t_plus_1_with_pred_action = self.target_q_with_idx.eval({
+#            self.target_s_t: s_t_plus_1,
+#            self.target_q_idx: [[idx, pred_a] for idx, pred_a in enumerate(pred_action)]
+#          })
+#            target_q_t = (1. - terminal) * self.ag.discount * \
+#                                        q_t_plus_1_with_pred_action + reward
+#        else:
+#            terminal = np.array(terminal) + 0.
+#            q_t_plus_1 = self.target_q.eval({self.target_s_t: s_t_plus_1})
+#    
+#            max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+#            target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
+        target_q_t = self.generate_target_q_t(prefix       = '',
+                                              reward       = reward,
+                                              s_t_plus_1   = s_t_plus_1,
+                                              terminal     = terminal)
         _, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
                                              self.loss, self.q_summary], {
             self.target_q_t: target_q_t,
@@ -191,48 +195,7 @@ class DQNAgent(Agent):
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        
         self.m.update_count += 1
-        
-    def add_dueling(self, prefix, input_layer):
-        print("ADDING due", prefix)
-        if prefix in ['', 'target']:
-            architecture = self.config.ag.architecture_duel
-        else:
-            if prefix == 'mc':
-                architecture = self.mc.architecture_duel
-            elif prefix == 'c':
-                architecture = self.c.architecture_duel
-            else:
-                assert 0
-        prefix = prefix + "_" if prefix != '' else prefix
-        parameters = getattr(self, prefix + 'w')
-        prefix = prefix.replace("target_", "")
-        last_layer = input_layer
-        
-        print("adding dense into ", prefix+'w')
-        value_hid, histograms_v = self.add_dense_layers(
-                        architecture = architecture,
-                        input_layer = last_layer,
-                        parameters = parameters,
-                        name_aux = prefix + 'value_hid')
-        adv_hid, histograms_a = self.add_dense_layers(
-                        architecture = architecture,
-                        input_layer = last_layer,
-                        parameters = parameters,
-                        name_aux = prefix + 'adv_hid')
-        aux1 = 'value_out'
-        aux2 = 'adv_out'
-        
-        value, w_val, b_val = linear(value_hid, 1, name= aux1)
-        adv, w_adv, b_adv = linear(adv_hid, self.environment.action_size,
-                                           name= aux2)
-        parameters[aux1 + "_w"] = w_val
-        parameters[aux1 + "_b"] = b_val
-        parameters[aux2 + "_w"] = w_adv
-        parameters[aux2 + "_b"] = b_adv
-        q = value + (adv - tf.reduce_mean(adv, reduction_indices = 1,
-                                          keepdims = True))
-        print(q)
-        return q
+
         
         
         
@@ -273,8 +236,9 @@ class DQNAgent(Agent):
             q_summary = histograms
             avg_q = tf.reduce_mean(self.q, 0)
     
-            
+            print(avg_q)
             for idx in range(self.ag.q_output_length):
+                print(idx, avg_q[idx])
                 q_summary.append(tf.summary.histogram('q/%s' % idx, avg_q[idx]))
             self.q_summary = tf.summary.merge(q_summary, 'q_summary')
 
@@ -304,10 +268,10 @@ class DQNAgent(Agent):
                     self.ag.learning_rate_minimum,
                     tf.train.exponential_decay(
                             learning_rate = self.ag.learning_rate,
-                            global_step = self.learning_rate_step,
-                            decay_steps = self.ag.learning_rate_decay_step,
-                            decay_rate = self.ag.learning_rate_decay,
-                            staircase  = True))
+                            global_step   = self.learning_rate_step,
+                            decay_steps   = self.ag.learning_rate_decay_step,
+                            decay_rate    = self.ag.learning_rate_decay,
+                            staircase     = True))
             self.optim = tf.train.RMSPropOptimizer(
                                 self.learning_rate_op, momentum=0.95,
                                 epsilon=0.01).minimize(self.loss)

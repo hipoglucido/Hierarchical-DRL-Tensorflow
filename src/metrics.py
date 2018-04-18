@@ -288,14 +288,17 @@ class Metrics:
           
         return summary
     
-    def compute_test(self, prefix, update_count):
+    def compute_test(self, prefix, update_count, mc_steps = None):
         if not update_count > 0:
             #Model hasn't started training
             return
         assert prefix in ['c', 'mc', '']
-        prefix = prefix + '_' if prefix is not '' else prefix
+        prefix = prefix + '_' if prefix != '' else prefix
         config = getattr(self, prefix + 'params')
-        test_step = config.test_step
+        if prefix == 'mc_':
+            test_step = mc_steps    
+        else:
+            test_step = config.test_step
         total_reward = getattr(self, prefix + 'total_reward')
         setattr(self, prefix + 'avg_reward', total_reward / test_step)
         total_loss = getattr(self, prefix + 'total_loss')

@@ -217,7 +217,7 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [5, 5, 5, 5]
+        self.architecture = [10, 10]
         self.architecture_duel = [5]
         
         self.test_step = 1000#int(self.max_step / 10)
@@ -236,14 +236,18 @@ class hDQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
         self.architecture = [25, 25]
+        self.architecture_duel = [10]
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
+        self.discount = 0.99
         
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
         self.mc.architecture = self.architecture
         self.c.architecture = self.architecture
+        self.mc.architecture_duel = self.architecture_duel
+        self.c.architecture_duel = self.architecture_duel
         
     def to_dict(self):       
         dictionary = vars(self).copy()
@@ -267,7 +271,7 @@ class ControllerSettings(AgentSettings):
         self.batch_size = 32
         self.random_start = 30
         
-        self.discount = 0.99
+        
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 0.0005
         self.learning_rate_minimum = 0.00025
@@ -281,7 +285,10 @@ class ControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = min(5. * self.scale, 100)
         
-        self.architecture = []
+        
+        self.architecture = None
+        self.architecture_duel = None
+        
         self.test_step = 1000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
@@ -305,7 +312,7 @@ class MetaControllerSettings(AgentSettings):
         self.batch_size = 32
         self.random_start = 30
         
-        self.discount = 0.99
+        
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 0.001
         self.learning_rate_minimum = 0.00025
@@ -320,6 +327,7 @@ class MetaControllerSettings(AgentSettings):
         self.learn_start = min(5. * self.scale, 20000)
         
         self.architecture = None
+        self.architecture_duel = None
         
 #        self.test_step = min(5 * self.scale, 500)
 #        self.save_step = self.test_step * 10

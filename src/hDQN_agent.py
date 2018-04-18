@@ -43,20 +43,22 @@ class HDQNAgent(Agent):
         self.c_history = History(length_ = self.c.history_length,
                                  size    = self.environment.state_size)
         
-        self.mc_memory = ReplayMemory(config      = self.mc,
-                                      model_dir  = self.model_dir,
-                                      screen_size = self.environment.state_size)
-        self.c_memory = ReplayMemory(config      = self.c,
-                                      model_dir  = self.model_dir,
-                                      screen_size = self.environment.state_size + \
-                                      self.ag.goal_size)
+        self.mc_memory = ReplayMemory(config       = self.mc,
+                                      model_dir    = self.model_dir,
+                                      screen_size  = self.environment.state_size)
+        self.c_memory = ReplayMemory(config        = self.c,
+                                      model_dir    = self.model_dir,
+                                      screen_size  = self.environment.state_size + \
+                                                          self.ag.goal_size)
 
         
             
         self.m = Metrics(self.config, self.goals)
         
-        self.build_hdqn()
+        
+        
         self.config.print()
+        self.build_hdqn()
         self.write_configuration()
         #TODO turn config inmutable
     
@@ -91,11 +93,12 @@ class HDQNAgent(Agent):
             step = 0
         ep = test_ep or self.mc_epsilon.steps_value(step)
         self.m.update_epsilon(goal_name = None, value = ep)
-        if random.random() < ep or self.gl.randomize:
+        if random.random() < ep or self.gl.randomize or 1:
+            
             n_goal = random.randrange(self.ag.goal_size)
         else:
             screens = self.mc_history.get()
-            n_goal = self.mc_q_goal.eval({self.mc_s_t: [screens]})[0]
+            n_goal = self.mc_q_action.eval({self.mc_s_t: [screens]})[0]
 #        n_goal = 5
         self.m.mc_goals.append(n_goal)
         goal = self.get_goal(n_goal)
@@ -164,12 +167,12 @@ class HDQNAgent(Agent):
    
         s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
         
-        q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
-
-        terminal = np.array(terminal) + 0.
-        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-        target_q_t = (1. - terminal) * self.mc.discount * max_q_t_plus_1 + ext_reward
-        
+#        q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
+#
+#        terminal = np.array(terminal) + 0.
+#        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+#        target_q_t = (1. - terminal) * self.mc.discount * max_q_t_plus_1 + ext_reward
+#        
         #print("SAAAAAMPLING")
 #        for s,g,r,s1,t in zip(s_t, goal, ext_reward, s_t_plus_1, terminal):
 #            if r == 0:
@@ -180,7 +183,10 @@ class HDQNAgent(Agent):
 #            print("s_t1\n",s1[-1])
 #            print("r",r)
 #            print("t",t)
-        
+        target_q_t = self.generate_target_q_t(prefix       = 'mc',
+                                              reward       = ext_reward,
+                                              s_t_plus_1   = s_t_plus_1,
+                                              terminal     = terminal)
         _, q_t, loss, summary_str = self.sess.run([self.mc_optim, self.mc_q,
                                              self.mc_loss, self.mc_q_summary], {
             self.mc_target_q_t: target_q_t,
@@ -222,16 +228,21 @@ class HDQNAgent(Agent):
             print("r",r)
             print("t",t)
         
-        q_t_plus_1 = self.c_target_q.eval({
-                                    self.c_target_s_t: s_t_plus_1,
-                                    self.c_target_g_t: g_t_plus_1,
-                                     })
-        
-        terminal = np.array(terminal) + 0. #Boolean to float
-    
-        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-        target_q_t = (1. - terminal) * self.c.discount * max_q_t_plus_1 + int_reward
-
+#        q_t_plus_1 = self.c_target_q.eval({
+#                                    self.c_target_s_t: s_t_plus_1,
+#                                    self.c_target_g_t: g_t_plus_1,
+#                                     })
+#        
+#        terminal = np.array(terminal) + 0. #Boolean to float
+#    
+#        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+#        target_q_t = (1. - terminal) * self.c.discount * max_q_t_plus_1 + int_reward
+#        
+        target_q_t = self.generate_target_q_t(prefix       = 'c',
+                                              reward       = int_reward,
+                                              s_t_plus_1   = s_t_plus_1,
+                                              terminal     = terminal,
+                                              g_t_plus_1   = g_t_plus_1)
         _, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
                                              self.c_loss, self.c_q_summary], {
             self.c_target_q_t: target_q_t,
@@ -270,22 +281,18 @@ class HDQNAgent(Agent):
         self.mc_step = mc_start_step
         self.set_next_goal()
         
-        if self.gl.display_prob < .011 and 0:            
-            iterator = tqdm(range(c_start_step, self.ag.max_step),
-                                              ncols=70, initial=c_start_step)
-        else:
-            iterator = range(c_start_step, self.ag.max_step)
+        iterator = range(c_start_step, self.ag.max_step)
         for self.c_step in iterator:
             if self.c_step == self.c.learn_start:                
                 self.m.restart()
             
             # Controller acts
             action = self.predict_next_action()
-            if self.display_episode:
-                self.console_print(action)
                 
             screen, ext_reward, terminal = self.environment.act(action, is_training = True)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
+            
+            
             
             
                         
@@ -297,7 +304,8 @@ class HDQNAgent(Agent):
 #                print('g', self.current_goal.one_hot)
             goal_achieved = self.current_goal.is_achieved(screen)
             int_reward = 1. if goal_achieved else 0.
-            
+            if self.display_episode:
+                self.console_print(action, ext_reward, int_reward)
             self.c_observe(screen, int_reward, action, terminal)
 
             
@@ -343,7 +351,7 @@ class HDQNAgent(Agent):
             #assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
             #assert not (terminal and self.m.mc_ep_reward == 0.)
             self.m.compute_test('c', self.m.c_update_count)
-            self.m.compute_test('mc', self.m.mc_update_count)
+            self.m.compute_test('mc', self.m.mc_update_count, self.mc_step)
             
             self.m.compute_goal_results(self.goals)
             self.m.compute_state_visits()
@@ -394,19 +402,27 @@ class HDQNAgent(Agent):
                                             lambda x, y: x * y, shape[1:])])            
             
             last_layer = self.mc_s_t_flat
-            last_layer = self.add_dense_layers(config = self.mc,
-                                               input_layer = last_layer,
-                                               prefix = 'mc')
-            self.mc_q, self.mc_w['q_w'], self.mc_w['q_b'] = linear(last_layer,
-                                                  self.ag.goal_size,
-                                                  name='mc_q')
-            self.mc_q_goal= tf.argmax(self.mc_q, axis=1)
+            last_layer, histograms = self.add_dense_layers(
+                                        architecture = self.mc.architecture,
+                                        input_layer = last_layer,
+                                        parameters  = self.mc_w,
+                                        name_aux = '')
+            if self.ag.dueling:
+                self.mc_q = self.add_dueling(prefix = 'mc', input_layer = last_layer)
+            else:
+                self.mc_q, self.mc_w['q_w'], self.mc_w['q_b'] = linear(
+                                                          last_layer,
+                                                          self.ag.goal_size,
+                                                          name='mc_q')
+            self.mc_q_action= tf.argmax(self.mc_q, axis=1)
             
-            q_summary = []
+            q_summary = histograms
             avg_q = tf.reduce_mean(self.mc_q, 0)
             
-
+            print(self.mc.q_output_length, avg_q)
             for idx in range(self.mc.q_output_length):
+                print(idx)
+                print(avg_q[idx])
                 q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
             self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
 
@@ -452,7 +468,8 @@ class HDQNAgent(Agent):
         with tf.variable_scope('c_prediction'):
             #input_size = self.environment.state_size + self.ag.goal_size
             self.c_s_t = tf.placeholder("float",
-                                [None, self.c_history.length, self.environment.state_size],
+                                [None, self.c_history.length,
+                                                 self.environment.state_size],
                                 name = 'c_s_t')
             shape = self.c_s_t.get_shape().as_list()
             self.c_s_t_flat = tf.reshape(self.c_s_t, [-1, reduce(
@@ -467,16 +484,20 @@ class HDQNAgent(Agent):
             print(self.c_s_t_flat)
             last_layer = self.c_gs_t
             print(last_layer)
-            last_layer = self.add_dense_layers(config = self.c,
+            last_layer, histograms = self.add_dense_layers(architecture = self.c.architecture,
                                                input_layer = last_layer,
-                                               prefix = 'c')
-            self.c_q, self.c_w['q_w'], self.c_w['q_b'] = linear(last_layer,
+                                               parameters = self.c_w,
+                                               name_aux= '')
+            if self.ag.dueling:
+                self.c_q = self.add_dueling(prefix = 'c', input_layer = last_layer)
+            else:
+                self.c_q, self.c_w['q_w'], self.c_w['q_b'] = linear(last_layer,
                                                   self.environment.action_size,
                                                   name='c_q')
             print(self.c_q)
             self.c_q_action= tf.argmax(self.c_q, axis=1)
             
-            q_summary = []
+            q_summary = histograms
             avg_q = tf.reduce_mean(self.c_q, 0)
             
 

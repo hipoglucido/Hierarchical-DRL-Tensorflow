@@ -49,7 +49,7 @@ class Agent(object):
     
     def add_output(self, txt):
         self.output += txt
-    def console_print(self, action, reward):
+    def console_print(self, action, reward, intrinsic_reward = None):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
         else:
@@ -59,16 +59,21 @@ class Agent(object):
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
+#        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
+        msg = '\nS:\n%s\nA: %d\nR: %.1f' % (str(out), action, reward)
         if self.m.is_hdqn:
-            msg = msg + ', G: ' + str(self.current_goal.n)
+            extra = ', G: %d, IR: %.1f' % (self.current_goal.n, intrinsic_reward)
+            if intrinsic_reward == 1:
+                extra += ' Goal accomplished!'
+            msg += extra
+#            msg = msg + ', G: ' + str(self.current_goal.n) + ', IR: ' + str(intrinsic_reward)
         self.add_output(msg)
         print(msg)
     def console_print_terminal(self, reward):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
             perc = round(100 * self.c_step / self.c.max_step, 4)
-            ep_r = self.mc_ep_reward
+            ep_r = self.m.mc_ep_reward
         else:
             observation = self.history.get()[-1]
             perc = round(100 * self.step / self.ag.max_step, 4)
@@ -77,7 +82,8 @@ class Agent(object):
             out =  observation.reshape(self.environment.gym.shape) 
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
+#        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
+        msg = '\nS:\n%s\nEP_R: %.1f' % (str(out), ep_r)
         if reward == 1:
             msg += "\tSUCCESS"
         msg += "\n________________ " + str(perc) + "% ________________"[:150]
@@ -117,7 +123,110 @@ class Agent(object):
             print("Histograms: ", ", ".join(histogram_summary_tags))
         self.writer = tf.summary.FileWriter('./logs/%s' % \
                                            self.model_dir, self.sess.graph)
-         
+
+    def generate_target_q_t(self, prefix, reward, s_t_plus_1, terminal, g_t_plus_1 = None):
+        if prefix == '':
+            pass
+        elif prefix == 'mc':
+            pass
+        elif prefix == 'c':
+            pass
+            #g_t = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]]) 
+#            s_t = s_t[:, :, self.ag.goal_size:]
+#            g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]])
+#            s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
+        else:
+            assert 0
+        prefix = prefix + '_' if prefix != '' else prefix
+        
+        
+        target_s_t = getattr(self, prefix + 'target_s_t')
+        if self.config.ag.double_q:
+            #DOUBLE Q LEARNING
+            #Get object references
+            q_action = getattr(self, prefix + 'q_action')
+            s_t = getattr(self, prefix + 's_t')
+            target_q_with_idx = getattr(self, prefix + 'target_q_with_idx')
+            target_q_idx = getattr(self, prefix + 'target_q_idx')
+            
+            #Predict action with ONLINE Q network
+            q_action_input = {s_t: s_t_plus_1}
+            if prefix == 'c_': #Add goal to input
+                q_action_input[self.c_g_t] = g_t_plus_1
+            pred_action = q_action.eval(q_action_input)
+            
+            #Estimate value of predicted action with TARGET Q network
+            target_q_with_idx_input = {
+                    target_s_t: s_t_plus_1,
+                    target_q_idx: [[idx, pred_a] for idx, pred_a in \
+                                                       enumerate(pred_action)]}
+            if prefix == 'c_': #Add goal to input
+                target_q_with_idx_input[self.c_target_g_t] = g_t_plus_1
+            q_t_plus_1_with_pred_action = target_q_with_idx.eval(target_q_with_idx_input)
+            
+            
+            target_q_t = (1. - terminal) * self.ag.discount * \
+                                        q_t_plus_1_with_pred_action + reward
+        else:
+            
+            target_q = getattr(self, prefix + 'target_q')
+            terminal = np.array(terminal) + 0.
+            target_q_input = {target_s_t: s_t_plus_1}
+            if prefix == 'c_':
+                target_q_input[self.c_target_g_t] = g_t_plus_1
+            q_t_plus_1 = target_q.eval(target_q_input)
+    
+            max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
+            target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
+        
+        return target_q_t        
+    def add_dueling(self, prefix, input_layer):
+        print("ADDING due", prefix)
+        if prefix in ['', 'target']:
+            #DQN
+            architecture = self.config.ag.architecture_duel
+            output_length = self.environment.action_size
+        else:
+            #HDQN
+            if prefix in ['mc', 'mc_target']:
+                architecture = self.mc.architecture_duel
+                output_length = self.ag.goal_size
+            elif prefix in ['c', 'c_target']:
+                architecture = self.c.architecture_duel
+                output_length = self.environment.action_size
+            else:
+                assert 0
+        prefix = prefix + "_" if prefix != '' else prefix
+        parameters = getattr(self, prefix + 'w')
+        prefix = prefix.replace("target_", "")
+        last_layer = input_layer
+        
+        print("adding dense into ", prefix+'w')
+        value_hid, histograms_v = self.add_dense_layers(
+                        architecture = architecture,
+                        input_layer = last_layer,
+                        parameters = parameters,
+                        name_aux = 'value_hid_')
+        adv_hid, histograms_a = self.add_dense_layers(
+                        architecture = architecture,
+                        input_layer = last_layer,
+                        parameters = parameters,
+                        name_aux = 'adv_hid_')
+        aux1 = 'value_out'
+        aux2 = 'adv_out'
+        
+        value, w_val, b_val = linear(value_hid, 1, name= aux1)
+        adv, w_adv, b_adv = linear(adv_hid, output_length,
+                                           name= aux2)
+        parameters[aux1 + "_w"] = w_val
+        parameters[aux1 + "_b"] = b_val
+        parameters[aux2 + "_w"] = w_adv
+        parameters[aux2 + "_b"] = b_adv
+        q = value + (adv - tf.reduce_mean(adv, reduction_indices = 1,
+                                          keepdims = True))
+        print(q)
+        return q    
+     
     def inject_summary(self, tag_dict, step):
 
         summary_str_lists = self.sess.run(
@@ -204,7 +313,7 @@ class Agent(object):
             last_layer, _ = self.add_dense_layers(architecture = config.architecture,
                                                input_layer = last_layer,
                                                parameters = target_w,
-                                               name_aux = prefix)
+                                               name_aux = '')
 #            histograms_ += histograms
             
             
