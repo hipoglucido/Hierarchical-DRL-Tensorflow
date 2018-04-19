@@ -1,6 +1,7 @@
 #Python
 src/__pycache__/
 src/logs/
+src/saved_logs/
 src/checkpoints/
 Environments/SpaceFortress/gym_space_fortress/__pycache__/
 Environments/SpaceFortress/gym_space_fortress/monitoring/__pycache__/

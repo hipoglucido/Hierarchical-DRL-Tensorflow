@@ -93,7 +93,7 @@ class HDQNAgent(Agent):
             step = 0
         ep = test_ep or self.mc_epsilon.steps_value(step)
         self.m.update_epsilon(goal_name = None, value = ep)
-        if random.random() < ep or self.gl.randomize or 1:
+        if random.random() < ep or self.gl.randomize:
             
             n_goal = random.randrange(self.ag.goal_size)
         else:
@@ -111,10 +111,7 @@ class HDQNAgent(Agent):
         
         #s_t should have goals and screens concatenated
         ep = test_ep or self.current_goal.epsilon
-#        assert ep > 0
-#        print(ep)
-        
-        
+
         if random.random() < ep or self.gl.randomize:
             action = random.randrange(self.environment.action_size)
             
@@ -124,6 +121,8 @@ class HDQNAgent(Agent):
             action = self.c_q_action.eval(
                             {self.c_s_t: [screens],
                              self.c_g_t: [self.current_goal.one_hot]})[0]
+    
+    
 #        action = int(self.aux(self.c_history.get()[-1]) < self.current_goal.n)
 #        print('**',self.aux(self.c_history.get()[-1]), self.current_goal.n, action)
         self.m.c_actions.append(action)
@@ -147,10 +146,16 @@ class HDQNAgent(Agent):
     def c_observe(self, screen, int_reward, action, terminal):
         if self.display_episode:
             pass#print("C ", int_reward, "while", self.aux(screen), "a:", action)
-       
+        # NB! screen is post-state, after action and reward
         self.c_history.add(screen)
+#        if terminal==0 and int_reward==1:
+#            print("_____________________")
+#            print("a",action)
+#            print("s_t\n",screen.reshape((3,3)))
+#            print("g_t\n",self.current_goal.one_hot.reshape((3,3)))
+#            print("R: %.2f, t=%s" % (int_reward, str(terminal)))
         next_state = np.hstack([self.current_goal.one_hot, screen])
-
+        
         self.c_memory.add(next_state, int_reward, action, terminal)
         
         if self.c_step > self.c.learn_start:
@@ -210,23 +215,20 @@ class HDQNAgent(Agent):
         s_t = s_t[:, :, self.ag.goal_size:]
         
         
-        g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]])
+        g_t_plus_1 = np.vstack([g[0] for g in s_t_plus_1[:, :, :self.ag.goal_size]])
         s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
         
         
-        for s,a,r,s1,t,g,g1 in zip(s_t, action, int_reward, s_t_plus_1, terminal,\
-                        g_t, g_t_plus_1):
-            break
-            if r == 0:
-                continue
-            print("******")
-            print("s_t\n",s[-1])
-            print("g_t",g)
-            print("a",a)
-            print("s_t1\n",s1[-1])
-            print("g_t1",g1)
-            print("r",r)
-            print("t",t)
+#        print('_____________________')
+#        print("s_t\n",s_t[-1][0].reshape(3,3))
+#        print("a",action[-1])
+#        print("g_t\n",g_t[-1].reshape(3,3))
+#        print("s_t1\n",s_t_plus_1[-1][0].reshape(3,3))
+#        print("g_t1\n",g_t_plus_1[-1].reshape(3,3))
+#        print("r",int_reward[-1])
+#        print("t",terminal[-1])
+#        
+ 
         
 #        q_t_plus_1 = self.c_target_q.eval({
 #                                    self.c_target_s_t: s_t_plus_1,
@@ -304,9 +306,11 @@ class HDQNAgent(Agent):
 #                print('g', self.current_goal.one_hot)
             goal_achieved = self.current_goal.is_achieved(screen)
             int_reward = 1. if goal_achieved else 0.
+            int_reward -= self.c.intrinsic_time_penalty
+            self.c_observe(screen, int_reward, action, terminal or goal_achieved)
+            
             if self.display_episode:
                 self.console_print(action, ext_reward, int_reward)
-            self.c_observe(screen, int_reward, action, terminal)
 
             
             self.m.increment_rewards(int_reward, ext_reward)

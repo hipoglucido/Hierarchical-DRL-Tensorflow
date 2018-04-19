@@ -66,10 +66,10 @@ class Experiment():
         elif name == 'exp4':
             #HYPERPARAMETER SEARCH
             architectures = [
-                    [25],
-                    [100, 100],
+                    [25, 25],
+#                    [100, 100],
 #                    [5, 5, 5, 5],
-                    [10, 10, 10]
+#                    [10, 10, 10]
 #                    [25, 25]                  
                     ]
             duelings = [
@@ -87,9 +87,9 @@ class Experiment():
                     'duelings'               : duelings,
                     'double_qs'              : double_qs
                     }
-            base_args = {'agent_type'            : 'dqn',
+            base_args = {'agent_type'            : 'hdqn',
                     'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 20,
+                    'scale'                 : 100,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.05,

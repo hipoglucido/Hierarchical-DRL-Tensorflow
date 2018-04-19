@@ -60,10 +60,10 @@ class Agent(object):
         else:
             out = self.environment.gym.one_hot_inverse(observation)
 #        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
-        msg = '\nS:\n%s\nA: %d\nR: %.1f' % (str(out), action, reward)
+        msg = '\nS:\n%s\nA: %d\nR: %.2f' % (str(out), action, reward)
         if self.m.is_hdqn:
-            extra = ', G: %d, IR: %.1f' % (self.current_goal.n, intrinsic_reward)
-            if intrinsic_reward == 1:
+            extra = ', G: %d, IR: %.2f' % (self.current_goal.n, intrinsic_reward)
+            if intrinsic_reward in [1, 0.99]:
                 extra += ' Goal accomplished!'
             msg += extra
 #            msg = msg + ', G: ' + str(self.current_goal.n) + ', IR: ' + str(intrinsic_reward)
@@ -83,7 +83,7 @@ class Agent(object):
         else:
             out = self.environment.gym.one_hot_inverse(observation)
 #        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
-        msg = '\nS:\n%s\nEP_R: %.1f' % (str(out), ep_r)
+        msg = '\nS:\n%s\nEP_R: %.2f' % (str(out), ep_r)
         if reward == 1:
             msg += "\tSUCCESS"
         msg += "\n________________ " + str(perc) + "% ________________"[:150]

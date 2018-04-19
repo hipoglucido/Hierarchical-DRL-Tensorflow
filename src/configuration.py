@@ -13,7 +13,7 @@ class Constants:
 
     key_to_sf = {
         'Key.up'     : 65362,
-        'Key.right'  : 65362,
+        'Key.right'  : 65363,
         'Key.down'   : 65364,
         'Key.left'  : 65361,
         'Key.space'  : 32,
@@ -36,9 +36,14 @@ class Constants:
         action_to_sf[game] = {}
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]
-
-#    print(key_to_action)
-#    print(action_to_sf)
+    SF_observation_space_sizes = {
+        'SFC-v0'   : 5,
+        'SF-v0'    : 0,
+        'SFS-v0'   : 0,
+        'AIM-v0'   : 0
+            }
+    print(key_to_action)
+    print(action_to_sf)
     
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     GYM_envs = ['CartPole-v0']
@@ -149,7 +154,7 @@ class GlobalSettings(GenericSettings):
         self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
         self.attrs_in_dir = [
-                 'env.factor',
+#                 'env.factor',
                  'gl.date',
                  'env.env_name',
 #                 'ag.agent_type',
@@ -263,6 +268,14 @@ class ControllerSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         
         self.history_length = 1
+        self.intrinsic_time_penalty = 0.01
+        """
+        Intrinsic rewards. If episode ends while a goal is being pursued (and
+        haven't been accomplished yet), how should controller interpret that?
+            1) Reward 0
+            2) Don't learn transition. Only works if intrinsic
+               time penalty is activated                                                                          
+        """
         
         self.memory_size = 100 * self.scale
         
@@ -282,8 +295,6 @@ class ControllerSettings(AgentSettings):
         self.ep_start = 1.
         self.ep_end_t = int(self.max_step / 2)
         
-        self.train_frequency = 4
-        self.learn_start = min(5. * self.scale, 100)
         
         
         self.architecture = None
@@ -295,6 +306,10 @@ class ControllerSettings(AgentSettings):
         
         self.ignore = ['ignore']
         self.prefix = 'c'
+        
+        self.train_frequency = 4
+        #Visualize weights initialization in the histogram
+        self.learn_start = min(5. * self.scale, self.test_step)
     
     
     
@@ -340,7 +355,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False 
-        self.action_repeat = 1     
+        self.action_repeat = 1    
         self.right_failure_prob = 0.
         
 class EZ_MDPSettings(EnvironmentSettings):
@@ -373,6 +388,7 @@ class Stochastic_MDPSettings(EnvironmentSettings):
         self.total_actions = 2
         self.right_failure_prob = 0.5
         self.update(new_attrs)
+
            
         
           
@@ -404,7 +420,9 @@ class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
         self.no_direction = False
-        self.library_path = '/home/victorgarcia/work/Hierarchical-DRL-Tensorflow/Environments/SpaceFortress/gym_space_fortress/envs/space_fortress/shared'
+        self.library_path = os.path.join('..','Environments','SpaceFortress',
+                                         'gym_space_fortress','envs',
+                                         'space_fortress','shared')
         self.libsuffix = ""
         
         self.screen_width = 84
@@ -414,9 +432,8 @@ class SpaceFortressSettings(EnvironmentSettings):
 
         self.record = False
         self.stats = False
-        self.default_render_mode = 'rgb_array'
         self.update(new_attrs)
-
+        
         
 
 

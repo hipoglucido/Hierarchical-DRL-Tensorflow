@@ -15,7 +15,7 @@ from configuration import Constants as CT
 #    RENDER_MODE, RenderSpeed
 
 import cv2
-
+import time
 class HumanAgent():
     def __init__(self, config, environment):
         self.config = config
@@ -23,7 +23,7 @@ class HumanAgent():
         self.config.print()
         # Current key has to be initialized before first input of keyboard
         self.key_to_action = CT.key_to_action[self.config.env.env_name]
-        
+        print(self.key_to_action)
     def train(self):
         pass
     
@@ -33,33 +33,37 @@ class HumanAgent():
     def play(self):
         on_release = self.on_release
         on_press = self.on_press
-        self.current_key = self.key_to_action['wait']
+        self.current_key = 'wait'
+        self.display_episode = True
         # Start listening to the keyboard
-        with Listener(on_press=on_press, on_release = on_release) as listener: 
+        with Listener(on_press=on_press, on_release = on_release): 
             while True:
-                self.environment.gym.render()
-                action = self.current_key
-                print("ACTIOOON", action)
+                if self.display_episode:
+                    self.environment.gym.render()
+                    
+                else:
+                    time.sleep(.01)
+                if self.current_key == 'Key.esc':
+                    self.environment.gym.close()
+                elif self.current_key not in self.key_to_action:
+                    self.current_key = 'wait'
+                
+                action = self.key_to_action[self.current_key]
+                
                 observation, reward, done = self.environment.act(action)
         
                 if done == 1:
-                    print("****************************************")
-                    cv2.destroyAllWindows()
                     self.environment.new_game()
-                    self.environment.gym.close()
-
+                    self.display_episode = random() < self.config.gl.display_prob
+                    
+                    if not self.display_episode:
+                        cv2.destroyAllWindows()
         
-                     
     def on_press(self, key):
-        print("EEH", key)
-        key = str(key).replace("'", "")  # Get keyboard input
-    
-        self.current_key = self.key_to_action[key]
-#        if key in self.key_to_action.keys():
-#            self.current_key = self.key_to_action[key]
-    
+        self.current_key = str(key)
+        
     def on_release(self, key):
-        pass#self.current_key = self.key_to_action[key]
+        self.current_key = 'wait'
     
         
 

@@ -263,7 +263,8 @@ class Metrics:
         
         exclude_inside = []
         exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward',
-                          'ep_reward', 'step_reward', 'avg_reward']
+                          'ep_reward', 'step_reward', 'avg_reward', 'c_avg_reward',
+                          'mc_avg_reward']
         exclude_regex = []#['g[0-9]_epsilon', 'g[0-9]_successes','g[0-9]_freq']        
         
         for key in list(summary):

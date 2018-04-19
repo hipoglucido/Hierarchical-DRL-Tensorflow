@@ -27,7 +27,7 @@ class Environment():
         #Update configuration
         cnf.env.update({"state_size" : self.state_size,
                        "action_size": self.action_size}, add = True)
-        
+        self.gym.reset()
       
     def load_gym(self):
         if self.env_name in CT.GYM_envs:
@@ -50,7 +50,6 @@ class Environment():
     
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
-        self.display_current_episode = random.random() < self.display_prob
         self._screen = self.gym.reset()
         
         return self.screen, 0., 0., self.terminal
