@@ -11,10 +11,10 @@ __pycache__/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+*.gif
 # C extensions
 *.so
-
+*.o
 # Distribution / packaging
 bin/
 build/

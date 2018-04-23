@@ -24,6 +24,8 @@ void Reset_Screen();
 unsigned char* update_screen();
 
 float* get_symbols();
+int get_screen_width();
+int get_screen_height();
 void Initialize_Graphics(cairo_t *cr);
 void Draw_Square(cairo_t *cr, int x, int y);
 void Close_Graphics(cairo_t *cr);

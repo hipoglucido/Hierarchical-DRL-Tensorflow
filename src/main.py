@@ -34,6 +34,8 @@ env_args.add_argument("--env_name", choices = CT.env_names ,default = "ez_mdp-v0
 env_args.add_argument("--right_failure_prob", default = None, type = float)
 env_args.add_argument("--total_states", default = None, type = int)
 env_args.add_argument("--factor", default = None, type = int)
+env_args.add_argument("--render_delay", default = None, type = int)
+
 
 # AGENT PARAMETERS
 ag_args = parser.add_argument_group('Agent')
@@ -90,9 +92,9 @@ for args in args_list:
     utils.insert_dirs(cnf.gl.env_dirs)
     
     
-    if args['env_name'] in CT.SF_envs:
+    if args['env_name'] == 'SFC-v0':
         #Space Fortress
-        env_st = configuration.SpaceFortressSettings(new_attrs = args)
+        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
         
     elif args['env_name'] == 'stochastic_mdp-v0':
         #MDP

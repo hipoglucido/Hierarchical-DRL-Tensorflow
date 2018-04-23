@@ -22,8 +22,8 @@
 #define POINTS_FONT_SIZE 12.0
 #endif
 
-#define WINDOW_WIDTH 448 // The square width of the original game
-#define WINDOW_HEIGHT 448
+#define WINDOW_WIDTH 200//448 // The square width of the original game
+#define WINDOW_HEIGHT 200
 
 
 #define SHIP_WON 1

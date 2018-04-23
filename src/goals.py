@@ -48,9 +48,35 @@ class Goal(metaclass = ABCMeta):
         metrics.store_goal_result(self, is_achieved)
     
 class MDPGoal(Goal):
+    """
+    Goals for the MDP toy problems. In this case the goals are defined as
+    reaching a particular state and there are as many goals as possible
+    states in the environment
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
             
     def is_achieved(self, screen):
         return np.array_equal(screen, self.one_hot)
+
+class SFGoal(Goal):
+    """
+    Goals for the Space Fortress games. Ideas:
+    
+    Goals shared across minigames:
+        - *Actions
+        - Divide screen in R regions and define R goals as "go to region _"
+        
+    Goals for the control task (SFC):
+        - Aim at the square
+        - 
+        
+    Goals for the shooting task (SFS):    
+        - 
+    Goals for the "complete" game (SF):
+        - Aim at the fortress
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
         

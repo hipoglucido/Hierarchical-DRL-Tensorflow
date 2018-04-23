@@ -71,7 +71,12 @@ IplImage *outframe;
 #endif
 
 float symbols[6] = {};
-
+int get_screen_width(){
+	return WINDOW_WIDTH;
+}
+int get_screen_height(){
+	return WINDOW_HEIGHT;
+}
 void Initialize_Graphics(cairo_t *cr)
 {
 //	int Height,OldMaxX;
@@ -217,13 +222,13 @@ void set_initial_vals()
 
 float* get_symbols()
 {
-	printf("GETTING SYMBOLS:");
-	symbols[0] = Ship_X_Pos;	
-	symbols[1] = Ship_Y_Pos;
-	symbols[2] = Ship_Headings;
-	symbols[3] = Square_X;
-	symbols[4] = Square_Y;
-	symbols[5] = Square_Step;
+	//printf("GETTING SYMBOLS:");
+	symbols[0] = Ship_X_Pos;// /(float) WINDOW_WIDTH;	
+	symbols[1] = Ship_Y_Pos;// /(float) WINDOW_HEIGHT;
+	symbols[2] = Ship_Headings;// /(float) 360;
+	symbols[3] = Square_X;// /(float) WINDOW_WIDTH;
+	symbols[4] = Square_Y;// /(float) WINDOW_HEIGHT;
+	symbols[5] = Square_Step;// /(float) MAX_SQUARE_STEPS;
 	//for (int i = 3; i >= 0; i--)
 	//	printf("%f, ",symbols[i]);
 	//printf("\n");
@@ -270,7 +275,7 @@ void set_key(int key_value)
 	{
 		New_Input_Flag=ON;
 	}
-	printf("KEEEEEEEEEEY %d\n", key_value);
+	//printf("KEEEEEEEEEEY %d\n", key_value);
 }
 
 // For the python interface:
@@ -279,7 +284,7 @@ float get_score()
 {
 	float reward = Score;
 	Score = 0.0;
-	printf("Reward: %f\n", reward);
+	//printf("Reward: %f\n", reward);
 	return reward;
 }
 

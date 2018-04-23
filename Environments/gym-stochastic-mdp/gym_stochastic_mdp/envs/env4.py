@@ -17,7 +17,7 @@ class Key_MDPEnv(MDP):
                         2 : (self.apply_down, 'down'),
                         3 : (self.apply_left, 'left')}
         self.big_reward = 1
-        self.small_reward = 1
+        self.small_reward = 0
         self.negative_reward = -1
         
     def reset(self):
@@ -134,29 +134,39 @@ class Key_MDPEnv(MDP):
         reward = reward - self.time_penalty
         observation = self.current_state.flatten()
         return observation, reward, terminal, info
-        
 
-# cnf = Key_MDPSettings()
-# mdp = Key_Env()
-# mdp.configure(cnf)
-# mdp.reset()
-# s = mdp.current_state
-# reward = 0
-# t = 0
-# while True:
-    # a = mdp.action_space.sample()
-    # print(reward)
-    # print(mdp.current_state)
-    # print(mdp.mapping[a][1])
-    # _, reward, terminal, info = mdp.step(a)
-    # if mdp.has_key and t == 0:
-        # t = 1
-        # print("********************")
-    # if terminal:
-        # print(reward)
-        # reward = 0
-        # print(mdp.current_state)
-        # mdp.reset()
-        # print("______________")
-        # assert t is not 1
-    
+#mdp = Key_MDPEnv()
+#
+#mdp.factor = 3
+#mdp.shape = (mdp.factor, mdp.factor)
+#mdp.initial_pos = 4
+#
+#mdp.action_space = gym.spaces.Discrete(4)
+#mdp.state_space = gym.spaces.Discrete(mdp.factor ** 2)
+#mdp.random_reset = True
+#mdp.time_penalty = 0
+#mdp.reset()
+#s = mdp.current_state
+#reward = 0
+#t = 0
+#while True:
+#     a = mdp.action_space.sample()
+#     print(reward)
+#     print(mdp.current_state)
+#     print(mdp.mapping[a][1])
+#     _, reward, terminal, info = mdp.step(a)
+#     if mdp.has_key and t == 0:
+#         t = 1
+#         print("********************")
+#     if terminal:
+#         print(reward)
+#         reward = 0
+#         print(mdp.current_state)
+#         mdp.reset()
+#         print("______________")
+#         assert t is not 1
+#    
+#goal = 
+#        
+#import imageio
+#im = imageio.imread()

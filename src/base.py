@@ -8,7 +8,7 @@ import utils
 import ops
 from functools import reduce
 from ops import linear, clipped_error
-
+from configuration import Constants as CT
 pp = pprint.PrettyPrinter().pprint
 
 class Epsilon():
@@ -46,10 +46,11 @@ class Agent(object):
         self._saver = None
         self.config = config
         self.output = ''
-    
-    def add_output(self, txt):
-        self.output += txt
-    def console_print(self, action, reward, intrinsic_reward = None):
+    def display_environment(self):
+        if self.m.is_SF:
+            self.environment.gym.render()
+            self.add_output('')
+            return
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
         else:
@@ -57,18 +58,30 @@ class Agent(object):
      
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
+            
         else:
             out = self.environment.gym.one_hot_inverse(observation)
+        msg = '\nS:\n%s' % str(out)
+        self.add_output(msg)
+        
+    def add_output(self, txt):
+        self.output += txt
+        
+    def console_print(self, action, reward, intrinsic_reward = None):
+        self.display_environment()
 #        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
-        msg = '\nS:\n%s\nA: %d\nR: %.2f' % (str(out), action, reward)
+        msg = '\nA: %d\nR: %.2f' % (action, reward)
         if self.m.is_hdqn:
             extra = ', G: %d, IR: %.2f' % (self.current_goal.n, intrinsic_reward)
             if intrinsic_reward in [1, 0.99]:
                 extra += ' Goal accomplished!'
             msg += extra
 #            msg = msg + ', G: ' + str(self.current_goal.n) + ', IR: ' + str(intrinsic_reward)
+        
+      
         self.add_output(msg)
-        print(msg)
+        if not self.m.is_SF:
+            print(self.output)
     def console_print_terminal(self, reward):
         if self.m.is_hdqn:
             observation = self.c_history.get()[-1]
@@ -80,6 +93,8 @@ class Agent(object):
             ep_r = self.m.ep_reward
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
+        elif self.config.env.env_name in CT.SF_envs:
+            out = ''
         else:
             out = self.environment.gym.one_hot_inverse(observation)
 #        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
@@ -88,7 +103,9 @@ class Agent(object):
             msg += "\tSUCCESS"
         msg += "\n________________ " + str(perc) + "% ________________"[:150]
         self.add_output(msg)
-        print(msg)
+        if not self.m.is_SF:
+            print(self.output)
+        
         
 #        assert reward != 1
         
@@ -394,22 +411,12 @@ class Agent(object):
     def checkpoint_dir(self):
         return os.path.join('checkpoints', self.model_dir)
 
-            
     @property
     def model_dir(self):
-        chain = []
-        for attr_fullname in self.config.gl.attrs_in_dir:
-            [attr_type, attr_name] = attr_fullname.split('.')
-            attr_value = getattr(getattr(self.config, attr_type), attr_name)
-            if 'architecture' in attr_name:
-                value = '-'.join([str(l) for l in attr_value])
-            else:
-                value = str(attr_value)
-            attr_name_initials = ''.join([word[0] for word in attr_name.split('_')])
-            part = attr_name_initials + str(value)
-            chain.append(part)
-        result = '_'.join(chain)
-        return result
+        #TODO remove references self.model_dir
+        return self.config.model_dir
+            
+
 
     @property
     def saver(self):

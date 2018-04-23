@@ -188,7 +188,7 @@ void Handle_Square()
 			Square_Step--;
 			if(Square_Step < 0)
 			{
-				printf("%s\n", "TERMINAAAAAAAAAAR");
+				
 				Terminal_State = 1;
 				Score = -1.0; // There is no observation connected to this atm
 				Square_Flag = KILL;

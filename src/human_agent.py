@@ -19,6 +19,7 @@ import time
 class HumanAgent():
     def __init__(self, config, environment):
         self.config = config
+        self.config.env.update({'display_prob' : 1.})
         self.environment = environment
         self.config.print()
         # Current key has to be initialized before first input of keyboard
@@ -41,6 +42,7 @@ class HumanAgent():
                 if self.display_episode:
                     self.environment.gym.render()
                     
+                    
                 else:
                     time.sleep(.01)
                 if self.current_key == 'Key.esc':
@@ -49,9 +51,23 @@ class HumanAgent():
                     self.current_key = 'wait'
                 
                 action = self.key_to_action[self.current_key]
-                
+                """
+                ship_x_pos_x,
+                ship_x_pos_y,                
+                ship_y_pos_x,
+                ship_y_pos_y,                
+                ship_headings_x,
+                ship_headings_y,
+                square_x_pos_x,
+                square_x_pos_y,
+                square_y_pos_x,
+                square_y_pos_y
+                """
                 observation, reward, done = self.environment.act(action)
-        
+                observation = '\t'.join([str(round(f,1)) for f in observation])
+                msg = '%s\tA:%s, R: %.3f, T: %s' \
+                            % (observation, self.current_key, reward, done)
+                print(msg)
                 if done == 1:
                     self.environment.new_game()
                     self.display_episode = random() < self.config.gl.display_prob

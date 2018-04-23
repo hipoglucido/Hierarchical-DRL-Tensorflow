@@ -6,7 +6,7 @@ CREATE_BINARY=no
 # Uncomment to specify parameters
 PARAM=
 PARAM+=-D GUI_INTERFACE #** Full sized and colored game renders **
-#PARAM+=-D GRID_MOVEMENT #** Lowers the control order to a direct type of control **
+PARAM+=-D GRID_MOVEMENT #** Lowers the control order to a direct type of control **
 #PARAM+=-D NO_WRAP #** Turns off wrapping **
 #PARAM+=-D NO_DIRECTION #** Turns off movement based on the ships nose direction **
 #PARAM+=-D DEBUG #** Sounds Effects/Printing messages on soundless linux **
@@ -16,7 +16,7 @@ PARAM+=-D GUI_INTERFACE #** Full sized and colored game renders **
 define build
 	$(CC) -march=native `pkg-config --cflags cairo` -Wall -g -fPIC -c $(1)/myvars.c $(1)/DE_Minimal.c $(1)/HM.c $(1)/TCOL.c $(1)/RS.c -Wno-dangling-else -Wno-switch -O3 $(PARAM);
 	$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);
-	$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib_FULL.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);\
+	#$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);\
 	
 	@# check if we have to build the binary
 	if [ $(CREATE_BINARY) = yes ];then\

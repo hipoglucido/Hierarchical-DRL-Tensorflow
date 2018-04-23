@@ -2,13 +2,13 @@
 import numpy as np
 import time
 import re
-from configuration import hDQNSettings, DQNSettings
+from configuration import hDQNSettings, DQNSettings, Constants as CT
 
 class Metrics:
     def __init__(self, config, goals = {}):
         self.config = config
         self.is_hdqn = isinstance(self.config.ag, hDQNSettings)  
-        
+        self.is_SF = self.config.env.env_name in CT.SF_envs
         if self.is_hdqn:        
             self.mc_max_avg_ep_reward = 0
             self.c_max_avg_ep_reward = 0 #Not used for now
@@ -82,11 +82,13 @@ class Metrics:
                                  relative_frequency_tag, epsilon_tag,
                                  avg_steps_tag]
             assert isinstance(self.config.ag, hDQNSettings)
-        for state_id in range(self.config.env.state_size):
-            state_name = "s" + str(state_id)
-            self.state_names.append(state_name)
-            self.state_tags.append(state_name + "_freq")
-            self.state_tags.append(state_name + "_rfreq")
+        
+        if not self.is_SF:
+            for state_id in range(self.config.env.state_size):
+                state_name = "s" + str(state_id)
+                self.state_names.append(state_name)
+                self.state_tags.append(state_name + "_freq")
+                self.state_tags.append(state_name + "_rfreq")
         
         self.scalar_global_tags += self.state_tags
         if self.is_hdqn:
@@ -333,6 +335,8 @@ class Metrics:
             self.c_actions.append(action)
         else:
             self.actions.append(action)
+        if self.is_SF:
+           return 
         self.state_visits.append(state)
         state_freq_tag = 's' + str(state) + "_freq"
         visits = getattr(self, state_freq_tag)

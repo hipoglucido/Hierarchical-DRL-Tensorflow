@@ -110,3 +110,31 @@ def load_npy(path):
     obj = np.load(path)
     print("    [*] load %s" % path)
     return obj
+
+
+#import cv2
+#import numpy as np
+#from matplotlib import pyplot as plt
+#env_height, env_width = 448, 448
+#path = 'sfc.png'
+#env = cv2.imread(path)
+#plt.imshow(env)
+#
+#monitor_width, monitor_height = 300, env_height
+#blank = np.zeros((monitor_height, monitor_width, 3)) + 1
+#monitor = np.hstack([env, blank])
+#plt.imshow(monitor)
+#
+
+
+
+
+
+
+
+
+
+
+
+
+

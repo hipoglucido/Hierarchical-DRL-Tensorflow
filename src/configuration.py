@@ -37,13 +37,13 @@ class Constants:
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]
     SF_observation_space_sizes = {
-        'SFC-v0'   : 5,
+        'SFC-v0'   : 10,
         'SF-v0'    : 0,
         'SFS-v0'   : 0,
         'AIM-v0'   : 0
             }
-    print(key_to_action)
-    print(action_to_sf)
+#    print(key_to_action)
+#    print(action_to_sf)
     
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     GYM_envs = ['CartPole-v0']
@@ -78,8 +78,26 @@ class Configuration:
     
     def print(self):
         msg =  "\n" + self.to_str()
-        logging.info(msg)    
+        logging.info(msg)   
         
+    @property
+    def model_dir(self):
+        chain = []
+        for attr_fullname in self.gl.attrs_in_dir:
+            [attr_type, attr_name] = attr_fullname.split('.')
+            try:
+                attr_value = getattr(getattr(self, attr_type), attr_name)
+            except AttributeError:
+                attr_value = ''
+            if 'architecture' in attr_name:
+                value = '-'.join([str(l) for l in attr_value])
+            else:
+                value = str(attr_value)
+            attr_name_initials = ''.join([word[0] for word in attr_name.split('_')])
+            part = attr_name_initials + str(value)
+            chain.append(part)
+        result = '_'.join(chain)
+        return result        
 class GenericSettings():
         
     def update(self, new_attrs, add = False):
@@ -208,24 +226,24 @@ class DQNSettings(AgentSettings):
         self.random_start = 30
         
         self.discount = 0.99
-        self.target_q_update_step = 10 * self.scale
+        self.target_q_update_step = 1 * self.scale
         self.learning_rate = 0.00025
-        self.learning_rate_minimum = 0.000025
+        self.learning_rate_minimum = 0.00025
         self.learning_rate_decay = 0.96
         self.learning_rate_decay_step = int(.001 * self.max_step)
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = int(self.max_step / 2)
+        self.ep_end_t = int(self.max_step * .75)
         
         self.history_length = 1
         self.train_frequency = 4
         self.learn_start = 5. * self.scale
         
-        self.architecture = [10, 10]
-        self.architecture_duel = [5]
+        self.architecture = [512, 256, 64]
+        self.architecture_duel = [64]
         
-        self.test_step = 1000#int(self.max_step / 10)
+        self.test_step = 10000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -277,10 +295,8 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = 100 * self.scale
-        
-#        self.max_step = 500 * self.scale
-        
+        self.memory_size = 100 * self.scale        
+#        self.max_step = 500 * self.scale        
         self.batch_size = 32
         self.random_start = 30
         
@@ -403,11 +419,7 @@ class Trap_MDPSettings(EnvironmentSettings):
      
         self.trap_states = [3, 4]
         
-class CartPoleSettings(EnvironmentSettings):
-    def __init__(self, new_attrs):
-        super().__init__()
-        self.update(new_attrs)
-        self.total_states = 4
+
      
 class RenderSpeed():
 	# actually more of a render delay than speed 
@@ -427,13 +439,17 @@ class SpaceFortressSettings(EnvironmentSettings):
         
         self.screen_width = 84
         self.screen_height = 84
-        self.render_mode = "human" #minimal, rgb_array
-        self.render_delay = 0
+#        self.render_mode = "idk" #minimal, rgb_array
+        self.render_delay = 1
 
         self.record = False
         self.stats = False
         self.update(new_attrs)
-        
+
+class SpaceFortressControlSettings(SpaceFortressSettings):
+    def __init__(self, new_attrs):
+        super().__init__(new_attrs)
+        self.time_penalty = 0.001
         
 
 

@@ -147,10 +147,11 @@ void SF_iteration()
 //	Accumulate_Data();
 
 //		Score=Points;
+	/*
 	printf("________________\n");
 	printf("Ship_X_Pos %d,\nShip_Y_Pos %d, \nShip_Headings %d, \nSquare_X %d, \nSquare_Y %d\n", Ship_X_Pos,Ship_Y_Pos,Ship_Headings, Square_X, Square_Y);
     printf("Square_Step  %d\n", Square_Step);
-    printf("Terminal_State %d\n", Terminal_State);
+    printf("Terminal_State %d\n", Terminal_State);*/
 }
 
 int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)

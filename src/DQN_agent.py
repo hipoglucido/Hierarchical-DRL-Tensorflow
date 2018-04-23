@@ -25,7 +25,6 @@ class DQNAgent(Agent):
         self.ag = self.config.ag
         self.gl = self.config.gl
         self.environment = environment
-        
         self.ag.update({"q_output_length" : self.environment.action_size}, add = True)
         self.history = History(length_ = self.ag.history_length,
                                size    = self.environment.state_size)
@@ -50,10 +49,11 @@ class DQNAgent(Agent):
         self.new_episode()
 
         self.m.start_timer()
-            
-#        iterator = tqdm(range(start_step, self.ag.max_step),
-#                                              ncols=70, initial=start_step)
-        iterator = range(start_step, self.ag.max_step)
+        if self.m.is_SF:   
+            iterator = tqdm(range(start_step, self.ag.max_step),
+                                                  ncols=70, initial=start_step)
+        else:
+            iterator = range(start_step, self.ag.max_step)
         for self.step in iterator:
             if self.step == self.ag.learn_start:                
                 self.m.restart()
@@ -62,8 +62,10 @@ class DQNAgent(Agent):
             action = self.predict_next_action()    
             
             # 2. act            
-            screen, reward, terminal = self.environment.act(action, is_training = True)
-            self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
+            screen, reward, terminal = self.environment.act(action)
+            
+            self.m.add_act(action, screen)
+#            self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
             if self.display_episode:
                 self.console_print(action, reward)
                 
