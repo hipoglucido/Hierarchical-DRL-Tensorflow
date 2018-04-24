@@ -153,7 +153,7 @@ for args in args_list:
         elif ag_st.mode == 'graph':
             pass
         else:
-            raise ValueError("Wrong mode " + str(gl_st.mode))
+            raise ValueError("Wrong mode " + str(ag_st.mode))
         
         agent.show_attrs()
     tf.reset_default_graph()

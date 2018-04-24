@@ -27,7 +27,8 @@ class Experiment():
                         'log_level'    : 'DEBUG',
                         'display_prob' : 0.05,
                         'use_gpu'      : True,
-                        'mode'         : 'train'}
+                        'mode'         : 'train'
+                        }
                 args['architecture'] = '-'.join([str(l) for l in arch])
                 args_list.append(args)
         elif name == 'exp2':
@@ -66,38 +67,40 @@ class Experiment():
         elif name == 'exp4':
             #HYPERPARAMETER SEARCH
             architectures = [
-                    [32, 32, 32, 32],
-                    [128],
+#                    [32, 32, 32, 32],
+#                    [128],
                     [512],
-                    [256, 256]
+#                    [64, 64, 64]
 #                    [10, 10, 10]
 #                    [25, 25]                  
                     ]
             duelings = [
                     1,
-                    0
+#                    0
                     ]
             double_qs = [
                     1,
-                    0
+#                    0
                     ]
+            random_seeds = list(range(1))
             hyperparameter_space = {
 #                    'learning_rate_minimums' : [0.00025, 0.0001],
 #                    'learning_rates'         : [0.001, 0.1, 0.0005],
                     'architectures'          : architectures,
                     'duelings'               : duelings,
-                    'double_qs'              : double_qs
+                    'double_qs'              : double_qs,
+                    'random_seeds'           : random_seeds
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'SFC-v0',
-                    'scale'                 : 200,
+                    'scale'                 : 1000,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
-                    'display_prob'          : 0.01,
+                    'display_prob'          : 1,
                     'use_gpu'               : True,
                     'mode'                  : 'train',
-                    'double_q'              : False,
-                    'random_seed'           : 1}
+#                    'double_q'              : False
+            }
             
             for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                           base_args):

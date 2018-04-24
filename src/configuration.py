@@ -180,7 +180,8 @@ class GlobalSettings(GenericSettings):
 #                 'env.total_states',
                  'ag.architecture',
                  'ag.double_q',
-                 'ag.dueling'
+                 'ag.dueling',
+                 
 #                 'ag.learning_rate_minimum',
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
@@ -241,7 +242,7 @@ class DQNSettings(AgentSettings):
         self.learn_start = 5. * self.scale
         
         self.architecture = [512, 256, 64]
-        self.architecture_duel = [64]
+        self.architecture_duel = [128]
         
         self.test_step = 10000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -437,8 +438,8 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'space_fortress','shared')
         self.libsuffix = ""
         
-        self.screen_width = 84
-        self.screen_height = 84
+#        self.screen_width = 84
+#        self.screen_height = 84
 #        self.render_mode = "idk" #minimal, rgb_array
         self.render_delay = 1
 
@@ -449,7 +450,7 @@ class SpaceFortressSettings(EnvironmentSettings):
 class SpaceFortressControlSettings(SpaceFortressSettings):
     def __init__(self, new_attrs):
         super().__init__(new_attrs)
-        self.time_penalty = 0.001
+        self.time_penalty = 0.00
         
 
 

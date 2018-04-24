@@ -157,11 +157,12 @@ class DQNAgent(Agent):
         s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
 #        print("______________________________________")
 #        print("s_t\n",s_t[0].reshape(3,3))
+#        print("s_t\n",s_t[0])
 #        print("A",action[0])
 #        print("R", reward[0])
-#        print("s_t_plus_1\n", s_t_plus_1[0].reshape(3,3))
+#        print("s_t_plus_1\n", s_t_plus_1[0])
 #        print("terminal", terminal[0] + 0)
-#        assert reward[0] == 0 and not terminal[0]
+#        assert reward[0] in [0., -1.], reward[0]
 
 
         
