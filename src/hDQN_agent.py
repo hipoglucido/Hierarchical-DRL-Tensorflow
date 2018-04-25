@@ -10,7 +10,7 @@ import sys
 
 from base import Agent, Epsilon
 from history import History
-from replay_memory import ReplayMemory
+from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 from goals import MDPGoal
@@ -43,10 +43,10 @@ class HDQNAgent(Agent):
         self.c_history = History(length_ = self.c.history_length,
                                  size    = self.environment.state_size)
         
-        self.mc_memory = ReplayMemory(config       = self.mc,
+        self.mc_memory = OldReplayMemory(config       = self.mc,
                                       model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size)
-        self.c_memory = ReplayMemory(config        = self.c,
+        self.c_memory = OldReplayMemory(config        = self.c,
                                       model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size + \
                                                           self.ag.goal_size)

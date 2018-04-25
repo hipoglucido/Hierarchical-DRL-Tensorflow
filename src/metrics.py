@@ -29,7 +29,7 @@ class Metrics:
         self.scalar_global_tags = ['elapsed_time', 'games',
                                  'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
-                                 'debug_no_ep_error']
+                                 'debug_no_ep_error', 'td_error']
                                  
                                            
         if self.is_hdqn:

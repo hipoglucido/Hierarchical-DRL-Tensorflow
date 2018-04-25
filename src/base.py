@@ -17,7 +17,7 @@ class Epsilon():
         self.end = config.ep_end
         self.end_t = config.ep_end_t
         
-        self.learn_start = config.learn_start
+        self.learn_start = config.memory_size#learn_start
         self.step = start_step
     
     def steps_value(self, step):

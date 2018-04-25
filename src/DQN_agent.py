@@ -11,7 +11,7 @@ from metrics import Metrics
 
 from base import Agent, Epsilon
 from history import History
-from replay_memory import ReplayMemory
+from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
 from ops import linear, clipped_error
 from utils import get_time, save_pkl, load_pkl
 
@@ -29,8 +29,10 @@ class DQNAgent(Agent):
         self.history = History(length_ = self.ag.history_length,
                                size    = self.environment.state_size)
         
+      
+        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
         
-        self.memory = ReplayMemory(config      = self.ag,
+        self.memory = memory_type(config      = self.ag,
                                    model_dir  = self.model_dir,
                                    screen_size = self.environment.state_size)
 
@@ -41,6 +43,8 @@ class DQNAgent(Agent):
         self.build_dqn()
         self.config.print()
         self.write_configuration()
+        
+        assert self.ag.memory_size < self.ag.max_step
    
     def train(self):
         start_step = 0    
@@ -55,24 +59,28 @@ class DQNAgent(Agent):
         else:
             iterator = range(start_step, self.ag.max_step)
         for self.step in iterator:
-            if self.step == self.ag.learn_start:                
-                self.m.restart()
-
+#            if self.step == self.ag.learn_start:                
+#                self.m.restart()
+#            if self.memory.is_full():
+#                self.m.restart()
+            old_screen = self.history.get()
             # 1. predict
             action = self.predict_next_action()    
             
             # 2. act            
             screen, reward, terminal = self.environment.act(action)
             
-            self.m.add_act(action, screen)
-#            self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
+            if self.m.is_SF:
+                self.m.add_act(action, screen)
+            else:
+                self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
             if self.display_episode:
                 self.console_print(action, reward)
                 
                 
                 
             # 3. observe
-            self.observe(screen, reward, action, terminal)
+            self.observe(old_screen, action, reward, screen, terminal)
             self.m.increment_external_reward(reward)
             
             if terminal:
@@ -83,9 +91,10 @@ class DQNAgent(Agent):
                 self.new_episode()
 
             
-            if self.step < self.ag.learn_start:
-                continue
-            if self.step % self.ag.test_step != self.ag.test_step - 1:
+#            if self.step < self.ag.learn_start:
+#                continue
+            if self.step % self.ag.test_step != self.ag.test_step - 1 or \
+                                not self.memory.is_full():
                 continue   
             self.m.compute_test(prefix = '', update_count = self.m.update_count)
             self.m.compute_state_visits()
@@ -122,16 +131,17 @@ class DQNAgent(Agent):
         s_t = self.history.get()
         ep = test_ep or self.epsilon.steps_value(self.step)
         self.m.update_epsilon(value = ep)
-        if random.random() < ep:
+        if random.random() < ep or not self.memory.is_full():
             action = random.randrange(self.environment.action_size)
         else:
             action = self.q_action.eval({self.s_t: [s_t]})[0]
 
         return action
 
-    def observe(self, screen, reward, action, terminal):
+    def observe(self, old_screen, action, reward, screen, terminal):
         #reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
         # NB! screen is post-state, after action and reward
+        
         assert np.sum(np.isnan(screen)) == 0, screen
 #        print("______________________________________")
 #        print("s_t\n",self.history.get().reshape(3,3))
@@ -140,8 +150,11 @@ class DQNAgent(Agent):
 #        print("R", reward)
 #        print("terminal", terminal + 0)
         self.history.add(screen)
-        self.memory.add(screen, reward, action, terminal)
-        if self.step > self.ag.learn_start:
+        #self.memory.add(screen, reward, action, terminal)
+        self.memory.add(old_screen, action, reward, screen, terminal)
+        
+        #if self.step > self.ag.learn_start:
+        if self.memory.is_full():
             if self.step % self.ag.train_frequency == 0:
                 self.q_learning_mini_batch()
 
@@ -153,19 +166,19 @@ class DQNAgent(Agent):
     def q_learning_mini_batch(self):
         if self.memory.count < self.history.length:
             return
-        
-        s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
+        (s_t, action, reward, s_t_plus_1, terminal), idx, p, \
+                                        sum_p, count = self.memory.sample()
+#        s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
 #        print("______________________________________")
 #        print("s_t\n",s_t[0].reshape(3,3))
-#        print("s_t\n",s_t[0])
 #        print("A",action[0])
 #        print("R", reward[0])
-#        print("s_t_plus_1\n", s_t_plus_1[0])
+#        print("s_t_plus_1\n", s_t_plus_1[0].reshape(3,3))
 #        print("terminal", terminal[0] + 0)
 #        assert reward[0] in [0., -1.], reward[0]
 
 
-        
+#        print(s_t_plus_1.shape)
         
 #        if self.config.ag.double_q:
 #            
@@ -186,18 +199,32 @@ class DQNAgent(Agent):
                                               reward       = reward,
                                               s_t_plus_1   = s_t_plus_1,
                                               terminal     = terminal)
-        _, q_t, loss, summary_str = self.sess.run([self.optim, self.q,
+        
+        _, q_t, q_acted, loss, summary_str = self.sess.run([self.optim, self.q,
+                                                            self.q_action,
                                              self.loss, self.q_summary], {
             self.target_q_t: target_q_t,
             self.action: action,
             self.s_t: s_t,
             self.learning_rate_step: self.step,
         })
+        
+       
+        
+        q_t_acted = np.array([q_t[i][a] for i, a in enumerate(action)])      
+        
+        td = np.abs(q_t_acted - target_q_t)
+        
+       
+            
+        
+        
         self.writer.add_summary(summary_str, self.step) #TODO what does this do?
 
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        
         self.m.update_count += 1
+        self.m.td_error += td.mean()
 
         
         

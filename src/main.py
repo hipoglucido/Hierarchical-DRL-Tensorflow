@@ -48,6 +48,7 @@ ag_args.add_argument("--learning_rate_minimum", default = None, type = float)
 ag_args.add_argument("--learning_rate_decay", default = None, type = float)
 ag_args.add_argument("--double_q", default = None, type = utils.str2bool)
 ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
+ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 
 #
 args = vars(parser.parse_args())

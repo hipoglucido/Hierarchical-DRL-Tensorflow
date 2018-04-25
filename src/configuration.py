@@ -37,7 +37,7 @@ class Constants:
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]
     SF_observation_space_sizes = {
-        'SFC-v0'   : 10,
+        'SFC-v0'   : 5,
         'SF-v0'    : 0,
         'SFS-v0'   : 0,
         'AIM-v0'   : 0
@@ -197,6 +197,7 @@ class AgentSettings(GenericSettings):
     def __init__(self, scale = 1):
         self.scale = scale
         self.mode = 'train'
+        self.pmemory = False
         self.max_step = self.scale * 5000
         self.double_q = False
         self.dueling = False
@@ -221,7 +222,7 @@ class DQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
         #self.max_step = 500 * self.scale
-        self.memory_size = 100 * self.scale
+        self.memory_size = 1000000# * self.scale
         
         self.batch_size = 32
         self.random_start = 30
@@ -239,12 +240,12 @@ class DQNSettings(AgentSettings):
         
         self.history_length = 1
         self.train_frequency = 4
-        self.learn_start = 5. * self.scale
+        #self.learn_start = 5. * self.scale
         
-        self.architecture = [512, 256, 64]
-        self.architecture_duel = [128]
+        self.architecture = [25, 25]
+        self.architecture_duel = [16]
         
-        self.test_step = 10000#int(self.max_step / 10)
+        self.test_step = 3000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -259,7 +260,7 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-        self.architecture = [25, 25]
+        self.architecture = [25]
         self.architecture_duel = [10]
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)

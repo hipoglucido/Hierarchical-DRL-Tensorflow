@@ -64,7 +64,7 @@ class HumanAgent():
                 square_y_pos_y
                 """
                 observation, reward, done = self.environment.act(action)
-                observation = '\t'.join([str(round(f,1)) for f in observation])
+                observation = '\t'.join([str(round(f,3)) for f in observation])
                 msg = '%s\tA:%s, R: %.3f, T: %s' \
                             % (observation, self.current_key, reward, done)
                 print(msg)
