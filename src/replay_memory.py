@@ -30,6 +30,12 @@ class OldReplayMemory:
         return self.count == self.memory_size
 #    def add(self, screen, reward, action, terminal):
     def add(self, old_screen, action, reward, screen, terminal):
+#        print("******4*********")
+#        print(old_screen.reshape(5,5))
+#        print(action, reward)
+#        print(screen.reshape(5,5))
+#        print(terminal)
+        
         assert screen.shape == self.dims
         # NB! screen is post-state, after action and reward
         self.actions[self.current] = action
@@ -106,10 +112,15 @@ from sum_tree import SumTree
 
 class ReplayMemory:
     """Store and replay (sample) memories."""
-    def __init__(self,
-                max_size,
-                window_size,
-                input_shape):
+#    def __init__(self,
+#                max_size,
+#                window_size,
+#                input_shape):
+    def __init__(self, config, model_dir, screen_size):
+        max_size = config.memory_size
+        self.batch_size = config.batch_size
+        window_size = config.history_length
+        input_shape = (screen_size,)
         """Setup memory.
         You should specify the maximum size o the memory. Once the
         memory fills up oldest values are removed.
@@ -117,33 +128,54 @@ class ReplayMemory:
         self._max_size = max_size
         self._window_size = window_size
         self._WIDTH = input_shape[0]
-        self._HEIGHT = input_shape[1]
+        #self._HEIGHT = input_shape[1]
         self._memory = []
-
+    @property
+    def count(self): return len(self._memory)
+        
     def is_full(self):
         return len(self._memory) == self._max_size
-    def append(self, old_state, action, reward, new_state, is_terminal):
+    def add(self, old_state, action, reward, new_state, is_terminal):
         """Add a list of samples to the replay memory."""
         num_sample = len(old_state)
 
         if len(self._memory) >= self._max_size:
             del(self._memory[0:num_sample])
 
-        for o_s, a, r, n_s, i_t in zip(old_state, action, reward, new_state, is_terminal):
-            self._memory.append((o_s, a, r, n_s, i_t))
+#        for o_s, a, r, n_s, i_t in zip(old_state, action, reward, new_state, is_terminal):
+#            self._memory.append((o_s, a, r, n_s, i_t))
+#        print("*******7********")
+#        print(old_state.reshape(5,5))
+#        print(action, reward)
+#        print(new_state.reshape(5,5))
+#        print(is_terminal)
+        self._memory.append((old_state.copy(), action, reward, new_state.copy(), is_terminal))
 
-
-    def sample(self, batch_size, indexes=None):
+    def sample(self, indexes=None):
         """Return samples from the memory.
         Returns
         --------
         (old_state_list, action_list, reward_list, new_state_list, is_terminal_list, frequency_list)
         """
-        samples = random.sample(self._memory, min(batch_size, len(self._memory)))
+        samples = random.sample(self._memory, min(self.batch_size, len(self._memory)))
+#        print(samples[0][0].reshape(5,5))
+#        print('action',samples[0][1])
+#        print('reward',samples[0][2])
+#        print(samples[0][3].reshape(5,5))
+#        print('t',samples[0][4])
         zipped = list(zip(*samples))
-        zipped[0] = np.reshape(zipped[0], (-1, self._WIDTH, self._window_size))
-        zipped[3] = np.reshape(zipped[3], (-1, self._WIDTH, self._window_size))
-        return zipped
+
+#        print(zipped[0][0].reshape(5,5))
+#        print('action',zipped[1][0])
+#        print('reward',zipped[2][0])
+#        print(zipped[3][0].reshape(5,5))
+#        print('t',zipped[4][0])
+#        print("***********")
+        zipped[0] = np.reshape(zipped[0], (-1, self._window_size, self._WIDTH))
+        zipped[3] = np.reshape(zipped[3], (-1, self._window_size, self._WIDTH))
+#        for z in zipped:
+#            print(z)
+        return zipped, None, None, None, None
 
 
 class PriorityExperienceReplay:
@@ -175,8 +207,10 @@ class PriorityExperienceReplay:
     def add(self, old_state, action, reward, new_state, is_terminal):
 #        for o_s, a, r, n_s, i_t in zip(old_state, action, reward, new_state, is_terminal):
             # 0.5 is the maximum error
-        p = self._getPriority(0.5)
-        self.tree.add(p, data=(old_state, action, reward, new_state, is_terminal)) 
+        error = abs(reward)#.5
+        #print(reward, type(error))
+        p = self._getPriority(error)
+        self.tree.add(p, data=(old_state.copy(), action, reward, new_state.copy(), is_terminal)) 
 
     def sample(self, batch_size = None, indexes=None):
         data_batch = []
@@ -198,6 +232,12 @@ class PriorityExperienceReplay:
         zipped = list(zip(*data_batch))
         zipped[0] = np.reshape(zipped[0], (-1, self._window_size, self._WIDTH))
         zipped[3] = np.reshape(zipped[3], (-1, self._window_size, self._WIDTH))
+#        print(zipped[0][0].reshape(3,3))
+#        print('action',zipped[1][0])
+#        print('reward',zipped[2][0])
+#        print(zipped[3][0].reshape(3,3))
+#        print('t',zipped[4][0])
+#        print("***********")
 
         sum_p, count = self.tree.total_and_count()
         return zipped, idx_batch, p_batch, sum_p, count

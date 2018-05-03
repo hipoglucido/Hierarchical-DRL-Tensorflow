@@ -15,6 +15,12 @@
 //#define WINDOW_WIDTH 240
 //#define WINDOW_HEIGHT 240 + (TEXT_HEIGHT*3)
 //#define WINDOW_HEIGHT 448 + TEXT_HEIGHT*2
+float* get_symbols();
+int get_screen_width();
+int get_screen_height();
+int is_frictionless();
+int is_wrapper();
+int is_no_direction();
 
 float deg2rad(int deg);
 void Open_Graphics(void);
@@ -23,9 +29,7 @@ void jitter_step2(cairo_t *cr, int step);
 void Reset_Screen();
 unsigned char* update_screen();
 
-float* get_symbols();
-int get_screen_width();
-int get_screen_height();
+
 void Initialize_Graphics(cairo_t *cr);
 void Draw_Square(cairo_t *cr, int x, int y);
 void Close_Graphics(cairo_t *cr);

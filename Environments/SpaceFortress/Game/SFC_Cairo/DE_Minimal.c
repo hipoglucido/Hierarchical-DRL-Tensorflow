@@ -77,6 +77,45 @@ int get_screen_width(){
 int get_screen_height(){
 	return WINDOW_HEIGHT;
 }
+float* get_symbols()
+{
+	//printf("GETTING SYMBOLS:");
+	symbols[0] = Ship_Y_Pos;// /(float) WINDOW_WIDTH;	
+	symbols[1] = Ship_X_Pos;// /(float) WINDOW_HEIGHT;
+	symbols[2] = Ship_Headings;// /(float) 360;
+	symbols[3] = Square_Y;// /(float) WINDOW_WIDTH;
+	symbols[4] = Square_X;// /(float) WINDOW_HEIGHT;
+	symbols[5] = Square_Step;// /(float) MAX_SQUARE_STEPS;
+	//for (int i = 3; i >= 0; i--)
+	//	printf("%f, ",symbols[i]);
+	//printf("\n");
+	return symbols;
+}
+
+int is_frictionless(){
+	#ifdef GRID_MOVEMENT
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_wrapper(){
+	#ifdef NO_WRAP
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_no_direction(){
+	#ifdef NO_DIRECTION
+		return 1;
+	#else
+		return 0;
+	#endif
+}
+
 void Initialize_Graphics(cairo_t *cr)
 {
 //	int Height,OldMaxX;
@@ -220,21 +259,7 @@ void set_initial_vals()
 
 }
 
-float* get_symbols()
-{
-	//printf("GETTING SYMBOLS:");
-	symbols[0] = Ship_X_Pos;// /(float) WINDOW_WIDTH;	
-	symbols[1] = Ship_Y_Pos;// /(float) WINDOW_HEIGHT;
-	symbols[2] = Ship_Headings;// /(float) 360;
-	symbols[3] = Square_X;// /(float) WINDOW_WIDTH;
-	symbols[4] = Square_Y;// /(float) WINDOW_HEIGHT;
-	symbols[5] = Square_Step;// /(float) MAX_SQUARE_STEPS;
-	//for (int i = 3; i >= 0; i--)
-	//	printf("%f, ",symbols[i]);
-	//printf("\n");
-	return symbols;
 
-}
 
 unsigned char* update_screen()
 {

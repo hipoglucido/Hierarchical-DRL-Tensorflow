@@ -29,8 +29,8 @@
 #define SHIP_WON 1
 #define FORT_WON 2
 
-#define SQUARE_HEIGHT 35
-#define SQUARE_WIDTH 35
+#define SQUARE_HEIGHT 5
+#define SQUARE_WIDTH 5
 #define MAX_SQUARES 3
 
 

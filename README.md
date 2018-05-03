@@ -7,3 +7,4 @@ Starting code:
  - https://github.com/EthanMacdonald/h-DQN
  - https://github.com/devsisters/DQN-tensorflow
  - https://github.com/DerkBarten/SpaceFortress
+ - https://github.com/cmusjtuliuyuan/RainBow

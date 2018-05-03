@@ -7,7 +7,8 @@ from configuration import hDQNSettings, DQNSettings, Constants as CT
 class Metrics:
     def __init__(self, config, goals = {}):
         self.config = config
-        self.is_hdqn = isinstance(self.config.ag, hDQNSettings)  
+        self.is_hdqn = isinstance(self.config.ag, hDQNSettings) 
+        self.is_pmemory = config.ag.pmemory
         self.is_SF = self.config.env.env_name in CT.SF_envs
         if self.is_hdqn:        
             self.mc_max_avg_ep_reward = 0
@@ -46,6 +47,8 @@ class Metrics:
                      'max_ep_reward', 'min_ep_reward', \
                      'avg_ep_reward', 'learning_rate', 'total_reward', \
                      'ep_reward', 'total_loss', 'total_q', 'update_count']
+        if self.is_pmemory:
+            self.scalar_dual_tags.append('beta')
         for tag in self.scalar_dual_tags:
             if self.is_hdqn:
                 #hDQN

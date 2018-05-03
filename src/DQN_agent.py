@@ -12,7 +12,7 @@ from metrics import Metrics
 from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
-from ops import linear, clipped_error
+from ops import linear, clipped_error, huber_loss, weighted_huber_loss
 from utils import get_time, save_pkl, load_pkl
 
 class DQNAgent(Agent):
@@ -30,7 +30,7 @@ class DQNAgent(Agent):
                                size    = self.environment.state_size)
         
       
-        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
+        memory_type = PriorityExperienceReplay if self.ag.pmemory else ReplayMemory
         
         self.memory = memory_type(config      = self.ag,
                                    model_dir  = self.model_dir,
@@ -53,11 +53,14 @@ class DQNAgent(Agent):
         self.new_episode()
 
         self.m.start_timer()
+        total_steps = self.ag.max_step + self.ag.memory_size
         if self.m.is_SF:   
-            iterator = tqdm(range(start_step, self.ag.max_step),
+            iterator = tqdm(range(start_step, total_steps),
                                                   ncols=70, initial=start_step)
         else:
-            iterator = range(start_step, self.ag.max_step)
+            iterator = range(start_step, total_steps)
+        
+        print("Filling memory...")
         for self.step in iterator:
 #            if self.step == self.ag.learn_start:                
 #                self.m.restart()
@@ -123,7 +126,9 @@ class DQNAgent(Agent):
         #screen, reward, action, terminal = self.environment.new_random_game()
         screen, _, _, _ = self.environment.new_game()        
         self.history.fill_up(screen)
-        self.display_episode = random.random() < self.gl.display_prob
+        
+        self.display_episode = random.random() < self.gl.display_prob and \
+                                                    self.memory.is_full()
         
         return 
     
@@ -143,15 +148,17 @@ class DQNAgent(Agent):
         # NB! screen is post-state, after action and reward
         
         assert np.sum(np.isnan(screen)) == 0, screen
-#        print("______________________________________")
-#        print("s_t\n",self.history.get().reshape(3,3))
+#        print("_________________rr_____________________")
+#        print("s_t\n",old_screen.reshape(5,5))
 #        print("A",action)
-#        print("s_t_plus_one\n",screen.reshape(3,3))
+#        print("s_t_plus_one\n",screen.reshape(5,5))
 #        print("R", reward)
 #        print("terminal", terminal + 0)
-        self.history.add(screen)
+#        
+        #assert not terminal and reward != -1
         #self.memory.add(screen, reward, action, terminal)
         self.memory.add(old_screen, action, reward, screen, terminal)
+        self.history.add(screen)
         
         #if self.step > self.ag.learn_start:
         if self.memory.is_full():
@@ -166,14 +173,14 @@ class DQNAgent(Agent):
     def q_learning_mini_batch(self):
         if self.memory.count < self.history.length:
             return
-        (s_t, action, reward, s_t_plus_1, terminal), idx, p, \
+        (s_t, action, reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.memory.sample()
 #        s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
 #        print("______________________________________")
-#        print("s_t\n",s_t[0].reshape(3,3))
+#        print("s_t\n",s_t[0].reshape(5,5))
 #        print("A",action[0])
 #        print("R", reward[0])
-#        print("s_t_plus_1\n", s_t_plus_1[0].reshape(3,3))
+#        print("s_t_plus_1\n", s_t_plus_1[0].reshape(5,5))
 #        print("terminal", terminal[0] + 0)
 #        assert reward[0] in [0., -1.], reward[0]
 
@@ -199,23 +206,37 @@ class DQNAgent(Agent):
                                               reward       = reward,
                                               s_t_plus_1   = s_t_plus_1,
                                               terminal     = terminal)
-        
-        _, q_t, q_acted, loss, summary_str = self.sess.run([self.optim, self.q,
-                                                            self.q_action,
-                                             self.loss, self.q_summary], {
+        feed_dict = {
             self.target_q_t: target_q_t,
             self.action: action,
             self.s_t: s_t,
             self.learning_rate_step: self.step,
-        })
+        }
         
-       
         
-        q_t_acted = np.array([q_t[i][a] for i, a in enumerate(action)])      
-        
-        td = np.abs(q_t_acted - target_q_t)
-        
-       
+        if self.ag.pmemory:
+            beta = (1 - self.epsilon.steps_value(self.step)) + self.epsilon.end
+            self.m.beta = beta
+            loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
+            feed_dict[self.loss_weight] = loss_weight
+#            print("___________")
+#            print("loss_weight",loss_weight)
+#            print("idx_list", idx_list)
+#            print("p_list", p_list)
+#            print("sum_p", sum_p)
+#            print("count", count)
+        _, q_t, td_error, loss, summary_str = self.sess.run([self.optim, self.q,
+                                                             self.td_error,
+                                             self.loss, self.q_summary], feed_dict)
+        if self.ag.pmemory:
+            self.memory.update(idx_list, td_error)
+#       
+#        
+#        q_t_acted = np.array([q_t[i][a] for i, a in enumerate(action)])      
+#        
+#        td = np.abs(q_t_acted - target_q_t)
+#        print("________________")
+#        print(td_error)
             
         
         
@@ -224,7 +245,7 @@ class DQNAgent(Agent):
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        
         self.m.update_count += 1
-        self.m.td_error += td.mean()
+        self.m.td_error += td_error.mean()
 
         
         
@@ -278,6 +299,8 @@ class DQNAgent(Agent):
     
         # optimizer
         with tf.variable_scope('optimizer'):
+            if self.ag.pmemory:
+                self.loss_weight = tf.placeholder('float32', [None], name='loss_weight')
             self.target_q_t = tf.placeholder('float32', [None], name='target_q_t')
             self.action = tf.placeholder('int64', [None], name='action')
 
@@ -285,13 +308,19 @@ class DQNAgent(Agent):
                                        1.0, 0.0, name = 'action_one_hot')
             q_acted = tf.reduce_sum(self.q * action_one_hot,
                                    reduction_indices = 1, name = 'q_acted')
+            self.td_error = tf.abs(self.target_q_t - q_acted)
+            #delta = self.target_q_t - q_acted
 
-            delta = self.target_q_t - q_acted
-
-
-
-            self.loss = tf.reduce_mean(clipped_error(delta), #*
-                                                      name='loss')
+            if self.ag.pmemory:
+                self.loss = tf.reduce_mean(weighted_huber_loss(y_true = self.target_q_t,
+                                                         y_pred = q_acted,
+                                                            weights = self.loss_weight),
+                                                          name='loss')
+            else:
+                self.loss = tf.reduce_mean(huber_loss(y_true = self.target_q_t,
+                                                         y_pred = q_acted),
+                                                          name='loss')
+                
             self.learning_rate_step = tf.placeholder('int64', None, #*
                                             name='learning_rate_step')
             self.learning_rate_op = tf.maximum(#*
