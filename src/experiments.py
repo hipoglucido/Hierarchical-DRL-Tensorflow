@@ -53,15 +53,18 @@ class Experiment():
             seeds = range(1, 10)
             for seed in seeds:
                 args = {'agent_type'   : 'dqn',
-                        'env_name'     : 'key_mdp-v0',
-                        'scale'        : 5,
+                        'env_name'     : 'SFC-v0',
+                        'scale'        : 100,
                         'factor'       : 3,
+                        'memory_size'  : 500000,
                         'log_level'    : 'DEBUG',
-                        'display_prob' : 0.05,
-                        'use_gpu'      : True,
+                        'display_prob' : 0.03,
+                        'use_gpu'      : 1,
+                        'pmemory'      : 1,
                         'mode'         : 'train',
-                        'architecture' : '100-100-100',
-                        'double_q'     : False,
+                        'architecture' : '25-25',
+                        'double_q'     : 1,
+                        'dueling'      : 1,
                         'random_seed'  : seed}
                 args_list.append(args)
         elif name == 'exp4':
@@ -69,34 +72,46 @@ class Experiment():
             architectures = [
 #                    [32, 32, 32, 32],
 #                    [128],
-                    [512],
+                    [25, 25],
+                    [4],
+                    [128]
 #                    [64, 64, 64]
 #                    [10, 10, 10]
 #                    [25, 25]                  
                     ]
             duelings = [
-                    1,
+                    1
 #                    0
+                    ]
+            pmemorys = [
+#                    1,
+                    0
                     ]
             double_qs = [
                     1,
 #                    0
                     ]
-            random_seeds = list(range(1))
+            memory_sizes = [
+                    1000000,
+                    50000
+                    ]
+            random_seeds = list(range(3))
             hyperparameter_space = {
 #                    'learning_rate_minimums' : [0.00025, 0.0001],
 #                    'learning_rates'         : [0.001, 0.1, 0.0005],
                     'architectures'          : architectures,
                     'duelings'               : duelings,
                     'double_qs'              : double_qs,
+                    'pmemorys'               : pmemorys,
+                    'memory_sizes'           : memory_sizes,
                     'random_seeds'           : random_seeds
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'SFC-v0',
-                    'scale'                 : 1000,
+                    'scale'                 : 100,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
-                    'display_prob'          : 1,
+                    'display_prob'          : 0.03,
                     'use_gpu'               : True,
                     'mode'                  : 'train',
 #                    'double_q'              : False
@@ -122,7 +137,10 @@ class Experiment():
             list_ = [(param_name, v) for v in hyperparameters]
             
             lists.append(list_)
-        for configuration in itertools.product(*lists):
+        import random
+        configurations = list(itertools.product(*lists))
+        random.shuffle(configurations)
+        for configuration in configurations:
             yield {**base_dict, **dict(configuration)}
     
     def get_args_list(self):

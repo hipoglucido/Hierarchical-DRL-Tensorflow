@@ -78,5 +78,19 @@ class SFGoal(Goal):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+    
+    def is_achieved(self, screen, action):
+        if self.name == 'aime_at_square':
+            pass
+    
+def generate_SF_goals():
+    goals = []
+    name = 'aim_at_square'
+    return goals
+    
+    
+    
+    
+    
+           
         

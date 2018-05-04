@@ -15,7 +15,10 @@ import argparse
 from pprint import pformat
 from hDQN_agent import HDQNAgent
 from DQN_agent import DQNAgent
-from human_agent import HumanAgent
+try:
+    from human_agent import HumanAgent
+except:
+    print("Human agent not imported")
 parser = argparse.ArgumentParser()
 
 
@@ -49,6 +52,8 @@ ag_args.add_argument("--learning_rate_decay", default = None, type = float)
 ag_args.add_argument("--double_q", default = None, type = utils.str2bool)
 ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
+ag_args.add_argument("--memory_size", default = None, type = int)
+
 
 #
 args = vars(parser.parse_args())

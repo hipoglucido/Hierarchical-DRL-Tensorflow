@@ -30,7 +30,7 @@ class DQNAgent(Agent):
                                size    = self.environment.state_size)
         
       
-        memory_type = PriorityExperienceReplay if self.ag.pmemory else ReplayMemory
+        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
         
         self.memory = memory_type(config      = self.ag,
                                    model_dir  = self.model_dir,
@@ -44,7 +44,7 @@ class DQNAgent(Agent):
         self.config.print()
         self.write_configuration()
         
-        assert self.ag.memory_size < self.ag.max_step
+#        assert self.ag.memory_size < self.ag.max_step
    
     def train(self):
         start_step = 0    
@@ -60,8 +60,10 @@ class DQNAgent(Agent):
         else:
             iterator = range(start_step, total_steps)
         
-        print("Filling memory...")
+        print("\nFilling memory with %d random experiences..." % (self.ag.memory_size))
         for self.step in iterator:
+            if self.memory.is_full() and self.step == self.ag.memory_size:
+                print("\nLearning...")
 #            if self.step == self.ag.learn_start:                
 #                self.m.restart()
 #            if self.memory.is_full():
@@ -110,14 +112,14 @@ class DQNAgent(Agent):
 
                 self.m.update_best_score()
                 
-            if self.step > 50:
+           
                 
-                self.m.learning_rate = self.learning_rate_op.eval(
-                                {self.learning_rate_step: self.step})
-                summary = self.m.get_summary()
-                self.m.filter_summary(summary)
-                self.inject_summary(summary, self.step)
-                self.write_output()
+            self.m.learning_rate = self.learning_rate_op.eval(
+                            {self.learning_rate_step: self.step})
+            summary = self.m.get_summary()
+            self.m.filter_summary(summary)
+            self.inject_summary(summary, self.step)
+            self.write_output()
             if self.step > self.ag.max_step / 3:
                 pass#
             self.m.restart()
@@ -148,14 +150,15 @@ class DQNAgent(Agent):
         # NB! screen is post-state, after action and reward
         
         assert np.sum(np.isnan(screen)) == 0, screen
-#        print("_________________rr_____________________")
-#        print("s_t\n",old_screen.reshape(5,5))
-#        print("A",action)
-#        print("s_t_plus_one\n",screen.reshape(5,5))
-#        print("R", reward)
-#        print("terminal", terminal + 0)
-#        
-        #assert not terminal and reward != -1
+#        if self.memory.is_full() and reward == -1:
+#            print("_________________rr_____________________")
+#            print("s_t\n",old_screen)
+#            print("A",action)
+#            print("s_t_plus_one\n",screen)
+#            print("R", reward)
+#            print("terminal", terminal + 0)
+    #        
+            
         #self.memory.add(screen, reward, action, terminal)
         self.memory.add(old_screen, action, reward, screen, terminal)
         self.history.add(screen)

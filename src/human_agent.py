@@ -37,6 +37,7 @@ class HumanAgent():
         self.current_key = 'wait'
         self.display_episode = True
         # Start listening to the keyboard
+        print('  '.join(self.environment.gym.feature_names))
         with Listener(on_press=on_press, on_release = on_release): 
             while True:
                 if self.display_episode:
@@ -69,8 +70,12 @@ class HumanAgent():
                             % (observation, self.current_key, reward, done)
                 print(msg)
                 if done == 1:
+                    if self.display_episode:
+                        self.environment.gym.render()
+                        time.sleep(.3)
                     self.environment.new_game()
                     self.display_episode = random() < self.config.gl.display_prob
+                    print('  '.join(self.environment.gym.feature_names))
                     
                     if not self.display_episode:
                         cv2.destroyAllWindows()

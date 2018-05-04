@@ -180,8 +180,8 @@ class Agent(object):
             if prefix == 'c_': #Add goal to input
                 target_q_with_idx_input[self.c_target_g_t] = g_t_plus_1
             q_t_plus_1_with_pred_action = target_q_with_idx.eval(target_q_with_idx_input)
-            
-            
+       
+            terminal, reward = np.array(terminal), np.array(reward)
             target_q_t = (1. - terminal) * self.ag.discount * \
                                         q_t_plus_1_with_pred_action + reward
         else:

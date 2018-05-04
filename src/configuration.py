@@ -222,7 +222,7 @@ class DQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
         #self.max_step = 500 * self.scale
-        self.memory_size = 1000000
+        self.memory_size = 5000000
         
         self.batch_size = 32
         self.random_start = 30
