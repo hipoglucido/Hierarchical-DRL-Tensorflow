@@ -22,7 +22,7 @@ class Constants:
     }
     
     SF_action_spaces = {
-        'SFC-v0'   : [Key.up, Key.right, Key.left, 'wait'],
+        'SFC-v0'   : ['Key.up', 'Key.right', 'Key.left', 'wait'],
         'SF-v0'    : [],
         'SFS-v0'   : [],
         'AIM-v0'   : []
@@ -181,6 +181,9 @@ class GlobalSettings(GenericSettings):
                  'ag.architecture',
                  'ag.double_q',
                  'ag.dueling',
+                 'ag.pmemory',
+                 'ag.memory_size',
+                 'gl.random_seed'
                  
 #                 'ag.learning_rate_minimum',
 #                 'ag.learning_rate',

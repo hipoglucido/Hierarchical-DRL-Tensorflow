@@ -68,21 +68,22 @@ class HDQNAgent(Agent):
         
     def define_goals(self):
         
-        self.ag.goal_size = self.environment.state_size
         
         
-        goals = {}
-        for n in range(self.ag.goal_size):
-            if self.environment.env_name in CT.MDP_envs:
+        
+        if self.environment.env_name in CT.MDP_envs:
+            self.ag.goal_size = self.environment.state_size
+            goals = {}
+            for n in range(self.ag.goal_size):
                 goal_name = "g" + str(n)
                 goal = MDPGoal(n, goal_name, self.c)            
                 goal.setup_one_hot(self.ag.goal_size)
-            elif 0:
-                #Space Fortress
-                pass
-            else:
-                raise ValueError("No prior goals for " + self.environment.env_name)
-            goals[goal.n] = goal
+                goals[goal.n] = goal
+        elif self.environment.env_name in CT.SF_envs:
+            #Space Fortress
+            pass
+        else:
+            raise ValueError("No prior goals for " + self.environment.env_name)
         
         return goals
     

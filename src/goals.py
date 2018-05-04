@@ -2,9 +2,10 @@
 from abc import ABCMeta, abstractmethod
 from base import Epsilon
 import numpy as np
-
+import math
+from configuration import Constants as CT
 class Goal(metaclass = ABCMeta):
-    def __init__(self, n, name, config):
+    def __init__(self, n, name, config = None):
         self.n = n
         self.name = str(name)
         self.steps_counter = 0.
@@ -76,17 +77,73 @@ class SFGoal(Goal):
     Goals for the "complete" game (SF):
         - Aim at the fortress
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, environment, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.environment = environment.gym
+    def get_prep_features(self, observation):
+        result = {}
+        for feature_name in self.environment.feature_names:
+            result[feature_name] = \
+                   self.environment.get_prep_feature(observation, feature_name)
+        return result
     
     def is_achieved(self, screen, action):
-        if self.name == 'aime_at_square':
-            pass
+        pfs = self.get_prep_features(screen)
+        
+        achieved = False
+        if 'aim_at' in self.name:
+            if 'square' in self.name:
+                # aim_at_aquare
+                epsilon = .1
+                if not self.environment.is_no_direction:
+                    ship_headings_x =pfs['ship_headings_x']
+                    ship_headings_y =pfs['ship_headings_y']
+                    if ship_headings_x > 0:
+                        g = math.acos(ship_headings_y) / (2*math.pi)
+                    else:
+                        g = 1 - math.acos(ship_headings_y) / (2*math.pi)
+                    
+                    g = g * 360
+                    i_dist = pfs['ship_pos_i'] - pfs['square_pos_i']
+                    j_dist = pfs['ship_pos_j'] - pfs['square_pos_j']
+                    abs_dist = math.sqrt( abs(i_dist) ** 2 + abs(j_dist) ** 2)
+                    tan_alpha = i_dist / j_dist
+                    alpha = math.atan(tan_alpha)
+                    dist_angle = alpha - g
+                    print("Abs distanc", abs_dist)
+                    print("Ship grades", g)
+                    print("Rela grades", alpha)
+                    print("Dist grades", dist_angle)
+#                    print("Ship headings", ship_headings_x, 'g',g, 'alpha', dist_angle)
+                    pass
+                else:
+                    assert 0
+            else:
+                # aim_at_fortress
+                pass
+        elif action == CT.SF_action_spaces[self.environment.env_name].index(self.name):
+            achieved = True
+        return achieved
+            
+
     
-def generate_SF_goals():
+def generate_SF_goals(environment):
     goals = []
-    name = 'aim_at_square'
+    
+    for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
+        goals.append(
+                SFGoal(
+                    n = i,
+                    name = action_name,
+                    environment = environment))
+    goals.append(
+            SFGoal(
+                n = i + 1,
+                name = 'aim_at_square',
+                environment = environment))
+    
     return goals
+    
     
     
     

@@ -17,8 +17,8 @@ from hDQN_agent import HDQNAgent
 from DQN_agent import DQNAgent
 try:
     from human_agent import HumanAgent
-except:
-    print("Human agent not imported")
+except Exception as e:
+    print("Human agent not imported: %s" % (str(e)))
 parser = argparse.ArgumentParser()
 
 

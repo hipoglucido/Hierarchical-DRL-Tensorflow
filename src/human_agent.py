@@ -8,6 +8,7 @@ from time import sleep
 from environment import Environment
 from pynput.keyboard import KeyCode, Key, Listener
 from configuration import Constants as CT
+from goals import generate_SF_goals
 #from constants import GAME, Games, SCRIPTS, ScriptsAIM_3_All, LIBRARY_PATH, EnableScripts,\
 #    LIBRARY_NAME, FRAMESKIP, ScriptsSF_9, RECORD, RENDER_SPEED, RenderMode,\
 #    DEFAULT_RENDER_MODE, ScriptsSFC_9, ScriptsSF_3, ScriptsAIM_3, ScriptsSFC_3,\
@@ -21,6 +22,8 @@ class HumanAgent():
         self.config = config
         self.config.env.update({'display_prob' : 1.})
         self.environment = environment
+        
+        self.goals = generate_SF_goals(self.environment)
         self.config.print()
         # Current key has to be initialized before first input of keyboard
         self.key_to_action = CT.key_to_action[self.config.env.env_name]
@@ -65,10 +68,13 @@ class HumanAgent():
                 square_y_pos_y
                 """
                 observation, reward, done = self.environment.act(action)
-                observation = '\t'.join([str(round(f,3)) for f in observation])
+                observation_str = '\t'.join([str(round(f,3)) for f in observation])
                 msg = '%s\tA:%s, R: %.3f, T: %s' \
-                            % (observation, self.current_key, reward, done)
+                            % (observation_str, self.current_key, reward, done)
                 print(msg)
+                for goal in self.goals:
+                    achieved = goal.is_achieved(observation, action)
+                    pass#print("Goal %s achived -> %s" % (goal.name, str(achieved)))
                 if done == 1:
                     if self.display_episode:
                         self.environment.gym.render()

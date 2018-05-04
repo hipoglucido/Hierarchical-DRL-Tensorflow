@@ -54,7 +54,7 @@ class Experiment():
             for seed in seeds:
                 args = {'agent_type'   : 'dqn',
                         'env_name'     : 'SFC-v0',
-                        'scale'        : 100,
+                        'scale'        : 10000,
                         'factor'       : 3,
                         'memory_size'  : 500000,
                         'log_level'    : 'DEBUG',
@@ -73,8 +73,8 @@ class Experiment():
 #                    [32, 32, 32, 32],
 #                    [128],
                     [25, 25],
-                    [4],
-                    [128]
+#                    [4],
+#                    [128]
 #                    [64, 64, 64]
 #                    [10, 10, 10]
 #                    [25, 25]                  
@@ -92,10 +92,10 @@ class Experiment():
 #                    0
                     ]
             memory_sizes = [
-                    1000000,
-                    50000
+#                    1000000,
+                    100000
                     ]
-            random_seeds = list(range(3))
+            random_seeds = list(range(10,20))
             hyperparameter_space = {
 #                    'learning_rate_minimums' : [0.00025, 0.0001],
 #                    'learning_rates'         : [0.001, 0.1, 0.0005],
@@ -108,7 +108,7 @@ class Experiment():
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'SFC-v0',
-                    'scale'                 : 100,
+                    'scale'                 : 200,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.03,
