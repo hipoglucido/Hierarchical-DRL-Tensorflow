@@ -74,7 +74,7 @@ class HumanAgent():
                 print(msg)
                 for goal in self.goals:
                     achieved = goal.is_achieved(observation, action)
-                    pass#print("Goal %s achived -> %s" % (goal.name, str(achieved)))
+                    print("Goal %s achieved -> %s" % (goal.name, str(achieved)))
                 if done == 1:
                     if self.display_episode:
                         self.environment.gym.render()

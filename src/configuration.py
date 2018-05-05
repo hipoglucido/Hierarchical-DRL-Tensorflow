@@ -1,9 +1,9 @@
-import logging
 import os
 import inspect
 import sys
 import glob
 import utils
+import math
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pprint import pformat
@@ -48,6 +48,14 @@ class Constants:
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     GYM_envs = ['CartPole-v0']
     env_names = SF_envs + MDP_envs + GYM_envs
+    
+    ### GOALS
+    c = 2 * math.pi
+    c34 = 3 / 4 * c
+    c12 = 1 / 2 * c
+    c14 = 1 / 4 * c
+    
+    #oneqpi = math.pi * 1 / 4
     
 class Configuration:
     def __init__(self):
