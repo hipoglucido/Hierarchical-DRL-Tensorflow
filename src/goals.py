@@ -92,92 +92,46 @@ class SFGoal(Goal):
     def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .1):
         
         result = False
-#        ship_headings_sin =pfs['ship_headings_sin']
-#        ship_headings_cos =pfs['ship_headings_cos']
         if A_sin > 0:
-            A_pointer = math.acos(A_cos)# / (2*math.pi)
+            A_pointer = math.acos(A_cos)
         else:
-            A_pointer = CT.c - math.acos(A_cos)# / (2*math.pi)
-        #rad /= 2 * math.pi
+            A_pointer = CT.c - math.acos(A_cos)
+        
         A_min = (A_pointer - epsilon - CT.c14) % CT.c
         A_max = (A_pointer + epsilon - CT.c14) % CT.c
-#                    g = 360 * rad / (2 * math.pi)
+
         i_dist = B_i - A_i
         j_dist = B_j - A_j
-        def r(x): return 360 * x / CT.c
-#                    abs_dist = math.sqrt( abs(i_dist) ** 2 + abs(j_dist) ** 2)
-#                    tan_alpha = i_dist / j_dist
+#        def r(x): return 360 * x / CT.c
+
         rel_rad = math.atan2(i_dist, j_dist) + CT.c12
-#                    ship_rad = (ship_rad + math.pi) % (2 * math.pi)
-#                    target_rad = target_rad + math.pi/2 % 2 * math.pi
-#                    alpha = math.atan(tan_alpha)
-#                    dist_angle = alpha - g
-        
-#        print("frel", r(frel))
-#                    error = target_rad - ship_rad
-#        diff = abs(A_min - A_max)
-        print("Ship\t[%.2f, %.2f]" % (r(A_min), r(A_max) ))
-        print("Rela radian", r(rel_rad))
+
+#        print("Ship\t[%.2f, %.2f]" % (r(A_min), r(A_max) ))
+#        print("Rela radian", r(rel_rad))
         
         if A_i <= B_i and A_j >= B_j:
-            print(1)
+#            print(1)
             diff = (CT.c - rel_rad)
             A_target = CT.c12 - diff
         elif A_i >= B_i and A_j >= B_j:
-            print(2)
+#            print(2)
             A_target = CT.c12 + rel_rad
         elif A_i >= B_i and A_j <= B_j:
-            print(3)
-            
+#            print(3)            
             A_target = CT.c12 + rel_rad
         elif A_i <= B_i and A_j <= B_j:
-            print(4)
+#            print(4)
             A_target =  - CT.c12 + rel_rad
         else:
-            print("MAAAAAAAAL")
-        print(r(A_target))
-        
-      
+            assert 0
+#        print(r(A_target))
         if A_min < A_target < A_max:
             result = True
         elif abs(A_min - A_max) > 2.1 * epsilon:
-            print("wieeerd")
+#            print("wieeerd")
             if A_target > A_min or A_target < A_max:
                 result = True
-            
-#        error = -1
-#        is_weird = diff > beam_size*1.1
-#        if is_weird:
-#            print("WEIRD")
-#        if CT.c34 <= rel_rad <= CT.c:                        
-#            print(1)
-#                
-#            if not any([CT.c14 < A_min < CT.c12,
-#                       CT.c14 < A_max < CT.c12]):
-#                result = False
-#            else:
-#                print("Das",r((rel_rad)))
-#                result = A_min < (rel_rad + CT.c12) < A_max
-#        elif 0 <= rel_rad <= CT.c14:
-#            print(2)   
-#            if is_weird:
-#                result = False
-#            else:
-#                t = (rel_rad + CT.c12) % CT.c
-#                result = A_min < t < A_max                 
-#        elif CT.c14 <= rel_rad <= CT.c12:
-#            print(3)
-#            if is_weird:
-#                t = (rel_rad + CT.c12) % CT.c
-#            else:
-#                t = (rel_rad + CT.c12) % CT.c
-#                result = A_min < t < A_max
-#            print(99,t)
-#        elif CT.c12 <= rel_rad <= CT.c34:
-#            print(4)
-#        else:
-#            print("MAL")
-        
+ 
         return result
     def is_achieved(self, screen, action):
         pfs = self.get_prep_features(screen)
@@ -208,22 +162,21 @@ class SFGoal(Goal):
             achieved = True
         return achieved
             
-
+#def generate_area_goals()
     
 def generate_SF_goals(environment):
     goals = []
-    i = 0
-#    for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
-#        goals.append(
-#                SFGoal(
-#                    n = i,
-#                    name = action_name,
-#                    environment = environment))
-    goals.append(
-            SFGoal(
-                n = i + 1,
-                name = 'aim_at_square',
-                environment = environment))
+#    i = 0
+    for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
+        goals[i] =  SFGoal(
+                        n = i,
+                        name = action_name,
+                        environment = environment)
+    goals[i + 1] = SFGoal(
+                        n = i + 1,
+                        name = 'aim_at_square',
+                        environment = environment)
+#    goals = generate_area_goals()
     
     return goals
     

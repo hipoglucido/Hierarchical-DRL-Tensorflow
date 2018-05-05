@@ -17,7 +17,7 @@ class Key_MDPEnv(MDP):
                         2 : (self.apply_down, 'down'),
                         3 : (self.apply_left, 'left')}
         self.big_reward = 1
-        self.small_reward = 1
+        self.small_reward = 0
         self.negative_reward = -1
         
     def reset(self):

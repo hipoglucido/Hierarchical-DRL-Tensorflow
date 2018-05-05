@@ -46,7 +46,8 @@ class Metrics:
         self.scalar_dual_tags = ['avg_reward', 'avg_loss', 'avg_q', \
                      'max_ep_reward', 'min_ep_reward', \
                      'avg_ep_reward', 'learning_rate', 'total_reward', \
-                     'ep_reward', 'total_loss', 'total_q', 'update_count']
+                     'ep_reward', 'total_loss', 'total_q', 'update_count',
+                     'memory_size']
         if self.is_pmemory:
             self.scalar_dual_tags.append('beta')
         for tag in self.scalar_dual_tags:
@@ -333,7 +334,7 @@ class Metrics:
             steps_per_episode = self.error_value
         setattr(self, 'steps_per_episode', steps_per_episode)
         
-    def add_act(self, action, state):
+    def add_act(self, action, state = None):
         if self.is_hdqn:
             self.c_actions.append(action)
         else:

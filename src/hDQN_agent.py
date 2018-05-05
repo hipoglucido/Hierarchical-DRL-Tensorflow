@@ -11,9 +11,9 @@ import sys
 from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
-from ops import linear, clipped_error
+from ops import linear, clipped_error, huber_loss, weighted_huber_loss
 from utils import get_time, save_pkl, load_pkl
-from goals import MDPGoal
+from goals import MDPGoal, generate_SF_goals
 from metrics import Metrics
 from configuration import Constants as CT
 
@@ -42,11 +42,11 @@ class HDQNAgent(Agent):
         
         self.c_history = History(length_ = self.c.history_length,
                                  size    = self.environment.state_size)
-        
-        self.mc_memory = OldReplayMemory(config       = self.mc,
+        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
+        self.mc_memory = memory_type(config       = self.mc,
                                       model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size)
-        self.c_memory = OldReplayMemory(config        = self.c,
+        self.c_memory = memory_type(config        = self.c,
                                       model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size + \
                                                           self.ag.goal_size)
@@ -68,9 +68,6 @@ class HDQNAgent(Agent):
         
     def define_goals(self):
         
-        
-        
-        
         if self.environment.env_name in CT.MDP_envs:
             self.ag.goal_size = self.environment.state_size
             goals = {}
@@ -81,46 +78,44 @@ class HDQNAgent(Agent):
                 goals[goal.n] = goal
         elif self.environment.env_name in CT.SF_envs:
             #Space Fortress
-            pass
+            goals = generate_SF_goals(self.environment)
         else:
             raise ValueError("No prior goals for " + self.environment.env_name)
         
         return goals
     
-    def set_next_goal(self, test_ep = None):
-        try:
-            step = self.c_step #TODO think about this
-        except:
-            step = 0
-        ep = test_ep or self.mc_epsilon.steps_value(step)
+    def set_next_goal(self, obs):
+        step = self.c_step #TODO think about this
+        
+        ep = self.mc_epsilon.steps_value(step)
         self.m.update_epsilon(goal_name = None, value = ep)
         if random.random() < ep or self.gl.randomize:
             
             n_goal = random.randrange(self.ag.goal_size)
         else:
-            screens = self.mc_history.get()
-            n_goal = self.mc_q_action.eval({self.mc_s_t: [screens]})[0]
+            n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
+        self.mc_old_obs = obs
 #        n_goal = 5
         self.m.mc_goals.append(n_goal)
         goal = self.get_goal(n_goal)
         goal.set_counter += 1
         self.current_goal = goal
         
-    def predict_next_action(self, test_ep = None):
+    def predict_next_action(self, obs):
         
         
         
         #s_t should have goals and screens concatenated
-        ep = test_ep or self.current_goal.epsilon
+        ep = self.current_goal.epsilon
 
         if random.random() < ep or self.gl.randomize:
             action = random.randrange(self.environment.action_size)
             
         else:
-            screens = self.c_history.get()
+            #screens = self.c_history.get()
             
             action = self.c_q_action.eval(
-                            {self.c_s_t: [screens],
+                            {self.c_s_t: [[obs]],
                              self.c_g_t: [self.current_goal.one_hot]})[0]
     
     
@@ -128,13 +123,17 @@ class HDQNAgent(Agent):
 #        print('**',self.aux(self.c_history.get()[-1]), self.current_goal.n, action)
         self.m.c_actions.append(action)
         return action
-    def mc_observe(self, screen, ext_reward, goal_n, terminal):
-        if self.display_episode:
-            pass#print("MC ", ext_reward, "while", self.aux(screen), "g:", goal_n)
+    def mc_observe(self, goal_n, ext_reward, new_obs, terminal):
+#        old_state = self.mc_history.get()
+#        self.mc_history.add(screen)
+#        print("____________mcobs________________")
+#        f=self.config.env.factor
+#        print("s0:\n",self.mc_old_obs.reshape(f,f))
+#        print("g:", self.current_goal.n)
+#        print("s1:\n", new_obs.reshape(f,f))
+#        print("EXtR:", ext_reward,", terminal", int(terminal))
         
-        self.mc_history.add(screen)
-        next_state = screen
-        self.mc_memory.add(next_state, ext_reward, goal_n, terminal)
+        self.mc_memory.add(self.mc_old_obs, goal_n, ext_reward, new_obs, terminal)
 
         if self.mc_step >  self.mc.learn_start:
             if self.mc_step % self.mc.train_frequency == 0:
@@ -144,20 +143,26 @@ class HDQNAgent(Agent):
                         self.mc.target_q_update_step - 1:
                 self.mc_update_target_q_network()    
     
-    def c_observe(self, screen, int_reward, action, terminal):
+    def c_observe(self, old_obs, action, int_reward, new_obs, terminal):
         if self.display_episode:
             pass#print("C ", int_reward, "while", self.aux(screen), "a:", action)
         # NB! screen is post-state, after action and reward
-        self.c_history.add(screen)
+#        old_screen = self.c_history.get()[0]
+#        print(old_screen)
+#        print(self.current_goal.one_hot)
+        old_state = np.hstack([self.current_goal.one_hot, old_obs])
+#        self.c_history.add(screen)
+        next_state = np.hstack([self.current_goal.one_hot, new_obs])
 #        if terminal==0 and int_reward==1:
-#            print("_____________________")
-#            print("a",action)
-#            print("s_t\n",screen.reshape((3,3)))
-#            print("g_t\n",self.current_goal.one_hot.reshape((3,3)))
-#            print("R: %.2f, t=%s" % (int_reward, str(terminal)))
-        next_state = np.hstack([self.current_goal.one_hot, screen])
+#        print("_______***___________")
+#        f=self.config.env.factor
+#        print("s_t-1\n", old_obs.reshape(f,f))
+#        print("a",action)
+#        print("s_t\n",new_obs.reshape(f,f))
+#        print("g_t:",self.current_goal.n)#one_hot.reshape((3,3)))
+#        print("R: %.2f, t=%s" % (int_reward, str(terminal)))
         
-        self.c_memory.add(next_state, int_reward, action, terminal)
+        self.c_memory.add(old_state, action, int_reward, next_state, terminal)
         
         if self.c_step > self.c.learn_start:
             if self.c_step % self.c.train_frequency == 0:
@@ -171,35 +176,38 @@ class HDQNAgent(Agent):
             return
         
    
-        s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
-        
-#        q_t_plus_1 = self.mc_target_q.eval({self.mc_target_s_t: s_t_plus_1})
-#
-#        terminal = np.array(terminal) + 0.
-#        max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-#        target_q_t = (1. - terminal) * self.mc.discount * max_q_t_plus_1 + ext_reward
-#        
-        #print("SAAAAAMPLING")
-#        for s,g,r,s1,t in zip(s_t, goal, ext_reward, s_t_plus_1, terminal):
-#            if r == 0:
-#                continue
-#            print("******")
-#            print("s_t\n",s[-1])
-#            print("g",g)
-#            print("s_t1\n",s1[-1])
-#            print("r",r)
-#            print("t",t)
+#        s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
+        (s_t, goal, ext_reward, s_t_plus_1, terminal), idx_list, p_list, \
+                                        sum_p, count = self.mc_memory.sample()
+
+#        if ext_reward[0] > 0:
+#            print("_______---___________")
+#            f=self.config.env.factor
+#            print("s_t-1\n", s_t[0].reshape(f,f))
+#            print("g",goal[0])
+#            print("s_t\n",s_t_plus_1[0].reshape(f,f))
+#            print("R: %.2f, t=%s" % (ext_reward[0], str(terminal[0])))
         target_q_t = self.generate_target_q_t(prefix       = 'mc',
                                               reward       = ext_reward,
                                               s_t_plus_1   = s_t_plus_1,
                                               terminal     = terminal)
-        _, q_t, loss, summary_str = self.sess.run([self.mc_optim, self.mc_q,
-                                             self.mc_loss, self.mc_q_summary], {
+        feed_dict = {
             self.mc_target_q_t: target_q_t,
             self.mc_action: goal,
             self.mc_s_t: s_t,
             self.mc_learning_rate_step: self.mc_step,
-        })
+        }
+        
+        if self.ag.pmemory:
+            #TODO
+            pass
+        
+        
+        _, q_t, loss, summary_str = self.sess.run([self.mc_optim,
+                                                             self.mc_q,
+                                                             self.mc_loss,
+                                                             self.mc_q_summary],
+                                                            feed_dict)
         self.writer.add_summary(summary_str, self.mc_step)
     
         self.m.mc_add_update(loss, q_t.mean())
@@ -209,7 +217,8 @@ class HDQNAgent(Agent):
         if self.c_memory.count < self.c_history.length:
             return
         
-        s_t, action, int_reward, s_t_plus_1, terminal = self.c_memory.sample()
+        (s_t, action, int_reward, s_t_plus_1, terminal), idx_list, p_list, \
+                                        sum_p, count = self.c_memory.sample()
         
         #TODO: optimize goals in memory
         g_t = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]]) 
@@ -219,15 +228,14 @@ class HDQNAgent(Agent):
         g_t_plus_1 = np.vstack([g[0] for g in s_t_plus_1[:, :, :self.ag.goal_size]])
         s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
         
-        
-#        print('_____________________')
-#        print("s_t\n",s_t[-1][0].reshape(3,3))
-#        print("a",action[-1])
-#        print("g_t\n",g_t[-1].reshape(3,3))
-#        print("s_t1\n",s_t_plus_1[-1][0].reshape(3,3))
-#        print("g_t1\n",g_t_plus_1[-1].reshape(3,3))
-#        print("r",int_reward[-1])
-#        print("t",terminal[-1])
+#        if int_reward[0] > 0:
+#            print("_______***___________")
+#            f=self.config.env.factor
+#            print("s_t-1\n", s_t[0].reshape(f,f))
+#            print("a",action[0])
+#            print("s_t\n",s_t_plus_1[0].reshape(f,f))
+#            print("g_t-1\n",g_t[0].reshape(f,f))#one_hot.reshape((3,3)))
+#            print("R: %.2f, t=%s" % (int_reward[0], str(terminal[0])))
 #        
  
         
@@ -246,27 +254,21 @@ class HDQNAgent(Agent):
                                               s_t_plus_1   = s_t_plus_1,
                                               terminal     = terminal,
                                               g_t_plus_1   = g_t_plus_1)
-        _, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
-                                             self.c_loss, self.c_q_summary], {
+        feed_dict = {
             self.c_target_q_t: target_q_t,
             self.c_action: action,
             self.c_s_t: s_t,
             self.c_g_t: g_t,
             self.c_learning_rate_step: self.c_step,
-        })
+        }
+        _, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
+                                             self.c_loss, self.c_q_summary], feed_dict)
         self.writer.add_summary(summary_str, self.c_step)
         self.m.c_add_update(loss, q_t.mean())
 
 
     
-    def new_episode(self):
-        #screen, reward, action, terminal = self.environment.new_random_game()
-        screen, _, _, _ = self.environment.new_game(False)        
-        self.mc_history.fill_up(screen)
-        self.c_history.fill_up(screen)
-        self.display_episode = random.random() < self.gl.display_prob
-      
-        return 
+
     
     def train(self):
 
@@ -277,23 +279,33 @@ class HDQNAgent(Agent):
         for key, goal in self.goals.items():
             goal.setup_epsilon(self.c, c_start_step) #TODO load individual
         
-        self.new_episode()
+        old_obs = self.new_episode()
             
         self.m.start_timer()
         # Initial goal
         self.mc_step = mc_start_step
-        self.set_next_goal()
+        self.c_step = c_start_step
+        self.set_next_goal(old_obs)
         
-        iterator = range(c_start_step, self.ag.max_step)
+        total_steps = self.ag.max_step + self.c.memory_size
+        if self.m.is_SF:   
+            iterator = tqdm(range(c_start_step, total_steps),
+                                                  ncols=70, initial=c_start_step)
+        else:
+            iterator = range(c_start_step, total_steps)
+        print("\nFilling c_memory (%d) and mc_memory (%d) with random experiences..." % (self.c.memory_size, self.mc.memory_size))
+        
         for self.c_step in iterator:
-            if self.c_step == self.c.learn_start:                
-                self.m.restart()
+            if self.c_memory.is_full() and self.c_step == self.c.memory_size:
+                print("Controller memory ready, MC is at %.2f..." % \
+                              (self.mc_memory.count / self.mc.memory_size))
+                time.sleep(.5)
             
             # Controller acts
-            action = self.predict_next_action()
+            action = self.predict_next_action(old_obs)
                 
-            screen, ext_reward, terminal = self.environment.act(action, is_training = True)            
-            self.m.add_act(action, self.environment.gym.one_hot_inverse(screen))
+            new_obs, ext_reward, terminal = self.environment.act(action)            
+            self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
             
             
@@ -305,13 +317,13 @@ class HDQNAgent(Agent):
 #                
 #                print('s', screen)
 #                print('g', self.current_goal.one_hot)
-            goal_achieved = self.current_goal.is_achieved(screen)
+            goal_achieved = self.current_goal.is_achieved(new_obs)
             int_reward = 1. if goal_achieved else 0.
             int_reward -= self.c.intrinsic_time_penalty
-            self.c_observe(screen, int_reward, action, terminal or goal_achieved)
+            self.c_observe(old_obs, action, int_reward, new_obs, terminal or goal_achieved)
             
             if self.display_episode:
-                self.console_print(action, ext_reward, int_reward)
+                self.console_print(old_obs, action, ext_reward, int_reward)
 
             
             self.m.increment_rewards(int_reward, ext_reward)
@@ -320,24 +332,26 @@ class HDQNAgent(Agent):
                 
                 self.current_goal.finished(self.m, goal_achieved)
                 # Meta-controller learns                
-                self.mc_observe(screen, self.m.mc_step_reward,
-                                                self.current_goal.n, terminal)
+                self.mc_observe(self.current_goal.n, self.m.mc_step_reward,
+                                                new_obs, terminal)
                 reward = self.m.mc_step_reward
                 self.m.mc_step_reward = 0    
                 if goal_achieved and self.display_episode:
                     pass#print("Achieved!!!", self.current_goal.n)
                 if terminal:
                     if self.display_episode:
-                        self.console_print_terminal(reward)
+                        self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
-                    self.new_episode()
+                    old_obs = self.new_episode()
+                else:
+                    old_obs = new_obs.copy()
                     
 #                print("This", self.m.mc_step_reward)
                     
                 self.mc_step += 1
                 
                 # Meta-controller sets goal
-                self.set_next_goal()
+                self.set_next_goal(old_obs)
                 self.m.mc_goals.append(self.current_goal.n)
                 
                 
@@ -375,12 +389,12 @@ class HDQNAgent(Agent):
                 self.m.update_best_score()
                 
 
-            if self.c_step > 50:
-                self.send_learning_rate_to_metrics()
-                summary = self.m.get_summary()
-                self.m.filter_summary(summary)
-                self.inject_summary(summary, self.c_step)
-                self.write_output()
+#            if self.c_step > 50:
+            self.send_learning_rate_to_metrics()
+            summary = self.m.get_summary()
+            self.m.filter_summary(summary)
+            self.inject_summary(summary, self.c_step)
+            self.write_output()
 
             self.m.restart()
             
@@ -389,6 +403,8 @@ class HDQNAgent(Agent):
                                 {self.mc_learning_rate_step: self.mc_step})
         self.m.c_learning_rate = self.c_learning_rate_op.eval(
                                 {self.c_learning_rate_step: self.c_step})
+        self.m.mc_memory_size = self.mc_memory.count
+        self.m.c_memory_size = self.c_memory.count
         
 
         
@@ -444,13 +460,19 @@ class HDQNAgent(Agent):
                                        1.0, 0.0, name = 'mc_action_one_hot')
             mc_q_acted = tf.reduce_sum(self.mc_q * mc_action_one_hot,
                                    reduction_indices = 1, name = 'mc_q_acted')
-
-            mc_delta = self.mc_target_q_t - mc_q_acted
+            self.mc_td_error = tf.abs(self.mc_target_q_t - mc_q_acted)
+            #mc_delta = self.mc_target_q_t - mc_q_acted
 
             #self.global_step = tf.Variable(0, trainable=False)
-
-            self.mc_loss = tf.reduce_mean(clipped_error(mc_delta),
-                                         name = 'mc_loss')
+            if self.ag.pmemory:
+                self.mc_loss = tf.reduce_mean(huber_loss(y_true  = self.mc_target_q_t,
+                                                         y_pred  = mc_q_acted,
+                                                         weights = self.mc_loss_weight),
+                                              name = 'mc_loss')
+            else:
+                self.mc_loss = tf.reduce_mean(huber_loss(y_true = self.mc_target_q_t,
+                                                         y_pred = mc_q_acted),
+                                              name = 'mc_loss')
             self.mc_learning_rate_step = tf.placeholder('int64', None,
                                             name='mc_learning_rate_step')
             self.mc_learning_rate_op = tf.maximum(
@@ -524,13 +546,20 @@ class HDQNAgent(Agent):
                                        1.0, 0.0, name = 'c_action_one_hot')
             c_q_acted = tf.reduce_sum(self.c_q * c_action_one_hot,
                                    reduction_indices = 1, name = 'c_q_acted')
-
-            c_delta = self.c_target_q_t - c_q_acted
+            self.c_td_error = tf.abs(self.c_target_q_t - c_q_acted)
+            #c_delta = self.c_target_q_t - c_q_acted
 
             #self.global_step = tf.Variable(0, trainable=False)
 
-            self.c_loss = tf.reduce_mean(clipped_error(c_delta),
-                                         name = 'c_loss')
+            if self.ag.pmemory:
+                self.c_loss = tf.reduce_mean(huber_loss(y_true  = self.c_target_q_t,
+                                                         y_pred  = c_q_acted,
+                                                         weights = self.c_loss_weight),
+                                              name = 'c_loss')
+            else:
+                self.c_loss = tf.reduce_mean(huber_loss(y_true = self.c_target_q_t,
+                                                         y_pred = c_q_acted),
+                                              name = 'c_loss')
             self.c_learning_rate_step = tf.placeholder('int64', None,
                                             name='c_learning_rate_step')
             self.c_learning_rate_op = tf.maximum(

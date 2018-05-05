@@ -277,6 +277,7 @@ class hDQNSettings(AgentSettings):
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         self.discount = 0.99
+       
         
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
@@ -338,7 +339,7 @@ class ControllerSettings(AgentSettings):
         
         self.train_frequency = 4
         #Visualize weights initialization in the histogram
-        self.learn_start = min(5. * self.scale, self.test_step)
+        self.learn_start = 1000#min(5. * self.scale, self.test_step)
     
     
     
@@ -368,7 +369,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = min(5. * self.scale, 20000)
+        self.learn_start = 1000#min(5. * self.scale, 20000)
         
         self.architecture = None
         self.architecture_duel = None

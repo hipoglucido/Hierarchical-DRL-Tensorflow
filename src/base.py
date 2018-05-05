@@ -7,6 +7,7 @@ import numpy as np
 import utils
 import ops
 from functools import reduce
+import random
 from ops import linear, clipped_error
 from configuration import Constants as CT
 pp = pprint.PrettyPrinter().pprint
@@ -46,15 +47,15 @@ class Agent(object):
         self._saver = None
         self.config = config
         self.output = ''
-    def display_environment(self):
+    def display_environment(self, observation):
         if self.m.is_SF:
             self.environment.gym.render()
             self.add_output('')
             return
-        if self.m.is_hdqn:
-            observation = self.c_history.get()[-1]
-        else:
-            observation = self.history.get()[-1]
+#        if self.m.is_hdqn:
+#            observation = self.c_history.get()[-1]
+#        else:
+#            observation = self.history.get()[-1]
      
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
@@ -63,12 +64,23 @@ class Agent(object):
             out = self.environment.gym.one_hot_inverse(observation)
         msg = '\nS:\n%s' % str(out)
         self.add_output(msg)
+    def new_episode(self):
+        #screen, reward, action, terminal = self.environment.new_random_game()
+        screen, _, _, _ = self.environment.new_game()        
+        #self.history.fill_up(screen)
+        if self.m.is_hdqn:
+            full_memory = self.mc_memory.is_full()
+        else:
+            full_memory = self.memory.is_full()
+        self.display_episode = random.random() < self.gl.display_prob and \
+                                                    full_memory
         
+        return screen        
     def add_output(self, txt):
         self.output += txt
         
-    def console_print(self, action, reward, intrinsic_reward = None):
-        self.display_environment()
+    def console_print(self, new_obs, action, reward, intrinsic_reward = None):
+        self.display_environment(new_obs)
 #        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
         msg = '\nA: %d\nR: %.2f' % (action, reward)
         if self.m.is_hdqn:
@@ -82,13 +94,13 @@ class Agent(object):
         self.add_output(msg)
         if not self.m.is_SF:
             print(self.output)
-    def console_print_terminal(self, reward):
+    def console_print_terminal(self, reward, observation):
         if self.m.is_hdqn:
-            observation = self.c_history.get()[-1]
+#            observation = self.c_history.get()[-1]
             perc = round(100 * self.c_step / self.c.max_step, 4)
             ep_r = self.m.mc_ep_reward
         else:
-            observation = self.history.get()[-1]
+            #observation = self.history.get()[-1]
             perc = round(100 * self.step / self.ag.max_step, 4)
             ep_r = self.m.ep_reward
         if self.environment.env_name == 'key_mdp-v0':
@@ -276,8 +288,8 @@ class Agent(object):
                        output_size = neurons,
                        activation_fn = tf.nn.relu,
                        name = layer_name)
-            histograms += [tf.summary.histogram("w_" + layer_name, weights),
-                           tf.summary.histogram("b_" + layer_name, biases)]
+#            histograms += [tf.summary.histogram("w_" + layer_name, weights),
+#                           tf.summary.histogram("b_" + layer_name, biases)]
 #                           tf.summary.histogram("o_" + layer_name, layer)]
             #setattr(self, layer_name, layer)
             parameters[layer_name + "_w"] = weights

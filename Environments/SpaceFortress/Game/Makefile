@@ -23,7 +23,8 @@ define build
 		$(CC) -march=native `pkg-config --cflags cairo pkg-config --libs cairo pkg-config --cflags gtk+-3.0 pkg-config --libs gtk+-3.0 ` -Wall -g -v -fPIC $(1)/myvars.c $(1)/TCOL.c $(1)/DE_Minimal.c $(1)/HM.c $(1)/RS.c  -lm -o Control -Wno-dangling-else -Wno-switch $(GUI);\
 	fi
 	
-	mv *.o $(1)
+	#mv *.o $(1)
+	rm *.o
 	mv *.so $(LIBPATH)
 	@echo "Shared library $(2)_frame_lib.so sucessfully made and installed."
 endef

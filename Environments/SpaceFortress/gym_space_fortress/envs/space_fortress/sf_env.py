@@ -318,7 +318,10 @@ class SFEnv(gym.Env):
             feature_names.append(fn + "_cos")
         self.feature_names = feature_names
         self.state_size = len(self.feature_names)
-        self.prep_fs = prep_fs 
+        self.prep_fs = prep_fs
+    def one_hot_inverse(self, screen):
+        #TODO remove function adn adapt HDQN
+        return None
     def configure(self, cnf):
         # Specify the game name which will be shown at the top of the game window
         
