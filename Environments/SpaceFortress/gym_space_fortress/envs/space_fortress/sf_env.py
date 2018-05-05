@@ -56,7 +56,7 @@ class SFEnv(gym.Env):
             self.update_logic()
             reward += self.score() - self.config.env.time_penalty
             done = self.terminal_state()
-            if self.game_name == 'SFC-v0':
+            if self.env_name == 'SFC-v0':
                 if reward == 1 - self.config.env.time_penalty:
                     done = 1
             if done:
@@ -109,7 +109,7 @@ class SFEnv(gym.Env):
 #            square_pos_x, square_pos_y = obs[3], obs[4]
 #            prep_obs += [ship_pos_x, ship_pos_y, square_pos_x, square_pos_y]
 #            feature_names += ['ship_pos_x', 'ship_pos_y', 'square_pos_x', 'square_pos_y']
-#        if self.game_name == 'SFC-v0':
+#        if self.env_name == 'SFC-v0':
 #            if not self.is_wrapper:
 #                
 #                ship_headings_x, ship_headings_y = aux_decompose_cyclic(obs[2])
@@ -179,12 +179,12 @@ class SFEnv(gym.Env):
 
    
         if self.config.ag.agent_type == 'human':
-            cv2.imshow(self.game_name, img)
+            cv2.imshow(self.env_name, img)
             cv2.waitKey(self.config.env.render_delay)
         else:
             if not os.path.exists(self.episode_dir):
                 os.makedirs(self.episode_dir)
-            image_name = self.game_name + "_" + self.current_time + ".png"
+            image_name = self.env_name + "_" + self.current_time + ".png"
             img_path = os.path.join(self.episode_dir, image_name)
             
     #
@@ -239,12 +239,16 @@ class SFEnv(gym.Env):
         sys.exit(0)
     def open_window(self):
         print("Opening window!")
-        cv2.namedWindow(self.game_name)
+        cv2.namedWindow(self.env_name)
     # Configure the space fortress gym environment
     def define_action_set(self):
-        self._action_set = CT.action_to_sf[self.game_name]
+        self._action_set = CT.action_to_sf[self.env_name]
         if self.is_no_direction:
-            self._action_set[3] = CT.key_to_sf['Key.down']        
+            self._action_set[3] = CT.key_to_sf['Key.down']
+    def get_prep_feature(self, observation, feature_name):
+        index = self.feature_names.index(feature_name)
+        return observation[index]
+        
     def get_raw_feature(self, observation, feature_name):
         #print("getting",feature_name)
         return observation[self.raw_features_name_to_ix[feature_name]]
@@ -268,9 +272,9 @@ class SFEnv(gym.Env):
                 assert 1.1 >= x >= -0.1
                 x = np.clip(x, 0, 1)
             import math
-            x = math.sin(2 * math.pi * x)
-            y = math.cos(2 * math.pi * x)
-            return x, y
+            sin = math.sin(2 * math.pi * x)
+            cos = math.cos(2 * math.pi * x)
+            return sin, cos
         prep_fs = []
         feature_names = [] 
         coordinate_feature_names = ['ship_pos_i', 'ship_pos_j','square_pos_i', 'square_pos_j']
@@ -292,8 +296,8 @@ class SFEnv(gym.Env):
             for fn in coordinate_feature_names:
                 f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, fn))
                 prep_fs.append(f)
-                feature_names.append(fn + "_x")
-                feature_names.append(fn + "_y")
+                feature_names.append(fn + "_sin")
+                feature_names.append(fn + "_cos")
 #            feature_names += ['ship_pos_i_x', 'ship_pos_i_y', 'ship_pos_j_x',
 #                              'ship_pos_j_y','square_pos_i_x','square_pos_i_y',
 #                              'square_pos_j_x','square_pos_j_y']
@@ -310,8 +314,8 @@ class SFEnv(gym.Env):
             fn = 'ship_headings'
             f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, fn))
             prep_fs.append(f)
-            feature_names.append(fn + "_x")
-            feature_names.append(fn + "_y")
+            feature_names.append(fn + "_sin")
+            feature_names.append(fn + "_cos")
         self.feature_names = feature_names
         self.state_size = len(self.feature_names)
         self.prep_fs = prep_fs 
@@ -319,7 +323,7 @@ class SFEnv(gym.Env):
         # Specify the game name which will be shown at the top of the game window
         
         self.config = cnf
-        self.game_name = self.config.env.env_name
+        self.env_name = self.config.env.env_name
         
         self.logger = logging.getLogger()
         # The game which will be played, the possible games are
@@ -334,14 +338,14 @@ class SFEnv(gym.Env):
 #        self.frame_skip = cnf.frameskip
         #self.mode = self.config.env.render_mode
         # Get the right shared library for the game
-#        if self.game_name == 'SFS-v0':
-#            libname = self.game_name
-#        elif self.game_name =='AIM-v0' or self.game_name == \
-#                            'SFC-v0' or self.game_name == 'SF-v0':
+#        if self.env_name == 'SFS-v0':
+#            libname = self.env_name
+#        elif self.env_name =='AIM-v0' or self.env_name == \
+#                            'SFC-v0' or self.env_name == 'SF-v0':
 #            libname = self.game.lower()
 #        else:
 #            assert False
-        libname = self.game_name.split('-')[0].lower()
+        libname = self.env_name.split('-')[0].lower()
 
         # There is no need for a window when in RGB_ARRAY mode
 #        if self.config.env.render_mode != "rgb_array":
@@ -378,13 +382,13 @@ class SFEnv(gym.Env):
         self.is_wrapper = library.is_wrapper()
     
         self.define_features()
-#        if not self.is_frictionless and self.game_name == 'SFC-v0':
+#        if not self.is_frictionless and self.env_name == 'SFC-v0':
 #        self.n_bytes =  ((int(self.screen_height/self.scale)) \
 #                                        * (int(self.screen_width/self.scale)))
         
         
         self.get_symbols = library.get_symbols
-        n_raw_symbols = CT.SF_observation_space_sizes[self.game_name]
+        n_raw_symbols = CT.SF_observation_space_sizes[self.env_name]
         self.get_symbols.restype = ctypes.POINTER(ctypes.c_float * n_raw_symbols)
 #        try:
         self.update_logic = ctypes.CDLL(lib_dir).SF_iteration
@@ -414,22 +418,22 @@ class SFEnv(gym.Env):
         # It is possible to specify a seed for random number generation
         self._seed()
         self.define_action_set()
-#        if not self.is_frictionless() and self.game_name == 'SFC-v0':
-#            del CT.action_to_sf[self.game_name][CT.key_to_sf['wait']]
-#            action_set = {i : v for i, v in enumerate(CT.action_to_sf[self.game_name])}
+#        if not self.is_frictionless() and self.env_name == 'SFC-v0':
+#            del CT.action_to_sf[self.env_name][CT.key_to_sf['wait']]
+#            action_set = {i : v for i, v in enumerate(CT.action_to_sf[self.env_name])}
 #            self._action_set = action_set
 #        else:
-#            assert 0, str(self.is_frictionless()) + ', ' + self.game_name
+#            assert 0, str(self.is_frictionless()) + ', ' + self.env_name
 #        print(self._action_set)
-#        if self.game_name in ['SFS-v0','SF-v0']:
+#        if self.env_name in ['SFS-v0','SF-v0']:
 #            # All keys allowed
 #            self._action_set = {0 : KeyMap.LEFT.value, 1 : KeyMap.UP.value, 2 : KeyMap.RIGHT.value, 3 : KeyMap.SHOOT.value}
 #
-#        elif self.game_name == 'AIM-v0':
+#        elif self.env_name == 'AIM-v0':
 #            # Only rotate left/right and shoot
 #            self._action_set = {0 : KeyMap.SHOOT.value, 1 : KeyMap.LEFT.value, 2 : KeyMap.RIGHT.value}
 #
-#        elif self.game_name == 'SFC-v0':
+#        elif self.env_name == 'SFC-v0':
 #            # Only rotate left/right and forward
 #            self._action_set = {0 : KeyMap.LEFT.value, 1 : KeyMap.RIGHT.value, 2 : KeyMap.UP.value}
 #        else:

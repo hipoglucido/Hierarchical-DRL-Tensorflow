@@ -22,8 +22,8 @@
 #define POINTS_FONT_SIZE 12.0
 #endif
 
-#define WINDOW_WIDTH 200//448 // The square width of the original game
-#define WINDOW_HEIGHT 200
+#define WINDOW_WIDTH 448//448 // The square width of the original game
+#define WINDOW_HEIGHT 448
 
 
 #define SHIP_WON 1
@@ -70,9 +70,9 @@
 // All the color values have been altered to be RGB tuples
 
 #ifndef GRID_MOVEMENT
-	#define MAX_SQUARE_STEPS 140
+	#define MAX_SQUARE_STEPS 10000
 #else
-	#define MAX_SQUARE_STEPS 170
+	#define MAX_SQUARE_STEPS 10000
 #endif
 
 
