@@ -15,7 +15,7 @@ from goals import generate_SF_goals
 #    ScriptsAIM_9, KeyMap, ALL_COMBINATIONS, SCRIPT_LENGTH, GAME_VERSION,\
 #    RENDER_MODE, RenderSpeed
 
-import cv2
+
 import time
 class HumanAgent():
     def __init__(self, config, environment):
@@ -23,7 +23,9 @@ class HumanAgent():
         self.config.env.update({'display_prob' : 1.})
         self.environment = environment
         
-        self.goals = generate_SF_goals(self.environment)
+        goal_names =  \
+            CT.goal_groups[self.environment.env_name][self.config.ag.goal_group]
+        self.goals = generate_SF_goals(self.environment, goal_names)
         self.config.print()
         # Current key has to be initialized before first input of keyboard
         self.key_to_action = CT.key_to_action[self.config.env.env_name]
@@ -72,7 +74,7 @@ class HumanAgent():
                 msg = '%s\tA:%s, R: %.3f, T: %s' \
                             % (observation_str, self.current_key, reward, done)
                 print(msg)
-                for goal in self.goals:
+                for i, goal in self.goals.items():
                     achieved = goal.is_achieved(observation, action)
                     print("Goal %s achieved -> %s" % (goal.name, str(achieved)))
                 if done == 1:

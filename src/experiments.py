@@ -80,16 +80,16 @@ class Experiment():
 #                    [25, 25]                  
                     ]
             duelings = [
-                    1
-#                    0
+#                    1
+                    0
                     ]
             pmemorys = [
-#                    1,
+                    1,
                     0
                     ]
             double_qs = [
-                    1,
-#                    0
+#                    1,
+                    0
                     ]
             memory_sizes = [
 #                    1000000,
@@ -107,12 +107,12 @@ class Experiment():
                     'random_seeds'           : random_seeds
                     }
             base_args = {'agent_type'            : 'dqn',
-                    'env_name'              : 'SFC-v0',
-                    'scale'                 : 200,
+                    'env_name'              : 'key_mdp-v0',
+                    'scale'                 : 50,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
-                    'display_prob'          : 0.03,
-                    'use_gpu'               : True,
+                    'display_prob'          : 0.005,
+                    'use_gpu'               : 0,
                     'mode'                  : 'train',
 #                    'double_q'              : False
             }

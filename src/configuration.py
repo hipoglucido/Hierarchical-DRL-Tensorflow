@@ -50,6 +50,22 @@ class Constants:
     env_names = SF_envs + MDP_envs + GYM_envs
     
     ### GOALS
+    def get_region_names(factor):
+        total_regions = factor ** 2
+        names = ['region_%d_%d' % (i, total_regions) for i in range(total_regions)]
+        return names
+    goal_groups = {
+        'SFC-v0' : {
+            0 : ['aim_at_square'] + SF_action_spaces['SFC-v0'],
+            1 : get_region_names(4),
+            2 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
+            3 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
+            },
+        'SF-v0'  : {},
+        'AIM-v0' : {}
+        }  
+    
+    
     c = 2 * math.pi
     c34 = 3 / 4 * c
     c12 = 1 / 2 * c
@@ -223,6 +239,7 @@ class HumanSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'human'
+        self.goal_group = 1
         
         
 class DQNSettings(AgentSettings):
@@ -272,11 +289,12 @@ class hDQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
         self.architecture = [25, 25]
-        self.architecture_duel = [10]
+        self.architecture_duel = [25]
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         self.discount = 0.99
+        self.goal_group = 1
        
         
     def update(self, *args, **kwargs):

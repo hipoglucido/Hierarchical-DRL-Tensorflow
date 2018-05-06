@@ -57,7 +57,8 @@ class MDPGoal(Goal):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
             
-    def is_achieved(self, screen):
+    def is_achieved(self, screen, action):
+        #action not used
         return np.array_equal(screen, self.one_hot)
 
 class SFGoal(Goal):
@@ -89,7 +90,22 @@ class SFGoal(Goal):
             result[feature_name] = \
                    self.environment.get_prep_feature(observation, feature_name)
         return result
-    def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .1):
+    def is_in_region(self, A_i, A_j, region, n):
+        factor = int(math.sqrt(n))
+        l = 1 / factor
+        matrix = np.zeros(n, dtype = int)
+        matrix[region] = 1
+        
+        matrix = matrix.reshape((factor, factor))
+        R_i, R_j = np.where(matrix == 1)
+        R_i, R_j = R_i[0], R_j[0]
+        R_i_min, R_j_min = R_i * l, R_j * l
+        R_i_max, R_j_max = (R_i + 1) * l, (R_j + 1) * l
+        i_condition = R_i_min < A_i < R_i_max
+        j_condition = R_j_min < A_j < R_j_max
+        return i_condition and j_condition
+        
+    def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .15):
         
         result = False
         if A_sin > 0:
@@ -158,24 +174,41 @@ class SFGoal(Goal):
             else:
                 # aim_at_fortress
                 pass
+        elif 'region' in self.name:
+            _, region_id, total_regions = self.name.split("_")
+             
+            achieved = self.is_in_region(
+                                    A_i      = pfs['ship_pos_i'],
+                                    A_j      = pfs['ship_pos_j'],
+                                    region = int(region_id),
+                                    n      = int(total_regions))
         elif action == CT.SF_action_spaces[self.environment.env_name].index(self.name):
             achieved = True
         return achieved
             
 #def generate_area_goals()
+ 
+def generate_SF_goals(environment, goal_names):
     
-def generate_SF_goals(environment):
-    goals = []
-#    i = 0
-    for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
-        goals[i] =  SFGoal(
-                        n = i,
-                        name = action_name,
-                        environment = environment)
-    goals[i + 1] = SFGoal(
-                        n = i + 1,
-                        name = 'aim_at_square',
-                        environment = environment)
+    goals = {}
+    goal_names = [gn for gn in goal_names if gn != 'wait']
+    goal_size = len(goal_names) #onehot
+    for i, goal_name in enumerate(goal_names):
+        print(goal_name)
+        goals[i] = SFGoal(n = i,
+                          name = goal_name,
+                          environment = environment)
+        goals[i].setup_one_hot(goal_size)
+    #    i = 0
+#        for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
+#            goals[i] =  SFGoal(
+#                            n = i,
+#                            name = action_name,
+#                            environment = environment)
+#        goals[i + 1] = SFGoal(
+#                            n = i + 1,
+#                            name = 'aim_at_square',
+#                            environment = environment)
 #    goals = generate_area_goals()
     
     return goals

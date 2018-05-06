@@ -78,7 +78,11 @@ class HDQNAgent(Agent):
                 goals[goal.n] = goal
         elif self.environment.env_name in CT.SF_envs:
             #Space Fortress
-            goals = generate_SF_goals(self.environment)
+            goal_names = CT.goal_groups[self.environment.env_name][self.ag.goal_group]
+            goals = generate_SF_goals(
+                    environment = self.environment,
+                    goal_names  = goal_names)
+            self.ag.goal_size = len(goals)
         else:
             raise ValueError("No prior goals for " + self.environment.env_name)
         
@@ -283,7 +287,7 @@ class HDQNAgent(Agent):
             goal.setup_epsilon(self.c, c_start_step) #TODO load individual
         
         old_obs = self.new_episode()
-            
+        
         self.m.start_timer()
         # Initial goal
         self.mc_step = mc_start_step
@@ -312,7 +316,7 @@ class HDQNAgent(Agent):
             
             
         
-            goal_achieved = self.current_goal.is_achieved(new_obs)
+            goal_achieved = self.current_goal.is_achieved(new_obs, action)
             int_reward = 1. if goal_achieved else 0.
             int_reward -= self.c.intrinsic_time_penalty
             self.c_observe(old_obs, action, int_reward, new_obs, terminal or goal_achieved)
@@ -338,9 +342,10 @@ class HDQNAgent(Agent):
                         self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
                     old_obs = self.new_episode()
+                    assert old_obs.sum() != 0
                 else:
                     old_obs = new_obs.copy() 
-            
+                    assert old_obs.sum() != 0
                     
 #                print("This", self.m.mc_step_reward)
                     
@@ -351,7 +356,7 @@ class HDQNAgent(Agent):
                 self.m.mc_goals.append(self.current_goal.n)
             if not terminal:
                 old_obs = new_obs.copy()  
-                
+                assert old_obs.sum() != 0
 #            print('c', self.m.c_update_count, self.c_step)
 #            print('mc', self.m.mc_update_count, self.mc_step)
             if self.display_episode:
@@ -449,6 +454,8 @@ class HDQNAgent(Agent):
 
         #Meta Controller optimizer
         with tf.variable_scope('mc_optimizer'):
+            if self.ag.pmemory:
+                self.mc_loss_weight = tf.placeholder('float32', [None], name='mc_loss_weight')
             self.mc_target_q_t = tf.placeholder('float32', [None],
                                                name='mc_target_q_t')
             self.mc_action = tf.placeholder('int64', [None], name='mc_action')
@@ -491,6 +498,8 @@ class HDQNAgent(Agent):
     
         with tf.variable_scope('c_prediction'):
             #input_size = self.environment.state_size + self.ag.goal_size
+            if self.ag.pmemory:
+                self.mc_loss_weight = tf.placeholder('float32', [None], name='mc_loss_weight')
             self.c_s_t = tf.placeholder("float",
                                 [None, self.c_history.length,
                                                  self.environment.state_size],
