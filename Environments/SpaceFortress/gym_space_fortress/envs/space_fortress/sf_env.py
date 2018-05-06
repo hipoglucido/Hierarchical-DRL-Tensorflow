@@ -223,9 +223,10 @@ class SFEnv(gym.Env):
                                         'episodes', "ep%d_%s" % \
                                         (self.ep_counter,self.current_time))
         
-        # screen = self.screen().contents
-        # obv = np.ctypeslib.as_array(screen)
-        return 0 # For some reason should show the observation
+        obs = np.ctypeslib.as_array(self.get_symbols().contents)
+#        print("obs:",obs)
+        preprocessed_obs = self.preprocess_observation(obs)
+        return preprocessed_obs # For some reason should show the observation
 
 
 
