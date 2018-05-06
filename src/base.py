@@ -72,6 +72,7 @@ class Agent(object):
             full_memory = self.mc_memory.is_full()
         else:
             full_memory = self.memory.is_full()
+        full_memory = 1
         self.display_episode = random.random() < self.gl.display_prob and \
                                                     full_memory
         

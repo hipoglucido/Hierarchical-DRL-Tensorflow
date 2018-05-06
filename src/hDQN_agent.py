@@ -100,6 +100,8 @@ class HDQNAgent(Agent):
         goal = self.get_goal(n_goal)
         goal.set_counter += 1
         self.current_goal = goal
+       
+            
         
     def predict_next_action(self, obs):
         
@@ -203,14 +205,15 @@ class HDQNAgent(Agent):
             pass
         
         
-        _, q_t, loss, summary_str = self.sess.run([self.mc_optim,
+        _, q_t, mc_td_error, loss, summary_str = self.sess.run([self.mc_optim,
                                                              self.mc_q,
+                                                             self.mc_td_error,
                                                              self.mc_loss,
                                                              self.mc_q_summary],
                                                             feed_dict)
         self.writer.add_summary(summary_str, self.mc_step)
     
-        self.m.mc_add_update(loss, q_t.mean())
+        self.m.mc_add_update(loss, q_t.mean(), mc_td_error.mean())
         
 
     def c_q_learning_mini_batch(self):
@@ -228,7 +231,7 @@ class HDQNAgent(Agent):
         g_t_plus_1 = np.vstack([g[0] for g in s_t_plus_1[:, :, :self.ag.goal_size]])
         s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
         
-#        if int_reward[0] > 0:
+#        if int_reward[0] > 0 or 1:
 #            print("_______***___________")
 #            f=self.config.env.factor
 #            print("s_t-1\n", s_t[0].reshape(f,f))
@@ -237,7 +240,7 @@ class HDQNAgent(Agent):
 #            print("g_t-1\n",g_t[0].reshape(f,f))#one_hot.reshape((3,3)))
 #            print("R: %.2f, t=%s" % (int_reward[0], str(terminal[0])))
 #        
- 
+# 
         
 #        q_t_plus_1 = self.c_target_q.eval({
 #                                    self.c_target_s_t: s_t_plus_1,
@@ -261,10 +264,10 @@ class HDQNAgent(Agent):
             self.c_g_t: g_t,
             self.c_learning_rate_step: self.c_step,
         }
-        _, q_t, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
-                                             self.c_loss, self.c_q_summary], feed_dict)
+        _, q_t, c_td_error, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
+                                             self.c_td_error, self.c_loss, self.c_q_summary], feed_dict)
         self.writer.add_summary(summary_str, self.c_step)
-        self.m.c_add_update(loss, q_t.mean())
+        self.m.c_add_update(loss, q_t.mean(), c_td_error.mean())
 
 
     
@@ -287,7 +290,7 @@ class HDQNAgent(Agent):
         self.c_step = c_start_step
         self.set_next_goal(old_obs)
         
-        total_steps = self.ag.max_step + self.c.memory_size
+        total_steps = self.ag.max_step# + self.c.memory_size
         if self.m.is_SF:   
             iterator = tqdm(range(c_start_step, total_steps),
                                                   ncols=70, initial=c_start_step)
@@ -308,15 +311,7 @@ class HDQNAgent(Agent):
             self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
             
-            
-            
-                        
-            
-            # Controller learns
-#            if self.config.display:
-#                
-#                print('s', screen)
-#                print('g', self.current_goal.one_hot)
+        
             goal_achieved = self.current_goal.is_achieved(new_obs)
             int_reward = 1. if goal_achieved else 0.
             int_reward -= self.c.intrinsic_time_penalty
@@ -344,7 +339,8 @@ class HDQNAgent(Agent):
                     self.m.close_episode()
                     old_obs = self.new_episode()
                 else:
-                    old_obs = new_obs.copy()
+                    old_obs = new_obs.copy() 
+            
                     
 #                print("This", self.m.mc_step_reward)
                     
@@ -353,7 +349,8 @@ class HDQNAgent(Agent):
                 # Meta-controller sets goal
                 self.set_next_goal(old_obs)
                 self.m.mc_goals.append(self.current_goal.n)
-                
+            if not terminal:
+                old_obs = new_obs.copy()  
                 
 #            print('c', self.m.c_update_count, self.c_step)
 #            print('mc', self.m.mc_update_count, self.mc_step)

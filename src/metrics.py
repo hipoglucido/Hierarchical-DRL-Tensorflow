@@ -30,7 +30,7 @@ class Metrics:
         self.scalar_global_tags = ['elapsed_time', 'games',
                                  'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
-                                 'debug_no_ep_error', 'td_error']
+                                 'debug_no_ep_error']
                                  
                                            
         if self.is_hdqn:
@@ -47,7 +47,7 @@ class Metrics:
                      'max_ep_reward', 'min_ep_reward', \
                      'avg_ep_reward', 'learning_rate', 'total_reward', \
                      'ep_reward', 'total_loss', 'total_q', 'update_count',
-                     'memory_size']
+                     'memory_size', 'td_error']
         if self.is_pmemory:
             self.scalar_dual_tags.append('beta')
         for tag in self.scalar_dual_tags:
@@ -267,7 +267,7 @@ class Metrics:
 
     def filter_summary(self, summary):
         
-        exclude_inside = []
+        exclude_inside = ['_avg_steps']
         exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward',
                           'ep_reward', 'step_reward', 'avg_reward', 'c_avg_reward',
                           'mc_avg_reward']
@@ -346,15 +346,17 @@ class Metrics:
         visits = getattr(self, state_freq_tag)
         setattr(self, state_freq_tag, visits + 1)
         
-    def mc_add_update(self, loss, q):
+    def mc_add_update(self, loss, q, td):
         self.mc_total_loss += loss
         self.mc_total_q += q
         self.mc_update_count += 1
+        self.mc_td_error += td
     
-    def c_add_update(self, loss, q):
+    def c_add_update(self, loss, q, td):
         self.c_total_loss += loss
         self.c_total_q += q        
         self.c_update_count += 1
+        self.c_td_error += td
 
         
         
