@@ -91,7 +91,10 @@ class HDQNAgent(Agent):
     def set_next_goal(self, obs):
         step = self.c_step #TODO think about this
         
-        ep = self.mc_epsilon.steps_value(step)
+        if self.mc_ready:
+            ep = self.mc_epsilon.steps_value(step)
+        else:
+            ep = 1
         self.m.update_epsilon(goal_name = None, value = ep)
         if random.random() < ep or self.gl.randomize:
             
@@ -140,14 +143,19 @@ class HDQNAgent(Agent):
 #        print("EXtR:", ext_reward,", terminal", int(terminal))
         
         self.mc_memory.add(self.mc_old_obs, goal_n, ext_reward, new_obs, terminal)
-
+        
+        
         if self.mc_step >  self.mc.learn_start:
             if self.mc_step % self.mc.train_frequency == 0:
                 self.mc_q_learning_mini_batch()
 
             if self.mc_step % self.mc.target_q_update_step ==\
                         self.mc.target_q_update_step - 1:
-                self.mc_update_target_q_network()    
+                self.mc_update_target_q_network()
+                
+            if not self.mc_ready:
+                self.mc_epsilon.learn_start = self.c_step
+                self.mc_ready = True
     
     def c_observe(self, old_obs, action, int_reward, new_obs, terminal):
         if self.display_episode:
@@ -281,7 +289,7 @@ class HDQNAgent(Agent):
 
         mc_start_step = 0
         c_start_step = 0
-        
+        self.mc_ready = False
         self.mc_epsilon = Epsilon(self.mc, mc_start_step)
         for key, goal in self.goals.items():
             goal.setup_epsilon(self.c, c_start_step) #TODO load individual
@@ -326,26 +334,25 @@ class HDQNAgent(Agent):
 
             
             self.m.increment_rewards(int_reward, ext_reward)
-            
+            ######################
             if terminal or goal_achieved:
                 
                 self.current_goal.finished(self.m, goal_achieved)
                 # Meta-controller learns                
-                self.mc_observe(self.current_goal.n, self.m.mc_step_reward,
-                                                new_obs, terminal)
+                self.mc_observe(goal_n     = self.current_goal.n,
+                                ext_reward = self.m.mc_step_reward,
+                                new_obs    = new_obs,
+                                terminal   = terminal)
                 reward = self.m.mc_step_reward
                 self.m.mc_step_reward = 0    
-                if goal_achieved and self.display_episode:
-                    pass#print("Achieved!!!", self.current_goal.n)
+                
                 if terminal:
                     if self.display_episode:
                         self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
                     old_obs = self.new_episode()
-                    assert old_obs.sum() != 0
                 else:
-                    old_obs = new_obs.copy() 
-                    assert old_obs.sum() != 0
+                    old_obs = new_obs.copy()
                     
 #                print("This", self.m.mc_step_reward)
                     
@@ -355,25 +362,45 @@ class HDQNAgent(Agent):
                 self.set_next_goal(old_obs)
                 self.m.mc_goals.append(self.current_goal.n)
             if not terminal:
-                old_obs = new_obs.copy()  
-                assert old_obs.sum() != 0
-#            print('c', self.m.c_update_count, self.c_step)
-#            print('mc', self.m.mc_update_count, self.mc_step)
-            if self.display_episode:
-                pass#print("ext",ext_reward,', int',int_reward)
-#            if terminal and self.display_episode:
-#                print("__________________________") 
+                old_obs = new_obs.copy()
+            ######################
             
+            ######################
+#            if terminal or goal_achieved:
+#                
+#                self.current_goal.finished(self.m, goal_achieved)
+#                # Meta-controller learns                
+#                self.mc_observe(self.current_goal.n, self.m.mc_step_reward,
+#                                                new_obs, terminal)
+#                reward = self.m.mc_step_reward
+#                self.m.mc_step_reward = 0    
+#                
+#                if terminal:
+#                    if self.display_episode:
+#                        self.console_print_terminal(reward, new_obs)
+#                    self.m.close_episode()
+#                    old_obs = self.new_episode()
+#                else:
+#                    old_obs = new_obs.copy()
+#                    
+##                print("This", self.m.mc_step_reward)
+#                    
+#                self.mc_step += 1
+#                
+#                # Meta-controller sets goal
+#                self.set_next_goal(old_obs)
+#                self.m.mc_goals.append(self.current_goal.n)
+#            if not terminal:
+#                old_obs = new_obs.copy()
+            ######################
             
             if self.c_step < self.c.learn_start:
                 continue
             if self.c_step % self.c.test_step != self.c.test_step - 1:
                 continue
-            #assert self.m.mc_update_count > 0, "MC hasn't been updated yet"
-            #assert not (terminal and self.m.mc_ep_reward == 0.)
+  
             self.m.compute_test('c', self.m.c_update_count)
             self.m.compute_test('mc', self.m.mc_update_count, self.mc_step)
-            
             self.m.compute_goal_results(self.goals)
             self.m.compute_state_visits()
             

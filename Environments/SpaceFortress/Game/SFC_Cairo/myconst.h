@@ -22,15 +22,15 @@
 #define POINTS_FONT_SIZE 12.0
 #endif
 
-#define WINDOW_WIDTH 150//448 // The square width of the original game
-#define WINDOW_HEIGHT 150
+#define WINDOW_WIDTH 200//448 // The square width of the original game
+#define WINDOW_HEIGHT 200
 
 
 #define SHIP_WON 1
 #define FORT_WON 2
 
-#define SQUARE_HEIGHT 15
-#define SQUARE_WIDTH 15
+#define SQUARE_HEIGHT 50
+#define SQUARE_WIDTH 50
 #define MAX_SQUARES 3
 
 

@@ -58,7 +58,7 @@ class Constants:
         'SFC-v0' : {
             0 : ['aim_at_square'] + SF_action_spaces['SFC-v0'],
             1 : get_region_names(4),
-            2 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
+            2 : ['aim_at_square'] + get_region_names(4),
             3 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
             },
         'SF-v0'  : {},
@@ -387,7 +387,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 1000#min(5. * self.scale, 20000)
+        self.learn_start = 200#min(5. * self.scale, 20000)
         
         self.architecture = None
         self.architecture_duel = None

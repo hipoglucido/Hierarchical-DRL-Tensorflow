@@ -18,13 +18,15 @@ class Epsilon():
         self.end = config.ep_end
         self.end_t = config.ep_end_t
         
-        self.learn_start = config.memory_size#learn_start
+        self.learn_start = config.learn_start
         self.step = start_step
     
-    def steps_value(self, step):
+    def steps_value(self, step, learn_start = None):
+        if learn_start is None:
+            learn_start = self.learn_start
         epsilon = self.end + \
                 max(0., (self.start - self.end) * \
-                 (self.end_t -max(0., step - self.learn_start)) / self.end_t)
+                 (self.end_t -max(0., step - learn_start)) / self.end_t)
         assert epsilon > 0
         return epsilon
     

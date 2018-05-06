@@ -53,6 +53,7 @@ ag_args.add_argument("--double_q", default = None, type = utils.str2bool)
 ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
+ag_args.add_argument("--goal_group", default = None, type = int)
 
 
 #

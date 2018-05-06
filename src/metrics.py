@@ -309,9 +309,10 @@ class Metrics:
         total_reward = getattr(self, prefix + 'total_reward')
         setattr(self, prefix + 'avg_reward', total_reward / test_step)
         total_loss = getattr(self, prefix + 'total_loss')
-        setattr(self, prefix + 'avg_loss', total_loss / update_count)
-        total_q = getattr(self, prefix + 'total_q')
-        setattr(self, prefix + 'avg_q', total_q / update_count)
+        if update_count > 0:
+            setattr(self, prefix + 'avg_loss', total_loss / update_count)
+            total_q = getattr(self, prefix + 'total_q')
+            setattr(self, prefix + 'avg_q', total_q / update_count)
         
         ep_rewards = getattr(self, prefix + 'ep_rewards')
         
@@ -321,7 +322,7 @@ class Metrics:
             setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
             setattr(self, prefix + 'avg_ep_reward', np.mean(ep_rewards))
         except Exception as e:
-            #print(prefix + ", " + str(e))
+            print(prefix + ", " + str(e))
             debug_no_ep_error = 1
             for s in ['max', 'min', 'avg']:
                 setattr(self, prefix + s +'_ep_reward', self.error_value)
