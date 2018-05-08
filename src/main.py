@@ -38,6 +38,7 @@ env_args.add_argument("--right_failure_prob", default = None, type = float)
 env_args.add_argument("--total_states", default = None, type = int)
 env_args.add_argument("--factor", default = None, type = int)
 env_args.add_argument("--render_delay", default = None, type = int)
+env_args.add_argument("--action_repeat", default = None, type = int)
 
 
 # AGENT PARAMETERS
@@ -100,6 +101,10 @@ for args in args_list:
     
     
     if args['env_name'] == 'SFC-v0':
+        #Space Fortress
+        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
+        
+    elif args['env_name'] == 'AIM-v0':
         #Space Fortress
         env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
         

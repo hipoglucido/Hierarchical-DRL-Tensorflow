@@ -69,8 +69,8 @@ CvSize outsize;
 IplImage *frame;
 IplImage *outframe;
 #endif
-
-float symbols[6] = {};
+////////////////////////////////////
+float symbols[8] = {};
 int get_screen_width(){
 	return WINDOW_WIDTH;
 }
@@ -86,12 +86,16 @@ float* get_symbols()
 	symbols[3] = Square_Y;// /(float) WINDOW_WIDTH;
 	symbols[4] = Square_X;// /(float) WINDOW_HEIGHT;
 	symbols[5] = Square_Step;// /(float) MAX_SQUARE_STEPS;
+	symbols[6] = Ship_Y_Speed;
+	symbols[7] = Ship_X_Speed;
+
+	
 	//for (int i = 3; i >= 0; i--)
-	//	printf("%f, ",symbols[i]);
+	//printf("SPPED Y %f, ",symbols[6]);
+	//printf("SPPED X %f, ",symbols[7]);
 	//printf("\n");
 	return symbols;
 }
-
 int is_frictionless(){
 	#ifdef GRID_MOVEMENT
 		return 0;
@@ -115,6 +119,8 @@ int is_no_direction(){
 		return 0;
 	#endif
 }
+
+////////////////////////////////////
 
 void Initialize_Graphics(cairo_t *cr)
 {

@@ -83,6 +83,7 @@ class HDQNAgent(Agent):
                     environment = self.environment,
                     goal_names  = goal_names)
             self.ag.goal_size = len(goals)
+            
         else:
             raise ValueError("No prior goals for " + self.environment.env_name)
         
@@ -100,6 +101,7 @@ class HDQNAgent(Agent):
             
             n_goal = random.randrange(self.ag.goal_size)
         else:
+            
             n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
         self.mc_old_obs = obs
 #        n_goal = 5

@@ -25,7 +25,7 @@ class Constants:
         'SFC-v0'   : ['Key.up', 'Key.right', 'Key.left', 'wait'],
         'SF-v0'    : [],
         'SFS-v0'   : [],
-        'AIM-v0'   : []
+        'AIM-v0'   : ['Key.right', 'Key.left', 'wait', 'Key.space']
             }
     SF_envs = list(SF_action_spaces.keys())
     key_to_action = {}
@@ -36,11 +36,12 @@ class Constants:
         action_to_sf[game] = {}
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]
+    
     SF_observation_space_sizes = {
-        'SFC-v0'   : 5,
+        'SFC-v0'   : 8,
         'SF-v0'    : 0,
         'SFS-v0'   : 0,
-        'AIM-v0'   : 0
+        'AIM-v0'   : 3
             }
 #    print(key_to_action)
 #    print(action_to_sf)
@@ -60,9 +61,17 @@ class Constants:
             1 : get_region_names(4),
             2 : ['aim_at_square'] + get_region_names(4),
             3 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
+            4 : ['aim_at_square'],
+            5 : []
             },
-        'SF-v0'  : {},
-        'AIM-v0' : {}
+        'SF-v0'  : {
+            0 : [],
+            1 : [] 
+                },
+        'AIM-v0' : {
+            0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
+            1 : [] 
+                },
         }  
     
     
@@ -207,6 +216,7 @@ class GlobalSettings(GenericSettings):
                  'ag.dueling',
                  'ag.pmemory',
                  'ag.memory_size',
+                 'env.action_repeat',
                  'gl.random_seed'
                  
 #                 'ag.learning_rate_minimum',
@@ -250,7 +260,7 @@ class DQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
         #self.max_step = 500 * self.scale
-        self.memory_size = 5000000
+        self.memory_size = 100000
         
         self.batch_size = 32
         self.random_start = 30
@@ -268,7 +278,7 @@ class DQNSettings(AgentSettings):
         
         self.history_length = 1
         self.train_frequency = 4
-        #self.learn_start = 5. * self.scale
+        self.learn_start = 1000#5. * self.scale
         
         self.architecture = [25, 25]
         self.architecture_duel = [16]
@@ -294,7 +304,7 @@ class hDQNSettings(AgentSettings):
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         self.discount = 0.99
-        self.goal_group = 1
+        self.goal_group = 0
        
         
     def update(self, *args, **kwargs):
@@ -327,7 +337,7 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = 100000        
+        self.memory_size = 1000000        
 #        self.max_step = 500 * self.scale        
         self.batch_size = 32
         self.random_start = 30
@@ -368,7 +378,7 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 100000# * self.scale
+        self.memory_size = 1000000# * self.scale
          
         #max_step = 5000 * scale
         
@@ -387,7 +397,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 200#min(5. * self.scale, 20000)
+        self.learn_start = 5000#min(5. * self.scale, 20000)
         
         self.architecture = None
         self.architecture_duel = None
@@ -403,7 +413,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False 
-        self.action_repeat = 1    
+        self.action_repeat = 4    
         self.right_failure_prob = 0.
         
 class EZ_MDPSettings(EnvironmentSettings):

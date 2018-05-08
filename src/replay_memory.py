@@ -70,6 +70,7 @@ class OldReplayMemory:
         while len(indexes) < self.batch_size:
             # find random index            
             while True:
+                
                 # sample one index (ignore states wraping over
                 index = random.randint(self.history_length, self.count - 1)
                 # if wraps over current pointer, then get new one

@@ -322,7 +322,7 @@ class Metrics:
             setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
             setattr(self, prefix + 'avg_ep_reward', np.mean(ep_rewards))
         except Exception as e:
-            print(prefix + ", " + str(e))
+            #print(prefix + ", " + str(e))
             debug_no_ep_error = 1
             for s in ['max', 'min', 'avg']:
                 setattr(self, prefix + s +'_ep_reward', self.error_value)

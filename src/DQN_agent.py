@@ -71,19 +71,19 @@ class DQNAgent(Agent):
             #old_screen = self.history.get()
             # 1. predict
             action = self.predict_next_action(old_obs)    
-            
+       
             # 2. act            
             new_obs, reward, terminal = self.environment.act(action)
-            
+           
             if self.m.is_SF:
                 self.m.add_act(action)
             else:
                 self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             if self.display_episode:
                 self.console_print(old_obs, action, reward)
+            
                 
-                
-                
+            
             # 3. observe
             self.observe(old_obs, action, reward, new_obs, terminal)
             self.m.increment_external_reward(reward)
@@ -94,18 +94,19 @@ class DQNAgent(Agent):
                 self.m.mc_step_reward = 0
                 self.m.close_episode()
                 old_obs = self.new_episode()
+             
             else:
                 old_obs = new_obs.copy()
+           
 
-            
-#            if self.step < self.ag.learn_start:
-#                continue
-            if self.step % self.ag.test_step != self.ag.test_step - 1 or \
-                                not self.memory.is_full():
+            if self.step < self.ag.learn_start:
+                continue
+            if self.step % self.ag.test_step != self.ag.test_step - 1:# or \
+                                #not self.memory.is_full():
                 continue   
             self.m.compute_test(prefix = '', update_count = self.m.update_count)
             self.m.compute_state_visits()
-#            self.m.print('')
+            
             if self.m.has_improved(prefix = ''):
                 self.step_assign_op.eval(
                         {self.step_input: self.step + 1})
@@ -118,12 +119,12 @@ class DQNAgent(Agent):
                 
             self.m.learning_rate = self.learning_rate_op.eval(
                             {self.learning_rate_step: self.step})
+            self.m.memory_size = self.memory.count
             summary = self.m.get_summary()
             self.m.filter_summary(summary)
             self.inject_summary(summary, self.step)
             self.write_output()
-            if self.step > self.ag.max_step / 3:
-                pass#
+            
             self.m.restart()
             
 
@@ -262,7 +263,7 @@ class DQNAgent(Agent):
             # tf Graph input
             self.s_t = tf.placeholder("float",
                                     [None, self.ag.history_length,
-                                      self.environment.state_size], name='s_t')
+                                     self.environment.state_size], name='s_t')
             print(self.s_t)
             shape = self.s_t.get_shape().as_list()
             self.s_t_flat = tf.reshape(self.s_t, [-1, reduce(

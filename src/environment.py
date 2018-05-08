@@ -91,6 +91,7 @@ class Environment():
             #start_lives = self.lives
             
             for _ in range(self.action_repeat):
+                
                 self._step(action)
                 cumulated_reward = cumulated_reward + self.reward
     

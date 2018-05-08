@@ -59,19 +59,53 @@ eval "$(cat DE_Minimal.c | grep -m 4 "\-\-cflags cairo")"; cp *.so ../gym-master
 #define DEFAULT_LINE_WIDTH 7.0
 #endif
 
-//
-float symbols[2] = {};
+////////////////////////////////////
+float symbols[3] = {};
+int get_screen_width(){
+	return WINDOW_WIDTH;
+}
+int get_screen_height(){
+	return WINDOW_HEIGHT;
+}
 float* get_symbols()
 {
-	printf("GETTING SYMBOLS:");
-	symbols[0] = 1.4f;	
-	symbols[1] = 2.3f;
+	//printf("GETTING SYMBOLS:");
+	symbols[0] = Ship_Headings;// /(float) WINDOW_WIDTH;	
+	symbols[1] = Mine_Y_Pos;// /(float) WINDOW_HEIGHT;
+	symbols[2] = Mine_X_Pos;// /(float) 360;
+	//symbols[3] = ;//Square_Y;// /(float) WINDOW_WIDTH;
+	//symbols[4] = ;//Square_X;// /(float) WINDOW_HEIGHT;
+	//symbols[5] = 1.1;//Square_Step;// /(float) MAX_SQUARE_STEPS;
 	//for (int i = 3; i >= 0; i--)
-	//	printf("%f, ",symbols[i]);
+		//printf("%f, ",symbols[i]);
 	//printf("\n");
 	return symbols;
-
 }
+int is_frictionless(){
+	#ifdef GRID_MOVEMENT
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_wrapper(){
+	#ifdef NO_WRAP
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_no_direction(){
+	#ifdef NO_DIRECTION
+		return 1;
+	#else
+		return 0;
+	#endif
+}
+
+////////////////////////////////////
 
 void Initialize_Graphics(cairo_t *cr)
 {

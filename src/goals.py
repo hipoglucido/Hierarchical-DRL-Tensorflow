@@ -104,9 +104,10 @@ class SFGoal(Goal):
         i_condition = R_i_min < A_i < R_i_max
         j_condition = R_j_min < A_j < R_j_max
         return i_condition and j_condition
-        
+      
     def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .15):
-        
+        #assert 0, 'denormalize sin and cos'
+        A_sin, A_cos = A_sin * 2 - 1, A_cos * 2 - 1
         result = False
         if A_sin > 0:
             A_pointer = math.acos(A_cos)
@@ -115,20 +116,22 @@ class SFGoal(Goal):
         
         A_min = (A_pointer - epsilon - CT.c14) % CT.c
         A_max = (A_pointer + epsilon - CT.c14) % CT.c
-
+        A_mean = (A_pointer - CT.c14) % CT.c
         i_dist = B_i - A_i
         j_dist = B_j - A_j
 #        def r(x): return 360 * x / CT.c
 
         rel_rad = math.atan2(i_dist, j_dist) + CT.c12
-
+        
 #        print("Ship\t[%.2f, %.2f]" % (r(A_min), r(A_max) ))
 #        print("Rela radian", r(rel_rad))
+        #A_r = (A_max - A_min) / 2
         
         if A_i <= B_i and A_j >= B_j:
 #            print(1)
             diff = (CT.c - rel_rad)
             A_target = CT.c12 - diff
+            #print(diff, A_target)
         elif A_i >= B_i and A_j >= B_j:
 #            print(2)
             A_target = CT.c12 + rel_rad
@@ -140,11 +143,51 @@ class SFGoal(Goal):
             A_target =  - CT.c12 + rel_rad
         else:
             assert 0
-#        print(r(A_target))
+        d = -1
+        gamma = -1
+        beta, alpha = rel_rad, A_mean
+        gamma = alpha - (beta - CT.c12)
+#        if A_i <= B_i and A_j >= B_j:
+##            print(1)
+#            
+#            alpha_p = alpha - CT.c12
+#            beta_p = CT.c - beta
+#            d = alpha_p + beta_p
+#            if d > CT.c12:
+#                m = d % CT.c12
+#                d = CT.c12 - m
+#                d = - abs(d)
+#            
+#        elif A_i >= B_i and A_j >= B_j:            
+##            gamma = alpha - (beta - CT.c12)
+#            alpha_p = alpha - CT.c12
+#            
+#            d = 0#CT.c14 + alpha_p + beta_p
+#            if d > CT.c12:
+#                m = d % CT.c12
+#                d = CT.c12 - m
+#                d = - abs(d)
+#        elif A_i >= B_i and A_j <= B_j:
+##            print(3)            
+#            pass#A_target = CT.c12 + rel_rad
+#        elif A_i <= B_i and A_j <= B_j:
+##            print(4)
+#            pass#A_target =  - CT.c12 + rel_rad
+#        else:
+#            assert 0
+#            
+        
+        weird = abs(A_min - A_max) > 2.1 * epsilon
+        #d = (abs(A_target - A_mean) % CT.c12)
+        def r(x): return 360 * x / (CT.c)
+        print('alpha', r(alpha))
+        print('beta', r(beta))
+        print('gamma', r(gamma))
+#        print("d", r(d))
         if A_min < A_target < A_max:
             result = True
-        elif abs(A_min - A_max) > 2.1 * epsilon:
-#            print("wieeerd")
+        elif weird:
+            
             if A_target > A_min or A_target < A_max:
                 result = True
  
@@ -168,11 +211,18 @@ class SFGoal(Goal):
                                       B_j     = pfs['square_pos_j'])
                     
 
-
+            
                 else:
                     assert 0
             else:
-                # aim_at_fortress
+                # aim_at_mine
+                achieved = self.is_aiming_at(
+                                      A_i     = .5,
+                                      A_j     = .5,
+                                      A_sin   = pfs['ship_headings_sin'],
+                                      A_cos   = pfs['ship_headings_cos'],
+                                      B_i     = pfs['mine_pos_i'],
+                                      B_j     = pfs['mine_pos_j'])
                 pass
         elif 'region' in self.name:
             _, region_id, total_regions = self.name.split("_")

@@ -72,7 +72,7 @@ class Experiment():
             architectures = [
 #                    [32, 32, 32, 32],
 #                    [128],
-                    [25, 25],
+                    [64, 64],
 #                    [4],
 #                    [128]
 #                    [64, 64, 64]
@@ -80,22 +80,28 @@ class Experiment():
 #                    [25, 25]                  
                     ]
             duelings = [
-#                    1
-                    0
+                    1
+#                    0
                     ]
             pmemorys = [
-                    1,
-                    0
-                    ]
-            double_qs = [
 #                    1,
                     0
                     ]
-            memory_sizes = [
-#                    1000000,
-                    100000
+            double_qs = [
+                    1,
+#                    0
                     ]
-            random_seeds = list(range(10,20))
+            memory_sizes = [
+                    1000000
+                    ]
+            action_repeats = [
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                    ]
+            random_seeds = list(range(2))
             hyperparameter_space = {
 #                    'learning_rate_minimums' : [0.00025, 0.0001],
 #                    'learning_rates'         : [0.001, 0.1, 0.0005],
@@ -104,15 +110,16 @@ class Experiment():
                     'double_qs'              : double_qs,
                     'pmemorys'               : pmemorys,
                     'memory_sizes'           : memory_sizes,
-                    'random_seeds'           : random_seeds
+                    'random_seeds'           : random_seeds,
+                    'action_repeats'         : action_repeats
                     }
             base_args = {'agent_type'            : 'dqn',
-                    'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 50,
+                    'env_name'              : 'SFC-v0',
+                    'scale'                 : 1000,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
-                    'display_prob'          : 0.005,
-                    'use_gpu'               : 0,
+                    'display_prob'          : 0.001,
+                    'use_gpu'               : 1,
                     'mode'                  : 'train',
 #                    'double_q'              : False
             }

@@ -11,7 +11,7 @@ import os
 import csv
 from pathlib import Path
 import sys
-
+import math
 
 from enum import Enum
 import time
@@ -30,7 +30,8 @@ class SFEnv(gym.Env):
       
     # Initialize the environment
     def __init__(self):
-        pass
+        self.imgs = []
+        
         
         
     def _seed(self):
@@ -44,16 +45,19 @@ class SFEnv(gym.Env):
 
 
     def step(self, a):
+        
         action = self._action_set[a] # Select the action from the action dictq
         reward = 0.0
         done = False
-        for frame in range(self.config.env.action_repeat):
+        for frame in range(1):#self.config.env.action_repeat):
           
             if not isinstance(action, list):
                 self.act(action)
             else:
                 self.act(action[frame])
+           
             self.update_logic()
+            
             reward += self.score() - self.config.env.time_penalty
             done = self.terminal_state()
             if self.env_name == 'SFC-v0':
@@ -63,7 +67,9 @@ class SFEnv(gym.Env):
                 self.ep_counter += 1
         self.ep_reward += reward
 #        screen = np.ctypeslib.as_array(self.update_screen().contents)
+        
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
+        
 #        print("obs:",obs)
         preprocessed_obs = self.preprocess_observation(obs)
 #        print("prep_obs", preprocessed_obs)
@@ -84,13 +90,23 @@ class SFEnv(gym.Env):
         
         
         
-        
-        #Normalize
-        obs[0] /= self.screen_width     # Ship_X_Pos
-        obs[1] /= self.screen_height    # Ship_Y_Pos
-        obs[2] /= 360              # Ship_Headings
-        obs[3] /= self.screen_width     # Square_X
-        obs[4] /= self.screen_height    # Square_Y
+        if self.env_name == 'SFC-v0':
+            
+            #Normalize
+            obs[0] /= self.screen_width     # Ship_X_Pos
+            obs[1] /= self.screen_height    # Ship_Y_Pos
+            obs[2] /= 360                   # Ship_Headings
+            obs[3] /= self.screen_width     # Square_X
+            obs[4] /= self.screen_height    # Square_Y
+            obs[5] = obs[5]                 # Square_steps
+            obs[6] = (obs[6] + 5.) / 10.    # Ship_X_Speed
+            obs[7] = (obs[7] + 5.) / 10.    # Ship_Y_Speed
+        elif self.env_name == 'AIM-v0':
+            #Normalize
+            obs[0] /= 360                  # Ship_Headings
+            obs[1] /= self.screen_width    # Mine_X_Pos
+            obs[2] /= self.screen_height   # Mine_Y_Pos
+            
         
         features = []
         
@@ -102,48 +118,7 @@ class SFEnv(gym.Env):
 #                print(feature)
                 features.append(feature)
         preprocessed_obs = np.array(features)
-#        feature_names = []
-#        prep_obs = []
-#        if not self.is_wrapper:
-#            ship_pos_x, ship_pos_y = obs[0], obs[1]
-#            square_pos_x, square_pos_y = obs[3], obs[4]
-#            prep_obs += [ship_pos_x, ship_pos_y, square_pos_x, square_pos_y]
-#            feature_names += ['ship_pos_x', 'ship_pos_y', 'square_pos_x', 'square_pos_y']
-#        if self.env_name == 'SFC-v0':
-#            if not self.is_wrapper:
-#                
-#                ship_headings_x, ship_headings_y = aux_decompose_cyclic(obs[2])
-#                
-#                #degrees = obs[2] * 360
-#                preprocessed_obs = np.array([
-#                        ship_pos_x,
-#                        ship_pos_y,               
-#                        ship_headings_x,
-#                        ship_headings_y,
-#                        square_pos_x,
-#                        square_pos_y
-#                        ])
-#            else:                
-#                ship_x_pos_x, ship_x_pos_y = aux_decompose_cyclic(obs[0])
-#                ship_y_pos_x, ship_y_pos_y = aux_decompose_cyclic(obs[1])
-#                ship_headings_x, ship_headings_y = aux_decompose_cyclic(obs[2])
-#                square_x_pos_x, square_x_pos_y = aux_decompose_cyclic(obs[3])
-#                square_y_pos_x, square_y_pos_y = aux_decompose_cyclic(obs[4])
-#                
-#                preprocessed_obs = np.array([
-#                        ship_x_pos_x,
-#                        ship_x_pos_y,                
-#                        ship_y_pos_x,
-#                        ship_y_pos_y,                
-#                        ship_headings_x,
-#                        ship_headings_y,
-#                        square_x_pos_x,
-#                        square_x_pos_y,
-#                        square_y_pos_x,
-#                        square_y_pos_y
-#                        ])
-#        else:
-#            assert 0
+
         
         return preprocessed_obs
     @property
@@ -153,6 +128,7 @@ class SFEnv(gym.Env):
     # Renders the current state of the game, only for our visualisation purposes
     # it is not important for the learning algorithm
     def render(self):
+        
         if not self.window_active and self.config.ag == 'human':
             self.open_window()
             self.window_active = True
@@ -184,18 +160,19 @@ class SFEnv(gym.Env):
         else:
             if not os.path.exists(self.episode_dir):
                 os.makedirs(self.episode_dir)
-            image_name = self.env_name + "_" + self.current_time + ".png"
-            img_path = os.path.join(self.episode_dir, image_name)
+            #image_name = self.env_name + "_" + self.current_time + ".png"
+            #img_path = os.path.join(self.episode_dir, image_name)
             
     #
     #            if self.record_path is not None and self.config.env.record:
-            cv2.imwrite(img_path, img)
+            #cv2.imwrite(img_path, img)
+            self.imgs.append(img)
             #print(img.max(), img.min(),img.shape, type(img))
         
         
         
     def generate_video(self, delete_images = True):
-        imgs = []
+        
         img_paths = glob.glob(os.path.join(self.episode_dir, '*.png'))
         img_paths.sort(key=os.path.getatime)
         if self.ep_reward is not None:
@@ -203,14 +180,15 @@ class SFEnv(gym.Env):
         else:
             video_path = self.episode_dir
         video_path += '.gif'
-        for img_path in img_paths:
-            img = imageio.imread(img_path)
-            imgs.append(img)
-        blank = img.copy() * 0 + 255
-        imgs.append(blank)
-        imageio.mimsave(video_path, imgs, duration = .00001)
+#        for img_path in img_paths:
+#            img = imageio.imread(img_path)
+#            imgs.append(img)
+        blank = self.imgs[-1].copy() * 0 + 255
+        self.imgs.append(blank)
+        imageio.mimsave(video_path, self.imgs, duration = .00001)
         if delete_images:
             shutil.rmtree(self.episode_dir)
+            self.imgs = []
 
     def reset(self):
         self.window_active = False
@@ -243,80 +221,106 @@ class SFEnv(gym.Env):
         cv2.namedWindow(self.env_name)
     # Configure the space fortress gym environment
     def define_action_set(self):
-        self._action_set = CT.action_to_sf[self.env_name]
         if self.is_no_direction:
-            self._action_set[3] = CT.key_to_sf['Key.down']
+            CT.key_to_action[self.env_name]['Key.down'] = 4
+            CT.action_to_sf[self.env_name][4] = CT.key_to_sf['Key.down']
+        self._action_set = CT.action_to_sf[self.env_name]
+       
+#        print(self._action_set)
+#        print(CT.action_to_sf[self.env_name])
+#        print(CT.key_to_action[self.env_name])
     def get_prep_feature(self, observation, feature_name):
         index = self.feature_names.index(feature_name)
         return observation[index]
         
     def get_raw_feature(self, observation, feature_name):
-        #print("getting",feature_name)
+        
         return observation[self.raw_features_name_to_ix[feature_name]]
     def define_features(self):
-        self.raw_features_name_to_ix = {
-                'ship_pos_i'   : 0,
-                'ship_pos_j'   : 1,
-                'ship_headings': 2,
-                'square_pos_i' : 3,
-                'square_pos_j' : 4
-                }
-
-        def aux_decompose_cyclic(x):
-            """
-            Decomposes a cyclic feature into x, y coordinates
-            x : normalized feature (float, scalar)
-            """
-            try:
-                assert 1 >= x >= 0, "X must be normalized (%f)" % x
-            except Exception as e:
-                assert 1.1 >= x >= -0.1
-                x = np.clip(x, 0, 1)
-            import math
-            sin = math.sin(2 * math.pi * x)
-            cos = math.cos(2 * math.pi * x)
-            return sin, cos
+        if self.env_name == 'SFC-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_pos_i'   : 0,
+                    'ship_pos_j'   : 1,
+                    'ship_headings': 2,
+                    'square_pos_i' : 3,
+                    'square_pos_j' : 4,
+                    #'square_steps' : 5,
+                    'ship_speed_i' : 6,
+                    'ship_speed_j' : 7
+                    }
+            
+            
+        elif self.env_name == 'AIM-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_headings': 0,
+                    'mine_pos_i'   : 1,
+                    'mine_pos_j'   : 2
+                    }
+           
+            
+        else:
+            assert 0
+     
         prep_fs = []
         feature_names = [] 
-        coordinate_feature_names = ['ship_pos_i', 'ship_pos_j','square_pos_i', 'square_pos_j']
+        
 #        from copy import deepcopy
         if not self.is_wrapper:
-#            for fn in coordinate_feature_names:
+#            for i in range(len(coordinate_feature_names)):
 #                print(99,fn)
-#                f = lambda obs: [self.get_raw_feature(obs, deepcopy(fn))]
+#                fn = coordinate_feature_names[i]
+#                f = lambda obs: [self.get_raw_feature(obs, fn)]
 #                prep_fs.append(f)
 #                feature_names.append(fn)
-            prep_fs = [
-                lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
-                lambda obs: [self.get_raw_feature(obs, 'ship_pos_j')],
-                lambda obs: [self.get_raw_feature(obs, 'square_pos_i')],
-                lambda obs: [self.get_raw_feature(obs, 'square_pos_j')]
-            ]
-            feature_names += coordinate_feature_names
+            if self.env_name == 'SFC-v0':
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'square_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'square_pos_j')]
+                ]
+                feature_names += ['ship_pos_i', 'ship_pos_j','square_pos_i', 'square_pos_j']
+            elif self.env_name == 'AIM-v0':
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+                ]
+                feature_names += ['mine_pos_i', 'mine_pos_j']
+            else:
+                assert 0
+            
         else:
-            for fn in coordinate_feature_names:
-                f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, fn))
-                prep_fs.append(f)
-                feature_names.append(fn + "_sin")
-                feature_names.append(fn + "_cos")
-#            feature_names += ['ship_pos_i_x', 'ship_pos_i_y', 'ship_pos_j_x',
-#                              'ship_pos_j_y','square_pos_i_x','square_pos_i_y',
-#                              'square_pos_j_x','square_pos_j_y']
-#            prep_fs += [
-#                    ),
-#                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_y')),
-#                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'square_pos_x')),
-#                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'square_pos_y'))
-#                    ]
+            # FRICTION-LESS
+            if self.env_name == 'SFC-v0':
+                prep_fs += [
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_i')),
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_j')),
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'square_pos_i')),
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'square_pos_j'))
+                ]
+                aux = ['ship_pos_i', 'ship_pos_j', 'square_pos_i', 'square_pos_j']
+                for fn in aux:
+                    feature_names += [fn + '_sin', fn + '_cos']
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')]
+                ]
+                feature_names += ['ship_speed_i', 'ship_speed_j']
+                
+            elif self.env_name == 'AIM-v0':
+                pass
+            else:
+                assert 0
+
         if self.is_no_direction:
             #Head doesn't control direction, no heading of the spaceship needed
             pass
         else:
-            fn = 'ship_headings'
-            f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, fn))
+            f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_headings'))
             prep_fs.append(f)
-            feature_names.append(fn + "_sin")
-            feature_names.append(fn + "_cos")
+            feature_names.append("ship_headings_sin")
+            feature_names.append("ship_headings_cos")
+
         self.feature_names = feature_names
         self.state_size = len(self.feature_names)
         self.prep_fs = prep_fs
@@ -386,35 +390,21 @@ class SFEnv(gym.Env):
         self.is_wrapper = library.is_wrapper()
     
         self.define_features()
-#        if not self.is_frictionless and self.env_name == 'SFC-v0':
-#        self.n_bytes =  ((int(self.screen_height/self.scale)) \
-#                                        * (int(self.screen_width/self.scale)))
-        
-        
+
         self.get_symbols = library.get_symbols
         n_raw_symbols = CT.SF_observation_space_sizes[self.env_name]
         self.get_symbols.restype = ctypes.POINTER(ctypes.c_float * n_raw_symbols)
-#        try:
+
         self.update_logic = ctypes.CDLL(lib_dir).SF_iteration
         self.update_screen = ctypes.CDLL(lib_dir).update_screen
-#        self.update_screen.restype = ctypes.POINTER(ctypes.c_ubyte * self.n_bytes)
-#        except:
-#            print("Warning: Some functions where not found in the library.")
-#        try:
-#            self.best = ctypes.CDLL(lib_dir).get_best_move
-#        except: # Not implemented in the game yet
-#            print("Warning: best_move function not found in the library.")
+
 
         self.terminal_state = ctypes.CDLL(lib_dir).get_terminal_state
         self.score = ctypes.CDLL(lib_dir).get_score
         self.stop_drawing = ctypes.CDLL(lib_dir).stop_drawing
         self.pretty_screen = ctypes.CDLL(lib_dir).get_original_screen
-        # Configure how many bytes to read in from the pointer
-        # c_ubyte is equal to unsigned char
-#        self.update.restype = ctypes.POINTER(ctypes.c_ubyte * self.n_bytes)
-#        self.screen.restype = ctypes.POINTER(ctypes.c_ubyte * self.n_bytes)
 
-        # 468 * 448 * 2 (original size times something to do with 16 bit images)
+
         sixteen_bit_img_bytes = self.screen_width * self.screen_height * 2
         self.pretty_screen.restype = ctypes.POINTER(ctypes.c_ubyte * sixteen_bit_img_bytes)
         self.score.restype = ctypes.c_float    
@@ -422,40 +412,11 @@ class SFEnv(gym.Env):
         # It is possible to specify a seed for random number generation
         self._seed()
         self.define_action_set()
-#        if not self.is_frictionless() and self.env_name == 'SFC-v0':
-#            del CT.action_to_sf[self.env_name][CT.key_to_sf['wait']]
-#            action_set = {i : v for i, v in enumerate(CT.action_to_sf[self.env_name])}
-#            self._action_set = action_set
-#        else:
-#            assert 0, str(self.is_frictionless()) + ', ' + self.env_name
-#        print(self._action_set)
-#        if self.env_name in ['SFS-v0','SF-v0']:
-#            # All keys allowed
-#            self._action_set = {0 : KeyMap.LEFT.value, 1 : KeyMap.UP.value, 2 : KeyMap.RIGHT.value, 3 : KeyMap.SHOOT.value}
-#
-#        elif self.env_name == 'AIM-v0':
-#            # Only rotate left/right and shoot
-#            self._action_set = {0 : KeyMap.SHOOT.value, 1 : KeyMap.LEFT.value, 2 : KeyMap.RIGHT.value}
-#
-#        elif self.env_name == 'SFC-v0':
-#            # Only rotate left/right and forward
-#            self._action_set = {0 : KeyMap.LEFT.value, 1 : KeyMap.RIGHT.value, 2 : KeyMap.UP.value}
-#        else:
-#            assert False
+
         
         self.action_space = gym.spaces.Discrete(self.n_actions)
         self.state_space = gym.spaces.Discrete(self.state_size)
-        # 1 float = 4 bytes
-        
-        ###########
-    
 
-
-        # Initialize the game's drawing context and it's variables
-        # I would rather that this be in the init method, but the OpenAI developer himself stated
-        # that if some functionality of an enviroment depends on the render mode, the only way
-        # to handle this is to write a configure method, a method that is only callable after the
-        # init
         self.init_game()
 
        
@@ -473,4 +434,21 @@ class SFEnv(gym.Env):
         
 
     
-
+def aux_decompose_cyclic(x):
+    """
+    Decomposes a cyclic feature into x, y coordinates
+    x : normalized feature (float, scalar)
+    """
+    try:
+        assert 1 >= x >= 0, "X must be normalized (%f)" % x
+    except Exception as e:
+        assert 1.1 >= x >= -0.1
+        x = np.clip(x, 0, 1)
+    import math
+    sin = math.sin(2 * math.pi * x)
+    cos = math.cos(2 * math.pi * x)
+    
+    norm_sin = (sin + 1) / 2
+    norm_cos = (cos + 1) / 2
+    #return sin, cos
+    return norm_sin, norm_cos
