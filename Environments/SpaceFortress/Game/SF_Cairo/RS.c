@@ -403,9 +403,7 @@ void SF_iteration()
 	// Handle_Bonus();
 
 //	Score=Points+Velocity+Control+Speed;
-	printf("________________\n");
-    printf("Ship_X_Pos %d,\nShip_Y_Pos %d, \nShip_Headings %d, \nMissile_X %d, \nMissile_Y %d\n", Ship_X_Pos,Ship_Y_Pos,Ship_Headings, Missile_X, Missile_Y);
-    printf("Terminal_State %d\n", Terminal_State);
+
 }
 
 

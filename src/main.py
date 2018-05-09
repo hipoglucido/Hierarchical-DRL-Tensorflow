@@ -56,9 +56,16 @@ ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
 
+args = vars(parser.parse_args())
+#### HARD RULES
+if args['agent_type'] == 'human':
+    args['use_gpu'] = 0
+    args['render_delay'] = 0
+    args['mode'] = 'play'
+    #args['action_repeat'] = 1
+
 
 #
-args = vars(parser.parse_args())
 if 'exp' in args['mode']:
     exp_name = args['mode']
     experiment = Experiment(exp_name)
@@ -105,6 +112,10 @@ for args in args_list:
         env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
         
     elif args['env_name'] == 'AIM-v0':
+        #Space Fortress
+        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
+        
+    elif args['env_name'] == 'SF-v0':
         #Space Fortress
         env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
         

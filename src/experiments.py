@@ -95,10 +95,10 @@ class Experiment():
                     1000000
                     ]
             action_repeats = [
-                    2,
-                    3,
-                    4,
-                    5,
+#                    2,
+#                    3,
+#                    4,
+#                    5,
                     6
                     ]
             random_seeds = list(range(2))
@@ -115,7 +115,7 @@ class Experiment():
                     }
             base_args = {'agent_type'            : 'dqn',
                     'env_name'              : 'SFC-v0',
-                    'scale'                 : 1000,
+                    'scale'                 : 250,
                     'factor'                : 3,
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.001,

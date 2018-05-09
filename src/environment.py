@@ -89,8 +89,14 @@ class Environment():
     def act(self, action, is_training=True):
             cumulated_reward = 0
             #start_lives = self.lives
+            repeat = self.action_repeat
+            if self.env_name == 'SF-v0':
+                # Don't repeat shootings
+                if CT.action_to_sf[self.env_name][action] == CT.key_to_sf['Key.space']:
+                    repeat = 1
             
-            for _ in range(self.action_repeat):
+                
+            for _ in range(repeat):
                 
                 self._step(action)
                 cumulated_reward = cumulated_reward + self.reward

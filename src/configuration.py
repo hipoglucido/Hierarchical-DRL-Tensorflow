@@ -23,7 +23,7 @@ class Constants:
     
     SF_action_spaces = {
         'SFC-v0'   : ['Key.up', 'Key.right', 'Key.left', 'wait'],
-        'SF-v0'    : [],
+        'SF-v0'    : ['Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'],
         'SFS-v0'   : [],
         'AIM-v0'   : ['Key.right', 'Key.left', 'wait', 'Key.space']
             }
@@ -39,7 +39,7 @@ class Constants:
     
     SF_observation_space_sizes = {
         'SFC-v0'   : 8,
-        'SF-v0'    : 0,
+        'SF-v0'    : 9,
         'SFS-v0'   : 0,
         'AIM-v0'   : 3
             }
@@ -57,12 +57,12 @@ class Constants:
         return names
     goal_groups = {
         'SFC-v0' : {
-            0 : ['aim_at_square'] + SF_action_spaces['SFC-v0'],
+            0 : [],
             1 : get_region_names(4),
             2 : ['aim_at_square'] + get_region_names(4),
             3 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
             4 : ['aim_at_square'],
-            5 : []
+            5 : ['aim_at_square'] + SF_action_spaces['SFC-v0']
             },
         'SF-v0'  : {
             0 : [],

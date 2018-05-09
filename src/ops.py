@@ -1,4 +1,6 @@
 import tensorflow as tf
+from configuration import Constants as CT
+import math
 from tensorflow.contrib.layers.python.layers import initializers
 
 def clipped_error(y_true, y_pred):
@@ -29,7 +31,7 @@ def linear(input_, output_size, stddev=0.0002, bias_start=0.0,
 
 """Loss functions."""
 
-import tensorflow as tf
+
 
 
 def huber_loss(y_true, y_pred, max_grad=1.):
@@ -98,3 +100,20 @@ def weighted_huber_loss(y_true, y_pred, weights, max_grad=1.):
       The mean huber loss.
     """
     return tf.reduce_mean(weights*huber_loss(y_true, y_pred, max_grad=max_grad))
+
+    
+def revert_cyclic_feature(X_sin, X_cos, is_scaled, scale_after):
+    if is_scaled:
+        # [0, 1] -> [-1, 1]
+        X_sin, X_cos = X_sin * 2 - 1, X_cos * 2 - 1
+    if X_sin > 0:
+        X = math.acos(X_cos)
+    else:
+        X = CT.c - math.acos(X_cos)
+        
+    if scale_after:
+        # [0, 2pi] -> [0, 1]
+        X /= CT.c
+    return X
+    
+    

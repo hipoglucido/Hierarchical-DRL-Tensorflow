@@ -58,19 +58,59 @@ int jitter_switch = 1;
 #endif
 
 
-//
-float symbols[2] = {};
+////////////////////////////////////
+float symbols[9] = {};
+int get_screen_width(){
+	return WINDOW_WIDTH;
+}
+int get_screen_height(){
+	return WINDOW_HEIGHT;
+}
 float* get_symbols()
 {
-	printf("GETTING SYMBOLS:");
-	symbols[0] = 1.4f;	
-	symbols[1] = 2.3f;
+	//printf("GETTING SYMBOLS:");
+	symbols[0] = Ship_Y_Pos;// /(float) WINDOW_WIDTH;	
+	symbols[1] = Ship_X_Pos;// /(float) WINDOW_HEIGHT;
+	symbols[2] = Ship_Y_Speed;
+	symbols[3] = Ship_X_Speed;
+	symbols[4] = Ship_Headings;// /(float) 360;
+	symbols[5] = Shell_Y_Pos;//(float) Missile_Y_Pos;
+	symbols[6] = Shell_X_Pos;//(float) Missile_X_Pos;	
+	symbols[7] = Fort_Headings;
+	symbols[8]=  Missile_Stock;
+	//shell speed?
 	//for (int i = 3; i >= 0; i--)
-	//	printf("%f, ",symbols[i]);
+	//printf("SPPED Y %f, ",symbols[6]);
+	//printf("SPPED X %f, ",symbols[7]);
 	//printf("\n");
 	return symbols;
-
 }
+int is_frictionless(){
+	#ifdef GRID_MOVEMENT
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_wrapper(){
+	#ifdef NO_WRAP
+		return 0;
+	#else
+		return 1;
+	#endif
+}
+
+int is_no_direction(){
+	#ifdef NO_DIRECTION
+		return 1;
+	#else
+		return 0;
+	#endif
+}
+
+////////////////////////////////////
+
 
 void Initialize_Graphics(cairo_t *cr)
 {

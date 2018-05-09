@@ -4,6 +4,7 @@ from base import Epsilon
 import numpy as np
 import math
 from configuration import Constants as CT
+import ops
 class Goal(metaclass = ABCMeta):
     def __init__(self, n, name, config = None):
         self.n = n
@@ -104,16 +105,22 @@ class SFGoal(Goal):
         i_condition = R_i_min < A_i < R_i_max
         j_condition = R_j_min < A_j < R_j_max
         return i_condition and j_condition
-      
+     
     def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .15):
         #assert 0, 'denormalize sin and cos'
-        A_sin, A_cos = A_sin * 2 - 1, A_cos * 2 - 1
-        result = False
-        if A_sin > 0:
-            A_pointer = math.acos(A_cos)
-        else:
-            A_pointer = CT.c - math.acos(A_cos)
         
+        #Rescale
+        A_pointer = ops.revert_cyclic_feature(X_sin       = A_sin,
+                                              X_cos       = A_cos,
+                                              is_scaled   = True,
+                                              scale_after = False)
+#        A_sin, A_cos = A_sin * 2 - 1, A_cos * 2 - 1
+        result = False
+#        if A_sin > 0:
+#            A_pointer = math.acos(A_cos)
+#        else:
+#            A_pointer = CT.c - math.acos(A_cos)
+#        
         A_min = (A_pointer - epsilon - CT.c14) % CT.c
         A_max = (A_pointer + epsilon - CT.c14) % CT.c
         A_mean = (A_pointer - CT.c14) % CT.c
@@ -143,10 +150,10 @@ class SFGoal(Goal):
             A_target =  - CT.c12 + rel_rad
         else:
             assert 0
-        d = -1
-        gamma = -1
-        beta, alpha = rel_rad, A_mean
-        gamma = alpha - (beta - CT.c12)
+#        d = -1
+#        gamma = -1
+#        beta, alpha = rel_rad, A_mean
+#        gamma = alpha - (beta - CT.c12)
 #        if A_i <= B_i and A_j >= B_j:
 ##            print(1)
 #            
@@ -178,11 +185,11 @@ class SFGoal(Goal):
 #            
         
         weird = abs(A_min - A_max) > 2.1 * epsilon
-        #d = (abs(A_target - A_mean) % CT.c12)
-        def r(x): return 360 * x / (CT.c)
-        print('alpha', r(alpha))
-        print('beta', r(beta))
-        print('gamma', r(gamma))
+#        #d = (abs(A_target - A_mean) % CT.c12)
+#        def r(x): return 360 * x / (CT.c)
+#        print('alpha', r(alpha))
+#        print('beta', r(beta))
+#        print('gamma', r(gamma))
 #        print("d", r(d))
         if A_min < A_target < A_max:
             result = True
@@ -193,15 +200,40 @@ class SFGoal(Goal):
  
         return result
     def is_achieved(self, screen, action):
+        
         pfs = self.get_prep_features(screen)
         
         achieved = False
         if 'aim_at' in self.name:
+            if self.environment.is_no_direction:
+                    #Aiming at square doesn't make sense if rotation is deactivated
+                    assert 0
             if 'square' in self.name:
                 # aim_at_aquare
                 
                 
-                if not self.environment.is_no_direction:
+                if self.environment.is_wrapper:
+                    # Rotation activated and WRAPPING
+                    new_pfs = {}
+                    coordinate_fns = ['ship_pos_i', 'ship_pos_j', 'square_pos_i',
+                                      'square_pos_j']
+                    for fn in coordinate_fns:
+                        new_pfs[fn] = ops.revert_cyclic_feature(
+                                X_sin         = pfs[fn + '_sin'],
+                                X_cos         = pfs[fn + '_cos'],
+                                is_scaled     = True,
+                                scale_after   = True)
+                    
+                    achieved = self.is_aiming_at(
+                                      A_i     = new_pfs['ship_pos_i'],
+                                      A_j     = new_pfs['ship_pos_j'],
+                                      A_sin   = pfs['ship_headings_sin'],
+                                      A_cos   = pfs['ship_headings_cos'],
+                                      B_i     = new_pfs['square_pos_i'],
+                                      B_j     = new_pfs['square_pos_j'])
+                    
+                else:
+                    # Rotation activated and NO WRAPPING
                     achieved = self.is_aiming_at(
                                       A_i     = pfs['ship_pos_i'],
                                       A_j     = pfs['ship_pos_j'],
@@ -209,12 +241,9 @@ class SFGoal(Goal):
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = pfs['square_pos_i'],
                                       B_j     = pfs['square_pos_j'])
-                    
 
-            
-                else:
-                    assert 0
-            else:
+                
+            elif 'mine' in self.name:
                 # aim_at_mine
                 achieved = self.is_aiming_at(
                                       A_i     = .5,
@@ -223,15 +252,33 @@ class SFGoal(Goal):
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = pfs['mine_pos_i'],
                                       B_j     = pfs['mine_pos_j'])
-                pass
+            elif 'fortress' in self.name:
+                
+                
+            else:
+                assert 0
         elif 'region' in self.name:
             _, region_id, total_regions = self.name.split("_")
-             
-            achieved = self.is_in_region(
-                                    A_i      = pfs['ship_pos_i'],
-                                    A_j      = pfs['ship_pos_j'],
-                                    region = int(region_id),
-                                    n      = int(total_regions))
+            if self.environment.is_wrapper:
+                new_pfs = {}
+                coordinate_fns = ['ship_pos_i', 'ship_pos_j']
+                for fn in coordinate_fns:
+                    new_pfs[fn] = ops.revert_cyclic_feature(
+                            X_sin         = pfs[fn + '_sin'],
+                            X_cos         = pfs[fn + '_cos'],
+                            is_scaled     = True,
+                            scale_after   = True)
+                achieved = self.is_in_region(
+                                        A_i      = new_pfs['ship_pos_i'],
+                                        A_j      = new_pfs['ship_pos_j'],
+                                        region = int(region_id),
+                                        n      = int(total_regions))
+            else:
+                achieved = self.is_in_region(
+                                        A_i      = pfs['ship_pos_i'],
+                                        A_j      = pfs['ship_pos_j'],
+                                        region = int(region_id),
+                                        n      = int(total_regions))
         elif action == CT.SF_action_spaces[self.environment.env_name].index(self.name):
             achieved = True
         return achieved

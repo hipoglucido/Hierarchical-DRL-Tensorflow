@@ -49,6 +49,7 @@ class SFEnv(gym.Env):
         action = self._action_set[a] # Select the action from the action dictq
         reward = 0.0
         done = False
+        
         for frame in range(1):#self.config.env.action_repeat):
           
             if not isinstance(action, list):
@@ -69,8 +70,11 @@ class SFEnv(gym.Env):
 #        screen = np.ctypeslib.as_array(self.update_screen().contents)
         
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
+#        print('______________________')
+#        for k in self.raw_features_name_to_ix:
+#            print(k, obs[self.raw_features_name_to_ix[k]])
         
-#        print("obs:",obs)
+        self.scale_observation(obs)
         preprocessed_obs = self.preprocess_observation(obs)
 #        print("prep_obs", preprocessed_obs)
         
@@ -78,6 +82,36 @@ class SFEnv(gym.Env):
 #        ob = symbols
         #ob = symbols
         return preprocessed_obs, reward, done, {}
+    
+    def scale_observation(self, raw_obs):
+        if self.env_name == 'SFC-v0':
+            
+            #Normalize
+            raw_obs[0] /= self.screen_height    # Ship_Y_Pos
+            raw_obs[1] /= self.screen_width     # Ship_X_Pos
+            raw_obs[2] /= 360                   # Ship_Headings
+            raw_obs[3] /= self.screen_width     # Square_Y
+            raw_obs[4] /= self.screen_height    # Square_X
+            raw_obs[5] = raw_obs[5]                 # Square_steps
+            raw_obs[6] = (raw_obs[6] + 5.) / 10.    # Ship_X_Speed
+            raw_obs[7] = (raw_obs[7] + 5.) / 10.    # Ship_Y_Speed
+        elif self.env_name == 'AIM-v0':
+            #Normalize
+            raw_obs[0] /= 360                   # Ship_Headings
+            raw_obs[1] /= self.screen_width     # Mine_X_Pos
+            raw_obs[2] /= self.screen_height    # Mine_Y_Pos
+        elif self.env_name == 'SF-v0':
+            raw_obs[0]  /= self.screen_height         # Ship_Y_Pos
+            raw_obs[1]  /= self.screen_width          # Ship_X_Pos
+            raw_obs[2]   = (raw_obs[2] + 5.) / 10.    # Ship_Y_Speed
+            raw_obs[3]   = (raw_obs[3] + 5.) / 10.    # Ship_X_Speed 
+            raw_obs[4]  /= 360                        # Ship_Headings
+            raw_obs[5]  /= self.screen_height         # Missile_Y_Pos
+            raw_obs[6]  /= self.screen_width          # Missile_X_Pos
+            raw_obs[7]  /= 360                        # fort_Headings
+            raw_obs[8] /= 100                        # Missile_Stock
+    
+            
     def preprocess_observation(self, obs):
         """
         symbols[0] = Ship_X_Pos;// /(float) WINDOW_WIDTH;	
@@ -87,26 +121,6 @@ class SFEnv(gym.Env):
         	symbols[4] = Square_Y;// /(float) WINDOW_HEIGHT;
         	symbols[5] = Square_Step;//
         """
-        
-        
-        
-        if self.env_name == 'SFC-v0':
-            
-            #Normalize
-            obs[0] /= self.screen_width     # Ship_X_Pos
-            obs[1] /= self.screen_height    # Ship_Y_Pos
-            obs[2] /= 360                   # Ship_Headings
-            obs[3] /= self.screen_width     # Square_X
-            obs[4] /= self.screen_height    # Square_Y
-            obs[5] = obs[5]                 # Square_steps
-            obs[6] = (obs[6] + 5.) / 10.    # Ship_X_Speed
-            obs[7] = (obs[7] + 5.) / 10.    # Ship_Y_Speed
-        elif self.env_name == 'AIM-v0':
-            #Normalize
-            obs[0] /= 360                  # Ship_Headings
-            obs[1] /= self.screen_width    # Mine_X_Pos
-            obs[2] /= self.screen_height   # Mine_Y_Pos
-            
         
         features = []
         
@@ -203,6 +217,7 @@ class SFEnv(gym.Env):
         
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
 #        print("obs:",obs)
+        self.scale_observation(obs)
         preprocessed_obs = self.preprocess_observation(obs)
         return preprocessed_obs # For some reason should show the observation
 
@@ -258,20 +273,24 @@ class SFEnv(gym.Env):
                     }
            
             
-        else:
-            assert 0
-     
+        elif self.env_name == 'SF-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_pos_i'     : 0,
+                    'ship_pos_j'     : 1,
+                    'ship_speed_i'   : 2,
+                    'ship_speed_j'   : 3,
+                    'ship_headings'  : 4,
+                    'missile_pos_i'  : 5,
+                    'missile_pos_j'  : 6,
+                    'fort_headings' : 7,
+                    'missile_stock'  : 8
+                    }
+        
         prep_fs = []
         feature_names = [] 
         
-#        from copy import deepcopy
+
         if not self.is_wrapper:
-#            for i in range(len(coordinate_feature_names)):
-#                print(99,fn)
-#                fn = coordinate_feature_names[i]
-#                f = lambda obs: [self.get_raw_feature(obs, fn)]
-#                prep_fs.append(f)
-#                feature_names.append(fn)
             if self.env_name == 'SFC-v0':
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
@@ -286,9 +305,21 @@ class SFEnv(gym.Env):
                     lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
                 ]
                 feature_names += ['mine_pos_i', 'mine_pos_j']
-            else:
-                assert 0
-            
+            elif self.env_name == 'SF-v0':
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
+                ]
+                feature_names += ['ship_pos_i', 'ship_pos_j',
+                                  'ship_speed_i', 'ship_speed_j',
+                                  'missile_pos_i', 'missile_pos_j',
+                                  'missile_stock']
+  
         else:
             # FRICTION-LESS
             if self.env_name == 'SFC-v0':
@@ -309,8 +340,26 @@ class SFEnv(gym.Env):
                 
             elif self.env_name == 'AIM-v0':
                 pass
-            else:
-                assert 0
+            elif self.env_name == 'SF-v0':
+                prep_fs += [
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_i')),
+                    lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_j'))
+                ]
+                aux = ['ship_pos_i', 'ship_pos_j']
+                for fn in aux:
+                    feature_names += [fn + '_sin', fn + '_cos']
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
+                ]
+                feature_names += ['ship_speed_i', 'ship_speed_j',
+                                  'missile_pos_i', 'missile_pos_j',
+                                  'missile_stock']
+                
+                
 
         if self.is_no_direction:
             #Head doesn't control direction, no heading of the spaceship needed
@@ -320,7 +369,11 @@ class SFEnv(gym.Env):
             prep_fs.append(f)
             feature_names.append("ship_headings_sin")
             feature_names.append("ship_headings_cos")
-
+            if self.env_name == 'SF-v0':
+                f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'fort_headings'))
+                prep_fs.append(f)
+                feature_names.append("fort_headings_sin")
+                feature_names.append("fort_headings_cos")
         self.feature_names = feature_names
         self.state_size = len(self.feature_names)
         self.prep_fs = prep_fs
@@ -444,7 +497,7 @@ def aux_decompose_cyclic(x):
     except Exception as e:
         assert 1.1 >= x >= -0.1
         x = np.clip(x, 0, 1)
-    import math
+
     sin = math.sin(2 * math.pi * x)
     cos = math.cos(2 * math.pi * x)
     

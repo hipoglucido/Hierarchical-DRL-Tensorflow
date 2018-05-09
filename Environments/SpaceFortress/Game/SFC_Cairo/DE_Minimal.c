@@ -89,7 +89,7 @@ float* get_symbols()
 	symbols[6] = Ship_Y_Speed;
 	symbols[7] = Ship_X_Speed;
 
-	
+
 	//for (int i = 3; i >= 0; i--)
 	//printf("SPPED Y %f, ",symbols[6]);
 	//printf("SPPED X %f, ",symbols[7]);
@@ -552,10 +552,11 @@ void Reset_Screen()
     Ship_X_Pos=randrange(20,MaxX-20);
     Ship_Y_Pos=randrange(20,MaxY-20);
     Ship_Headings=randrange(0,359);
+
     #endif
 //		printf("Ship pos after reset: %d %d\n", Ship_X_Pos, Ship_Y_Pos);
-    Ship_X_Speed=0.0;
-    Ship_Y_Speed=0.0;
+    Ship_X_Speed=randrange(-SHIP_MAX_SPEED * 0.4, SHIP_MAX_SPEED * 0.4);
+    Ship_Y_Speed=randrange(-SHIP_MAX_SPEED * 0.4, SHIP_MAX_SPEED * 0.4);
     Rotate_Input=0; /* joystick left/right */
     Accel_Input=0; /* joystick forward */
 
