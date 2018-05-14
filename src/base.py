@@ -66,6 +66,14 @@ class Agent(object):
             out = self.environment.gym.one_hot_inverse(observation)
         msg = '\nS:\n%s' % str(out)
         self.add_output(msg)
+    def is_ready_to_learn(self, prefix):
+        if prefix == '':
+            is_ready = self.step > self.ag.learn_start + self.start_step
+        elif prefix == 'mc':
+            is_ready = self.mc_step >  self.mc.learn_start
+        elif prefix == 'c':
+            is_ready = self.c_step > self.c.learn_start + self.mc_start_step
+        return is_ready
     def new_episode(self):
         #screen, reward, action, terminal = self.environment.new_random_game()
         screen, _, _, _ = self.environment.new_game()        
@@ -88,6 +96,7 @@ class Agent(object):
         msg = '\nA: %d\nR: %.2f' % (action, reward)
         if self.m.is_hdqn:
             extra = ', G: %d, IR: %.2f' % (self.current_goal.n, intrinsic_reward)
+            #extra += '\n' + str(self.goal_probs)
             if intrinsic_reward in [1, 0.99]:
                 extra += ' Goal accomplished!'
             msg += extra
@@ -150,11 +159,10 @@ class Agent(object):
                                          None, name=tag)
                 self.summary_ops[tag]    = tf.summary.histogram(tag,
                                             self.summary_placeholders[tag])
-            print(self.model_dir)
-            print("Scalars: ", ", ".join(scalar_summary_tags))
-            print("Histograms: ", ", ".join(histogram_summary_tags))
-        self.writer = tf.summary.FileWriter('./logs/%s' % \
-                                           self.model_dir, self.sess.graph)
+            
+#            print("Scalars: ", ", ".join(scalar_summary_tags))
+#            print("Histograms: ", ", ".join(histogram_summary_tags))
+        self.writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
 
     def generate_target_q_t(self, prefix, reward, s_t_plus_1, terminal, g_t_plus_1 = None):
         if prefix == '':
@@ -391,48 +399,58 @@ class Agent(object):
         
         
     def save_model(self, step=None):
-        print(" [*] Saving checkpoints...")
-
-        if not os.path.exists(self.checkpoint_dir):
-            os.makedirs(self.checkpoint_dir)
-        self.saver.save(self.sess, self.checkpoint_dir, global_step=step)
+        if not os.path.exists(self.checkpoints_dir):
+            os.makedirs(self.checkpoints_dir)
+        self.saver.save(self.sess, self.checkpoints_dir, global_step=step)
+        msg = "Saved checkpoint step=%d" % (step)#, self.checkpoints_dir)
+        print(msg)
 
     def load_model(self):
         print(" [*] Loading checkpoints...")
-
-        ckpt = tf.train.get_checkpoint_state(self.checkpoint_dir)
+        temp = self.config.ag.mode
+        self.config.ag.mode = 'train'
+        ckpt = tf.train.get_checkpoint_state(self.checkpoints_dir2)
+       
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-            fname = os.path.join(self.checkpoint_dir, ckpt_name)
+            fname = os.path.join(self.checkpoints_dir2, ckpt_name)
             self.saver.restore(self.sess, fname)
             print(" [*] Load SUCCESS: %s" % fname)
-            return True
+            success = True
         else:
-            print(" [!] Load FAILED: %s" % self.checkpoint_dir)
-            return False
+            print(" [!] Load FAILED: %s" % self.checkpoints_dir)
+            success = False
+        self.config.ag.mode = temp
+        return success
         
     def write_configuration(self):
-        filename = self.model_dir + "_" + "cnf.txt"
-        filepath = os.path.join(self.gl.logs_dir,self.model_dir, filename)
+        filename = self.config.model_name + "_" + "cnf.txt"
+        filepath = os.path.join(self.logs_dir, filename)
         with open(filepath, 'w') as fp:
             fp.write(self.config.to_str())
     def write_output(self):
-        filename = self.model_dir + "_" + "episodes.txt"
-        filepath = os.path.join(self.gl.logs_dir,self.model_dir, filename)
+        filename = self.config.model_name + "_" + "episodes.txt"
+        filepath = os.path.join(self.logs_dir, filename)
         with open(filepath, 'w') as fp:
             fp.write(self.output)
+       
+    @property
+    def checkpoints_dir(self):
+        return os.path.join(self.config.gl.checkpoints_dir,
+                            self.config.model_name,
+                            self.config.model_name)
+    @property
+    def checkpoints_dir2(self):
+        return os.path.join(self.config.gl.checkpoints_dir,
+                            self.config.model_name)
+
+    @property
+    def logs_dir(self):
+        return os.path.join(self.config.gl.logs_dir,
+                            self.config.model_name)
+
+   
         
-    @property
-    def checkpoint_dir(self):
-        return os.path.join('checkpoints', self.model_dir)
-
-    @property
-    def model_dir(self):
-        #TODO remove references self.model_dir
-        return self.config.model_dir
-            
-
-
     @property
     def saver(self):
         if self._saver == None:

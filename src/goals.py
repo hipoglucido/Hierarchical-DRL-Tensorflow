@@ -253,10 +253,7 @@ class SFGoal(Goal):
                                       B_i     = pfs['mine_pos_i'],
                                       B_j     = pfs['mine_pos_j'])
             elif 'fortress' in self.name:
-                
-                
-            else:
-                assert 0
+                pass
         elif 'region' in self.name:
             _, region_id, total_regions = self.name.split("_")
             if self.environment.is_wrapper:

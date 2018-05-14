@@ -114,7 +114,7 @@ class Configuration:
         logging.info(msg)   
         
     @property
-    def model_dir(self):
+    def model_name(self):
         chain = []
         for attr_fullname in self.gl.attrs_in_dir:
             [attr_type, attr_name] = attr_fullname.split('.')
@@ -206,6 +206,7 @@ class GlobalSettings(GenericSettings):
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
         self.attrs_in_dir = [
 #                 'env.factor',
+                 'ag.mode',
                  'gl.date',
                  'env.env_name',
 #                 'ag.agent_type',
@@ -217,13 +218,14 @@ class GlobalSettings(GenericSettings):
                  'ag.pmemory',
                  'ag.memory_size',
                  'env.action_repeat',
-                 'gl.random_seed'
+                 'gl.random_seed',
+                 
                  
 #                 'ag.learning_rate_minimum',
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
                  ]
-        self.checkpoint_dir = '' #TODO
+        self.checkpoints_dir = os.path.join(self.root_dir, 'src', 'checkpoints') #TODO
         self.logs_dir = os.path.join(self.root_dir, 'src', 'logs') #TODO
         self.settings_dir = '' #TODO
         self.randomize = False
@@ -368,6 +370,7 @@ class ControllerSettings(AgentSettings):
         self.train_frequency = 4
         #Visualize weights initialization in the histogram
         self.learn_start = 1000#min(5. * self.scale, self.test_step)
+        self.learnt_threshold = 0.7
     
     
     
@@ -408,6 +411,7 @@ class MetaControllerSettings(AgentSettings):
         
 #        self.ignore = ['ignore']
         self.prefix = 'mc'
+        
     
 class EnvironmentSettings(GenericSettings):
     def __init__(self):

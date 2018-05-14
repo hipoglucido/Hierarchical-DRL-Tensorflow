@@ -44,10 +44,8 @@ class HDQNAgent(Agent):
                                  size    = self.environment.state_size)
         memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
         self.mc_memory = memory_type(config       = self.mc,
-                                      model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size)
         self.c_memory = memory_type(config        = self.c,
-                                      model_dir    = self.model_dir,
                                       screen_size  = self.environment.state_size + \
                                                           self.ag.goal_size)
 
@@ -62,7 +60,7 @@ class HDQNAgent(Agent):
         self.write_configuration()
         #TODO turn config inmutable
     
-
+    
     def get_goal(self, n):
         return self.goals[n]
         
@@ -86,13 +84,19 @@ class HDQNAgent(Agent):
             
         else:
             raise ValueError("No prior goals for " + self.environment.env_name)
-        
+        self.goal_probs = np.array([1 / len(goals) for _ in goals])
         return goals
     
     def set_next_goal(self, obs):
         step = self.c_step #TODO think about this
-        
-        if self.mc_ready:
+#        if not self.c_learnt or 1:
+#            a = list(self.goals.keys())
+#            p = self.goal_probs
+#            
+#            n_goal = random.randrange(self.ag.goal_size)#np.random.choice(a = a, p = p)
+#        else:
+
+        if self.mc_ready and self.c_learnt:
             ep = self.mc_epsilon.steps_value(step)
         else:
             ep = 1
@@ -147,7 +151,7 @@ class HDQNAgent(Agent):
         self.mc_memory.add(self.mc_old_obs, goal_n, ext_reward, new_obs, terminal)
         
         
-        if self.mc_step >  self.mc.learn_start:
+        if self.is_ready_to_learn(prefix = 'mc'):
             if self.mc_step % self.mc.train_frequency == 0:
                 self.mc_q_learning_mini_batch()
 
@@ -188,10 +192,7 @@ class HDQNAgent(Agent):
                 self.c_update_target_q_network()
 
     def mc_q_learning_mini_batch(self):
-        if self.mc_memory.count < self.mc_history.length:
-            return
-        
-   
+      
 #        s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
         (s_t, goal, ext_reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.mc_memory.sample()
@@ -215,7 +216,11 @@ class HDQNAgent(Agent):
         }
         
         if self.ag.pmemory:
-            #TODO
+            beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end
+            self.m.mc_beta = beta
+            loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
+            feed_dict[self.mc_loss_weight] = loss_weight
+            
             pass
         
         
@@ -225,6 +230,7 @@ class HDQNAgent(Agent):
                                                              self.mc_loss,
                                                              self.mc_q_summary],
                                                             feed_dict)
+        
         self.writer.add_summary(summary_str, self.mc_step)
     
         self.m.mc_add_update(loss, q_t.mean(), mc_td_error.mean())
@@ -278,38 +284,47 @@ class HDQNAgent(Agent):
             self.c_g_t: g_t,
             self.c_learning_rate_step: self.c_step,
         }
+        if self.ag.pmemory:
+            beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end
+            self.m.c_beta = beta
+            loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
+            feed_dict[self.c_loss_weight] = loss_weight
+            pass
+            
         _, q_t, c_td_error, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
                                              self.c_td_error, self.c_loss, self.c_q_summary], feed_dict)
         self.writer.add_summary(summary_str, self.c_step)
         self.m.c_add_update(loss, q_t.mean(), c_td_error.mean())
 
 
-    
+    def play(self):
+        pass
 
     
     def train(self):
 
-        mc_start_step = 0
-        c_start_step = 0
+        self.mc_start_step = self.mc_step_op.eval()
+        self.c_start_step = self.c_step_op.eval()
         self.mc_ready = False
-        self.mc_epsilon = Epsilon(self.mc, mc_start_step)
+        self.c_learnt = False
+        self.mc_epsilon = Epsilon(self.mc, self.mc_start_step)
         for key, goal in self.goals.items():
-            goal.setup_epsilon(self.c, c_start_step) #TODO load individual
+            goal.setup_epsilon(self.c, self.c_start_step) #TODO load individual
         
         old_obs = self.new_episode()
         
         self.m.start_timer()
         # Initial goal
-        self.mc_step = mc_start_step
-        self.c_step = c_start_step
+        self.mc_step = self.mc_start_step
+        self.c_step = self.c_start_step
         self.set_next_goal(old_obs)
         
         total_steps = self.ag.max_step# + self.c.memory_size
         if self.m.is_SF:   
-            iterator = tqdm(range(c_start_step, total_steps),
-                                                  ncols=70, initial=c_start_step)
+            iterator = tqdm(range(self.c_start_step, total_steps),
+                                                  ncols=70, initial=self.c_start_step)
         else:
-            iterator = range(c_start_step, total_steps)
+            iterator = range(self.c_start_step, total_steps)
         print("\nFilling c_memory (%d) and mc_memory (%d) with random experiences..." % (self.c.memory_size, self.mc.memory_size))
         
         for self.c_step in iterator:
@@ -396,14 +411,21 @@ class HDQNAgent(Agent):
 #                old_obs = new_obs.copy()
             ######################
             
-            if self.c_step < self.c.learn_start:
+            if not self.is_ready_to_learn(prefix = 'c'):#c_step < self.c.learn_start:
                 continue
             if self.c_step % self.c.test_step != self.c.test_step - 1:
                 continue
   
             self.m.compute_test('c', self.m.c_update_count)
             self.m.compute_test('mc', self.m.mc_update_count, self.mc_step)
-            self.m.compute_goal_results(self.goals)
+            goal_success_rate = self.m.compute_goal_results(self.goals)
+            self.c_learnt = goal_success_rate > self.c.learnt_threshold
+#            probs = 1. - goal_success_rates.clip(.01, .99)
+#            probs = (probs - probs.min()) / (probs.max() - probs.min())
+#            probs /= probs.sum()
+#            self.goal_probs = probs
+            
+            
             self.m.compute_state_visits()
             
 #            self.m.print('mc')
@@ -444,7 +466,7 @@ class HDQNAgent(Agent):
         self.mc_target_w = {}
         # training meta-controller network
         with tf.variable_scope('mc_prediction'):
-            # tf Graph input
+            
             self.mc_s_t = tf.placeholder("float",
                         [None, self.mc_history.length, self.environment.state_size],
                         name='mc_s_t')
@@ -498,7 +520,7 @@ class HDQNAgent(Agent):
 
             #self.global_step = tf.Variable(0, trainable=False)
             if self.ag.pmemory:
-                self.mc_loss = tf.reduce_mean(huber_loss(y_true  = self.mc_target_q_t,
+                self.mc_loss = tf.reduce_mean(weighted_huber_loss(y_true  = self.mc_target_q_t,
                                                          y_pred  = mc_q_acted,
                                                          weights = self.mc_loss_weight),
                                               name = 'mc_loss')
@@ -527,8 +549,7 @@ class HDQNAgent(Agent):
     
         with tf.variable_scope('c_prediction'):
             #input_size = self.environment.state_size + self.ag.goal_size
-            if self.ag.pmemory:
-                self.mc_loss_weight = tf.placeholder('float32', [None], name='mc_loss_weight')
+            
             self.c_s_t = tf.placeholder("float",
                                 [None, self.c_history.length,
                                                  self.environment.state_size],
@@ -546,7 +567,8 @@ class HDQNAgent(Agent):
             print(self.c_s_t_flat)
             last_layer = self.c_gs_t
             print(last_layer)
-            last_layer, histograms = self.add_dense_layers(architecture = self.c.architecture,
+            last_layer, histograms = self.add_dense_layers(
+                                            architecture = self.c.architecture,
                                                input_layer = last_layer,
                                                parameters = self.c_w,
                                                name_aux= '')
@@ -573,6 +595,8 @@ class HDQNAgent(Agent):
         
         #Controller optimizer
         with tf.variable_scope('c_optimizer'):
+            if self.ag.pmemory:
+                self.c_loss_weight = tf.placeholder('float32', [None], name='c_loss_weight')
             self.c_target_q_t = tf.placeholder('float32', [None],
                                                name='c_target_q_t')
             self.c_action = tf.placeholder('int64', [None], name='c_action')
@@ -587,7 +611,7 @@ class HDQNAgent(Agent):
             #self.global_step = tf.Variable(0, trainable=False)
 
             if self.ag.pmemory:
-                self.c_loss = tf.reduce_mean(huber_loss(y_true  = self.c_target_q_t,
+                self.c_loss = tf.reduce_mean(weighted_huber_loss(y_true  = self.c_target_q_t,
                                                          y_pred  = c_q_acted,
                                                          weights = self.c_loss_weight),
                                               name = 'c_loss')

@@ -10,8 +10,7 @@ sys.path.insert(0, '..')
 from utils import save_npy, load_npy
 
 class OldReplayMemory:
-    def __init__(self, config, model_dir, screen_size):
-        self.model_dir = model_dir     #TODO remove parameter
+    def __init__(self, config, screen_size):
         self.memory_size = config.memory_size
         self.actions = np.empty(self.memory_size, dtype = np.uint8)
         self.rewards = np.empty(self.memory_size, dtype = np.float16)
@@ -63,7 +62,8 @@ class OldReplayMemory:
         # memory must include poststate, prestate and history
         
         #print(self.count, self.history_length)
-        assert self.count > self.history_length
+        assert self.count > self.history_length, "count=%d, history_length=%d" %\
+                                                    (self.count, self.history_length)
         
         # sample random indexes
         indexes = []
@@ -94,17 +94,17 @@ class OldReplayMemory:
         #print("sample:",self.prestates, actions, rewards, self.poststates, terminals)
         return (self.prestates, actions, rewards, self.poststates, terminals), None, None, None, None
 
-    def save(self):
-        for idx, (name, array) in enumerate(
-                zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
-                        [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
-            save_npy(array, os.path.join(self.model_dir, name))
-
-    def load(self):
-        for idx, (name, array) in enumerate(
-                zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
-                        [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
-            array = load_npy(os.path.join(self.model_dir, name))
+#    def save(self):
+#        for idx, (name, array) in enumerate(
+#                zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
+#                        [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
+#            save_npy(array, os.path.join(self.model_dir, name))
+#
+#    def load(self):
+#        for idx, (name, array) in enumerate(
+#                zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
+#                        [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
+#            array = load_npy(os.path.join(self.model_dir, name))
 """Replay Memory"""
 
 import numpy as np
@@ -184,7 +184,7 @@ class PriorityExperienceReplay:
     Almost copy from
     https://github.com/jaara/AI-blog/blob/master/Seaquest-DDQN-PER.py
     '''
-    def __init__(self, config, model_dir, screen_size):
+    def __init__(self, config, screen_size):
         max_size = config.memory_size
         self.batch_size = config.batch_size
   

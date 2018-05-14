@@ -145,6 +145,7 @@ class Metrics:
     def compute_goal_results(self, goals):
         total_goals_set = 0
         total_achieved_goals = 0
+        goal_success_rates = []
         for _, goal in goals.items():
             name = goal.name
             successes = getattr(self, name + '_successes')
@@ -154,11 +155,12 @@ class Metrics:
             except ZeroDivisionError:                
                 success_rate = self.error_value
             setattr(self, name + '_success_rate', success_rate)
-            
+            goal_success_rates.append(success_rate)
             total_goals_set += frequency
             total_achieved_goals += successes
             setattr(self, name + "_epsilon", goal.epsilon)
         debug_goals_rfreq_sum = 0
+        
         for _, goal in goals.items():
             name = goal.name
             frequency = getattr(self, name + "_freq")
@@ -174,6 +176,8 @@ class Metrics:
         except ZeroDivisionError:
             c_avg_goal_success = self.error_value
         setattr(self,'c_avg_goal_success', c_avg_goal_success)
+    
+        return c_avg_goal_success
         
     def compute_state_visits(self):
         total_visits = 0
@@ -298,7 +302,7 @@ class Metrics:
     def compute_test(self, prefix, update_count, mc_steps = None):
         if not update_count > 0:
             #Model hasn't started training
-            return
+            pass
         assert prefix in ['c', 'mc', '']
         prefix = prefix + '_' if prefix != '' else prefix
         config = getattr(self, prefix + 'params')

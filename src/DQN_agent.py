@@ -8,13 +8,13 @@ from functools import reduce
 import tensorflow as tf
 import sys
 from metrics import Metrics
-
+import time
 from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
 from ops import linear, clipped_error, huber_loss, weighted_huber_loss
 from utils import get_time, save_pkl, load_pkl
-
+import utils
 class DQNAgent(Agent):
     def __init__(self, config, environment, sess):
         super().__init__(config)
@@ -33,7 +33,6 @@ class DQNAgent(Agent):
         memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
         
         self.memory = memory_type(config      = self.ag,
-                                   model_dir  = self.model_dir,
                                    screen_size = self.environment.state_size)
 
         
@@ -41,34 +40,23 @@ class DQNAgent(Agent):
         self.m = Metrics(self.config)
         
         self.build_dqn()
+#        if self.ag.mode == 'play':
+#            self.gl.date = utils.get_timestamp() + "-" + self.gl.date
+        time.sleep(1)
         self.config.print()
         self.write_configuration()
         
 #        assert self.ag.memory_size < self.ag.max_step
-   
-    def train(self):
-        start_step = 0    
-        self.epsilon = Epsilon(self.ag, start_step)
+    def play(self):
+        self.start_step = self.step_op.eval()
+        
         
         old_obs = self.new_episode()
 
         self.m.start_timer()
-        total_steps = self.ag.max_step + self.ag.memory_size
-        if self.m.is_SF:   
-            iterator = tqdm(range(start_step, total_steps),
-                                                  ncols=70, initial=start_step)
-        else:
-            iterator = range(start_step, total_steps)
-        
-        print("\nFilling memory with %d random experiences..." % (self.ag.memory_size))
-        for self.step in iterator:
-            if self.memory.is_full() and self.step == self.ag.memory_size:
-                print("\nLearning...")
-#            if self.step == self.ag.learn_start:                
-#                self.m.restart()
-#            if self.memory.is_full():
-#                self.m.restart()
-            #old_screen = self.history.get()
+        self.step = 0
+        while 1:
+
             # 1. predict
             action = self.predict_next_action(old_obs)    
        
@@ -91,7 +79,70 @@ class DQNAgent(Agent):
             if terminal:
                 if self.display_episode:
                     self.console_print_terminal(reward, new_obs)
-                self.m.mc_step_reward = 0
+                #self.m.mc_step_reward = 0
+                self.m.close_episode()
+                old_obs = self.new_episode()
+             
+            else:
+                old_obs = new_obs.copy()
+           
+            
+            self.step += 1
+            if self.step % self.ag.test_step != self.ag.test_step - 1:
+                continue   
+            
+            self.m.compute_test(prefix = '', update_count = 0)
+            self.m.compute_state_visits()
+            
+
+            summary = self.m.get_summary()
+            self.m.filter_summary(summary)
+            self.inject_summary(summary, self.step)
+            self.write_output()
+            
+            self.m.restart()
+        
+        
+    def train(self):
+        self.start_step = self.step_op.eval()   
+        self.epsilon = Epsilon(self.ag, self.start_step)
+        
+        old_obs = self.new_episode()
+
+        self.m.start_timer()
+        total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
+        if self.m.is_SF:   
+            iterator = tqdm(range(self.start_step, total_steps),
+                                                  ncols=70, initial=self.start_step)
+        else:
+            iterator = range(self.start_step, total_steps)
+        
+        print("\nFilling memory with random experiences until step %d..." % \
+                                  (self.ag.learn_start))
+        for self.step in iterator:
+            # 1. predict
+            action = self.predict_next_action(old_obs)    
+       
+            # 2. act            
+            new_obs, reward, terminal = self.environment.act(action)
+           
+            if self.m.is_SF:
+                self.m.add_act(action)
+            else:
+                self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
+            if self.display_episode:
+                self.console_print(old_obs, action, reward)
+            
+                
+            
+            # 3. observe
+            self.observe(old_obs, action, reward, new_obs, terminal)
+            self.m.increment_external_reward(reward)
+            
+            if terminal:
+                if self.display_episode:
+                    self.console_print_terminal(reward, new_obs)
+                #self.m.mc_step_reward = 0
                 self.m.close_episode()
                 old_obs = self.new_episode()
              
@@ -99,7 +150,8 @@ class DQNAgent(Agent):
                 old_obs = new_obs.copy()
            
 
-            if self.step < self.ag.learn_start:
+            if not self.is_ready_to_learn(prefix = ''):
+                #Monitor shouldn't start if learning hasn't
                 continue
             if self.step % self.ag.test_step != self.ag.test_step - 1:# or \
                                 #not self.memory.is_full():
@@ -111,7 +163,7 @@ class DQNAgent(Agent):
                 self.step_assign_op.eval(
                         {self.step_input: self.step + 1})
      
-#                self.save_model(self.step + 1)
+                self.save_model(self.step + 1)
 
                 self.m.update_best_score()
                 
@@ -132,9 +184,12 @@ class DQNAgent(Agent):
     def predict_next_action(self, old_obs):
         #s_t = self.history.get()
         s_t = [old_obs]
-        ep = self.epsilon.steps_value(self.step)
+        if self.ag.mode == 'play':
+            ep = 0
+        else:
+            ep = self.epsilon.steps_value(self.step)
         self.m.update_epsilon(value = ep)
-        if random.random() < ep or not self.memory.is_full():
+        if random.random() < ep:
             action = random.randrange(self.environment.action_size)
         else:
             action = self.q_action.eval({self.s_t: [s_t]})[0]
@@ -159,8 +214,8 @@ class DQNAgent(Agent):
         self.memory.add(old_screen, action, reward, screen, terminal)
         #self.history.add(screen)
         
-        #if self.step > self.ag.learn_start:
-        if self.memory.is_full():
+        if self.is_ready_to_learn(prefix = '') and self.ag.mode == 'train':
+#        if self.memory.is_full():
             if self.step % self.ag.train_frequency == 0:
                 self.q_learning_mini_batch()
 
@@ -170,8 +225,7 @@ class DQNAgent(Agent):
 
 
     def q_learning_mini_batch(self):
-        if self.memory.count < self.history.length:
-            return
+      
         (s_t, action, reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.memory.sample()
 #        s_t, action, reward, s_t_plus_1, terminal = self.memory.sample()
@@ -224,6 +278,7 @@ class DQNAgent(Agent):
 #            print("p_list", p_list)
 #            print("sum_p", sum_p)
 #            print("count", count)
+            
         _, q_t, td_error, loss, summary_str = self.sess.run([self.optim, self.q,
                                                              self.td_error,
                                              self.loss, self.q_summary], feed_dict)
@@ -295,7 +350,7 @@ class DQNAgent(Agent):
         self.create_target(self.ag)
 
 
-    
+        
         # optimizer
         with tf.variable_scope('optimizer'):
             if self.ag.pmemory:

@@ -29,6 +29,8 @@ gl_args.add_argument("--gpu_fraction", default = None)
 gl_args.add_argument("--random_seed", type=int, help="Random seed for repeatable experiments.")
 gl_args.add_argument("--log_level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO", help="Log level.")
 gl_args.add_argument("--display_prob", default = None, type = float)
+gl_args.add_argument("--date", default = None, type = str)
+
 
 # ENVIRONMENT PARAMETERS
 env_args = parser.add_argument_group('Environment')
@@ -55,7 +57,9 @@ ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
+"""
 
+"""
 args = vars(parser.parse_args())
 #### HARD RULES
 if args['agent_type'] == 'human':
@@ -63,7 +67,8 @@ if args['agent_type'] == 'human':
     args['render_delay'] = 0
     args['mode'] = 'play'
     #args['action_repeat'] = 1
-
+if args['mode'] == 'play':
+    pass#args['display_prob'] = 1
 
 #
 if 'exp' in args['mode']:
@@ -86,6 +91,7 @@ for args in args_list:
     
     #Global settings
     gl_st = configuration.GlobalSettings(args)
+   
     
     cnf.set_global_settings(gl_st)
     
@@ -178,7 +184,7 @@ for args in args_list:
         else:
             raise ValueError("Wrong mode " + str(ag_st.mode))
         
-        agent.show_attrs()
+        #agent.show_attrs()
     tf.reset_default_graph()
     #if __name__ == '__main__':
     #    tf.app.run()
