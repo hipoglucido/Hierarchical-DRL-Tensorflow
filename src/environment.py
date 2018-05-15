@@ -83,25 +83,29 @@ class Environment():
 
 
         
-    def act(self, action, is_training=True):
+    def act(self, action, info = {}):
             cumulated_reward = 0
-            #start_lives = self.lives
-            repeat = self.action_repeat
-            if self.env_name == 'SF-v0':
-                # Don't repeat shootings
-                if CT.action_to_sf[self.env_name][action] == CT.key_to_sf['Key.space']:
-                    repeat = 1
             
+            small_step = False
+            if 'goal_name' in info.keys():
+                if info['goal_name'] == 'aim_at_fortress':
+                    small_step = True
+            if self.env_name == 'SF-v0':
+                if CT.action_to_sf[self.env_name][action] == CT.key_to_sf['Key.space']:
+                    small_step = True      
+           
+            # Don't repeat shootings
+            if small_step:
+                repeat = 1
+            else:
+                repeat = self.action_repeat
                 
             for _ in range(repeat):
                 
                 self._step(action)
                 cumulated_reward = cumulated_reward + self.reward
     
-                if 0:#is_training and start_lives > self.lives:
-                    continue #TODO better understand this
-                    cumulated_reward -= 1
-                    self.terminal = True
+                
     
                 if self.terminal:
                     break

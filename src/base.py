@@ -68,7 +68,7 @@ class Agent(object):
         self.add_output(msg)
     def process_info(self, info):
         if self.environment.env_name == 'SF-v0':
-            self.m.fortress_shots += info['fortress_hits']
+            self.m.fortress_hits += info['fortress_hits']
     def is_ready_to_learn(self, prefix):
         if prefix == '':
             is_ready = self.step > self.ag.learn_start + self.start_step

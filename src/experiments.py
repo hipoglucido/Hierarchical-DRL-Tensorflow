@@ -162,6 +162,26 @@ class Experiment():
                     'dueling'               : 1,
                     'double_q'              : 1,
                     'memory_size'           : 1000000
+            }    
+        elif name == 'exp7':
+            #hdqn vs dqn in SF
+            hyperparameter_space = {
+                    'goal_groups'             : [1, 2, 3],
+                    'random_seeds'            : [7, 14]
+                    }
+            base_args = {
+                    'env_name'              : 'SF-v0',
+                    'scale'                 : 500,
+                    'agent_type'            : 'hdqn',
+                    'log_level'             : 'DEBUG',
+                    'display_prob'          : 0.001,
+                    'use_gpu'               : 1,
+                    'mode'                  : 'train',
+                    'architecture'          : [64, 64],
+                    'dueling'               : 1,
+                    'double_q'              : 1,
+                    'memory_size'           : 5000000,
+                    'action_repeat'         : 4 
             }           
         for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                       base_args):

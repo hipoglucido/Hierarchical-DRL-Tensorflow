@@ -66,8 +66,9 @@ class Constants:
             },
         'SF-v0'  : {
             0 : [],
-            1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'],
-            2 : ['aim_at_fortress']+ get_region_names(3)
+            1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
+            2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
+            3 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
                 },
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
@@ -208,6 +209,7 @@ class GlobalSettings(GenericSettings):
 #                 'env.factor',
                  'ag.mode',
                  'gl.date',
+                 'ag.goal_group',
                  'env.env_name',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 

@@ -341,14 +341,14 @@ class DQNAgent(Agent):
             
             self.q_action = tf.argmax(self.q, axis=1)
             
-            q_summary = histograms
-            avg_q = tf.reduce_mean(self.q, 0)
-    
-            print(avg_q)
-            for idx in range(self.ag.q_output_length):
-                print(idx, avg_q[idx])
-                q_summary.append(tf.summary.histogram('q/%s' % idx, avg_q[idx]))
-            self.q_summary = tf.summary.merge(q_summary, 'q_summary')
+#            q_summary = histograms
+#            avg_q = tf.reduce_mean(self.q, 0)
+#    
+#            print(avg_q)
+#            for idx in range(self.ag.q_output_length):
+#                print(idx, avg_q[idx])
+#                q_summary.append(tf.summary.histogram('q/%s' % idx, avg_q[idx]))
+#            self.q_summary = tf.summary.merge(q_summary, 'q_summary')
 
         self.create_target(self.ag)
 

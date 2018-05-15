@@ -224,14 +224,14 @@ class HDQNAgent(Agent):
             pass
         
         
-        _, q_t, mc_td_error, loss, summary_str = self.sess.run([self.mc_optim,
+        _, q_t, mc_td_error, loss = self.sess.run([self.mc_optim,
                                                              self.mc_q,
                                                              self.mc_td_error,
-                                                             self.mc_loss,
-                                                             self.mc_q_summary],
+                                                             self.mc_loss],
+                                                             #self.mc_q_summary],
                                                             feed_dict)
         
-        self.writer.add_summary(summary_str, self.mc_step)
+#        self.writer.add_summary(summary_str, self.mc_step)
     
         self.m.mc_add_update(loss, q_t.mean(), mc_td_error.mean())
         
@@ -291,9 +291,13 @@ class HDQNAgent(Agent):
             feed_dict[self.c_loss_weight] = loss_weight
             pass
             
-        _, q_t, c_td_error, loss, summary_str = self.sess.run([self.c_optim, self.c_q,
-                                             self.c_td_error, self.c_loss, self.c_q_summary], feed_dict)
-        self.writer.add_summary(summary_str, self.c_step)
+        _, q_t, c_td_error, loss = self.sess.run([self.c_optim,
+                                                               self.c_q,
+                                                               self.c_td_error,
+                                                               self.c_loss],
+                                                               #self.c_q_summary],
+                                                            feed_dict)
+#        self.writer.add_summary(summary_str, self.c_step)
         self.m.c_add_update(loss, q_t.mean(), c_td_error.mean())
 
 
@@ -336,7 +340,9 @@ class HDQNAgent(Agent):
             # Controller acts
             action = self.predict_next_action(old_obs)
                 
-            new_obs, ext_reward, terminal, info = self.environment.act(action)
+            new_obs, ext_reward, terminal, info = self.environment.act(
+                                        action = action,
+                                        info   = {"goal_name" : self.current_goal.name})
             self.process_info(info)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
@@ -491,15 +497,15 @@ class HDQNAgent(Agent):
                                                           name='mc_q')
             self.mc_q_action= tf.argmax(self.mc_q, axis=1)
             
-            q_summary = histograms
-            avg_q = tf.reduce_mean(self.mc_q, 0)
+#            q_summary = histograms
+#            avg_q = tf.reduce_mean(self.mc_q, 0)
             
-            print(self.mc.q_output_length, avg_q)
-            for idx in range(self.mc.q_output_length):
-                print(idx)
-                print(avg_q[idx])
-                q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
-            self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
+#            print(self.mc.q_output_length, avg_q)
+#            for idx in range(self.mc.q_output_length):
+#                print(idx)
+#                print(avg_q[idx])
+#                q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
+#            self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
 
         # target network
         self.create_target(config = self.mc)
@@ -582,13 +588,13 @@ class HDQNAgent(Agent):
             print(self.c_q)
             self.c_q_action= tf.argmax(self.c_q, axis=1)
             
-            q_summary = histograms
-            avg_q = tf.reduce_mean(self.c_q, 0)
+#            q_summary = histograms
+#            avg_q = tf.reduce_mean(self.c_q, 0)
             
-
-            for idx in range(self.c.q_output_length):
-                q_summary.append(tf.summary.histogram('c_q/%s' % idx, avg_q[idx]))
-            self.c_q_summary = tf.summary.merge(q_summary, 'c_q_summary')
+#
+#            for idx in range(self.c.q_output_length):
+#                q_summary.append(tf.summary.histogram('c_q/%s' % idx, avg_q[idx]))
+#            self.c_q_summary = tf.summary.merge(q_summary, 'c_q_summary')
 
         # target network
         self.create_target(self.c)
