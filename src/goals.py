@@ -251,9 +251,9 @@ class SFGoal(Goal):
                                       A_sin   = pfs['ship_headings_sin'],
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = pfs['mine_pos_i'],
-                                      B_j     = pfs['mine_pos_j'])
+                                      B_j     = pfs['mine_pos_j'],
+                                      epsilon = 0.3)
             elif 'fortress' in self.name:
-                epsilon = 0.3
                 if self.environment.is_wrapper:
                     # Rotation activated and WRAPPING
                     new_pfs = {}
@@ -271,9 +271,7 @@ class SFGoal(Goal):
                                       A_sin   = pfs['ship_headings_sin'],
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = .5,
-                                      B_j     = .5,
                                       epsilon = epsilon)
-                    
                 else:
                     # Rotation activated and NO WRAPPING
                     achieved = self.is_aiming_at(
