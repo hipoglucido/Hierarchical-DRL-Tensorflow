@@ -151,7 +151,7 @@ void Test_Collisions()
 	     Ship_Damaged_By_Fortress++;
 	     breakflag=ON;
        Score = -1.0; // Breakflag is when something is already hit?
-	     if(Ship_Damaged_By_Fortress>=2) // was 4
+	     if(Ship_Damaged_By_Fortress>=SHIP_LIFES) // was 4
 	     {
 	     	Shell_Flag=KILL;
 		//  Points=Points-100;
@@ -236,7 +236,7 @@ void Test_Collisions()
 	     Handle_Missile_Flag=ON;
 		
 	      Score = 1.0;
-	      if(Vulner_Counter > 1) // was >= 4 (DEATH)
+	      if(Vulner_Counter > FORT_LIFES) // was >= 4 (DEATH)
 	      {
 	      	#ifdef DEBUG
 	      	system("say \"You won!\"&");

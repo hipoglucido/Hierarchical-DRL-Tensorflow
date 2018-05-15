@@ -77,7 +77,7 @@ class Key_MDPEnv(MDP):
                     self.is_bottom_left(i, j), self.is_bottom_right(i, j)])
         
     def get_template(self, n):
-        template = np.zeros(self.shape)
+        template = np.zeros(self.shape, dtype = np.int32)
         return template
     
     def build_state(self, n):

@@ -253,7 +253,40 @@ class SFGoal(Goal):
                                       B_i     = pfs['mine_pos_i'],
                                       B_j     = pfs['mine_pos_j'])
             elif 'fortress' in self.name:
-                pass
+                epsilon = 0.3
+                if self.environment.is_wrapper:
+                    # Rotation activated and WRAPPING
+                    new_pfs = {}
+                    coordinate_fns = ['ship_pos_i', 'ship_pos_j']
+                    for fn in coordinate_fns:
+                        new_pfs[fn] = ops.revert_cyclic_feature(
+                                X_sin         = pfs[fn + '_sin'],
+                                X_cos         = pfs[fn + '_cos'],
+                                is_scaled     = True,
+                                scale_after   = True)
+                    
+                    achieved = self.is_aiming_at(
+                                      A_i     = new_pfs['ship_pos_i'],
+                                      A_j     = new_pfs['ship_pos_j'],
+                                      A_sin   = pfs['ship_headings_sin'],
+                                      A_cos   = pfs['ship_headings_cos'],
+                                      B_i     = .5,
+                                      B_j     = .5,
+                                      epsilon = epsilon)
+                    
+                else:
+                    # Rotation activated and NO WRAPPING
+                    achieved = self.is_aiming_at(
+                                      A_i     = pfs['ship_pos_i'],
+                                      A_j     = pfs['ship_pos_j'],
+                                      A_sin   = pfs['ship_headings_sin'],
+                                      A_cos   = pfs['ship_headings_cos'],
+                                      B_i     = .5,
+                                      B_j     = .5,
+                                      epsilon = epsilon)
+                
+            else:
+                assert 0
         elif 'region' in self.name:
             _, region_id, total_regions = self.name.split("_")
             if self.environment.is_wrapper:
@@ -276,8 +309,41 @@ class SFGoal(Goal):
                                         A_j      = pfs['ship_pos_j'],
                                         region = int(region_id),
                                         n      = int(total_regions))
-        elif action == CT.SF_action_spaces[self.environment.env_name].index(self.name):
-            achieved = True
+        elif self.name in CT.SF_action_spaces[self.environment.env_name]:
+            goal_action = CT.SF_action_spaces[self.environment.env_name].index(self.name)
+            achieved = action == goal_action
+            
+        elif ' escape_from_fortress':
+            if self.environment.is_wrapper:
+                # Rotation activated and WRAPPING
+                new_pfs = {}
+                coordinate_fns = ['ship_pos_i', 'ship_pos_j']
+                for fn in coordinate_fns:
+                    new_pfs[fn] = ops.revert_cyclic_feature(
+                            X_sin         = pfs[fn + '_sin'],
+                            X_cos         = pfs[fn + '_cos'],
+                            is_scaled     = True,
+                            scale_after   = True)
+                
+                achieved = self.is_aiming_at(
+                                  A_i     = .5,
+                                  A_j     = .5,
+                                  A_sin   = pfs['ship_headings_sin'],
+                                  A_cos   = pfs['ship_headings_cos'],
+                                  B_i     = new_pfs['ship_pos_i'],
+                                  B_j     = new_pfs['ship_pos_j'],
+                                  epsilon = .3)
+                
+            else:
+                # Rotation activated and NO WRAPPING
+                achieved = self.is_aiming_at(
+                                  A_i     = .5,
+                                  A_j     = .5,
+                                  A_sin   = pfs['ship_headings_sin'],
+                                  A_cos   = pfs['ship_headings_cos'],
+                                  B_i     = pfs['ship_pos_i'],
+                                  B_j     = pfs['ship_pos_j'],
+                                  epsilon = .3)   
         return achieved
             
 #def generate_area_goals()
@@ -285,7 +351,8 @@ class SFGoal(Goal):
 def generate_SF_goals(environment, goal_names):
     
     goals = {}
-    goal_names = [gn for gn in goal_names if gn != 'wait']
+    goal_names_to_exclude = []#['wait']
+    goal_names = [gn for gn in goal_names if gn not in goal_names_to_exclude]
     goal_size = len(goal_names) #onehot
     for i, goal_name in enumerate(goal_names):
         print(goal_name)

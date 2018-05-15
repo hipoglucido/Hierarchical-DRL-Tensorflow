@@ -31,7 +31,9 @@ class Metrics:
                                  'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
                                  'debug_no_ep_error']
-                                 
+        if self.config.env.env_name == 'SF-v0':
+            
+            self.scalar_global_tags.append('fortress_hits')
                                            
         if self.is_hdqn:
             #hDQN
@@ -271,7 +273,7 @@ class Metrics:
 
     def filter_summary(self, summary):
         
-        exclude_inside = ['_avg_steps']
+        exclude_inside = ['_avg_steps', '_freq']
         exclude_equals = ['mc_ep_reward', 'c_ep_reward', 'mc_step_reward',
                           'ep_reward', 'step_reward', 'avg_reward', 'c_avg_reward',
                           'mc_avg_reward']

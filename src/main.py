@@ -57,6 +57,7 @@ ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
+ag_args.add_argument("--fresh_start", default = None, type = utils.str2bool)
 """
 
 """
@@ -66,10 +67,11 @@ if args['agent_type'] == 'human':
     args['use_gpu'] = 0
     args['render_delay'] = 0
     args['mode'] = 'play'
-    #args['action_repeat'] = 1
+    args['display_prob'] = 1
 if args['mode'] == 'play':
     pass#args['display_prob'] = 1
-
+if args['env_name'] == 'key_mdp-v0':
+    args['action_repeat'] = 1
 #
 if 'exp' in args['mode']:
     exp_name = args['mode']
@@ -188,3 +190,7 @@ for args in args_list:
     tf.reset_default_graph()
     #if __name__ == '__main__':
     #    tf.app.run()
+"""
+malas samples
+betas mal
+"""

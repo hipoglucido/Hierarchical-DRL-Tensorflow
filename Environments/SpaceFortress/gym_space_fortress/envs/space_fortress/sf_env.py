@@ -49,7 +49,9 @@ class SFEnv(gym.Env):
         action = self._action_set[a] # Select the action from the action dictq
         reward = 0.0
         done = False
-        
+        info = {}
+        if self.env_name == 'SF-v0':
+            info['fortress_hits'] = 0
         for frame in range(1):#self.config.env.action_repeat):
           
             if not isinstance(action, list):
@@ -58,12 +60,14 @@ class SFEnv(gym.Env):
                 self.act(action[frame])
            
             self.update_logic()
-            
-            reward += self.score() - self.config.env.time_penalty
+            reward_delta = self.score() - self.config.env.time_penalty
+            reward += reward_delta
             done = self.terminal_state()
             if self.env_name == 'SFC-v0':
                 if reward == 1 - self.config.env.time_penalty:
                     done = 1
+            elif self.env_name == 'SF-v0' and reward_delta:
+                info['fortress_hits'] += 1
             if done:
                 self.ep_counter += 1
         self.ep_reward += reward
@@ -81,7 +85,7 @@ class SFEnv(gym.Env):
         #symbols = np.ctypeslib.as_array(self.get_symbols().contents)
 #        ob = symbols
         #ob = symbols
-        return preprocessed_obs, reward, done, {}
+        return preprocessed_obs, reward, done, info
     
     def scale_observation(self, raw_obs):
         if self.env_name == 'SFC-v0':
@@ -211,7 +215,8 @@ class SFEnv(gym.Env):
             self.generate_video()
         self.ep_reward = 0
         
-        self.episode_dir = os.path.join(self.config.gl.logs_dir, self.config.model_dir, 
+        self.episode_dir = os.path.join(self.config.gl.logs_dir,
+                                        self.config.model_name, 
                                         'episodes', "ep%d_%s" % \
                                         (self.ep_counter,self.current_time))
         
@@ -288,9 +293,16 @@ class SFEnv(gym.Env):
         
         prep_fs = []
         feature_names = [] 
-        
-
-        if not self.is_wrapper:
+      
+        if self.env_name == 'AIM-v0':
+            ##Irrelevant if WRAPPER / FRICTIONLESS
+            prep_fs += [
+                lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
+                lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+            ]
+            feature_names += ['mine_pos_i', 'mine_pos_j']
+        elif not self.is_wrapper:
+            # NOT WRAPPER
             if self.env_name == 'SFC-v0':
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
@@ -299,29 +311,21 @@ class SFEnv(gym.Env):
                     lambda obs: [self.get_raw_feature(obs, 'square_pos_j')]
                 ]
                 feature_names += ['ship_pos_i', 'ship_pos_j','square_pos_i', 'square_pos_j']
-            elif self.env_name == 'AIM-v0':
-                prep_fs += [
-                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
-                ]
-                feature_names += ['mine_pos_i', 'mine_pos_j']
+          
             elif self.env_name == 'SF-v0':
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_j')],
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
                 ]
                 feature_names += ['ship_pos_i', 'ship_pos_j',
-                                  'ship_speed_i', 'ship_speed_j',
                                   'missile_pos_i', 'missile_pos_j',
                                   'missile_stock']
-  
+            
         else:
-            # FRICTION-LESS
+            # WRAPPER
             if self.env_name == 'SFC-v0':
                 prep_fs += [
                     lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_i')),
@@ -332,14 +336,8 @@ class SFEnv(gym.Env):
                 aux = ['ship_pos_i', 'ship_pos_j', 'square_pos_i', 'square_pos_j']
                 for fn in aux:
                     feature_names += [fn + '_sin', fn + '_cos']
-                prep_fs += [
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')]
-                ]
-                feature_names += ['ship_speed_i', 'ship_speed_j']
                 
-            elif self.env_name == 'AIM-v0':
-                pass
+          
             elif self.env_name == 'SF-v0':
                 prep_fs += [
                     lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'ship_pos_i')),
@@ -349,16 +347,19 @@ class SFEnv(gym.Env):
                 for fn in aux:
                     feature_names += [fn + '_sin', fn + '_cos']
                 prep_fs += [
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
                 ]
-                feature_names += ['ship_speed_i', 'ship_speed_j',
-                                  'missile_pos_i', 'missile_pos_j',
+                feature_names += ['missile_pos_i', 'missile_pos_j',
                                   'missile_stock']
-                
+        if self.is_frictionless and self.env_name != 'AIM-v0':
+                # FRICTIONLESS
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')]
+                    ]
+                feature_names += ['ship_speed_i', 'ship_speed_j']          
                 
 
         if self.is_no_direction:
@@ -370,10 +371,12 @@ class SFEnv(gym.Env):
             feature_names.append("ship_headings_sin")
             feature_names.append("ship_headings_cos")
             if self.env_name == 'SF-v0':
-                f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'fort_headings'))
-                prep_fs.append(f)
-                feature_names.append("fort_headings_sin")
-                feature_names.append("fort_headings_cos")
+                pass
+                #Fortress is ALWAYS looking at the spaceship, so this is not needed
+#                f = lambda obs: aux_decompose_cyclic(self.get_raw_feature(obs, 'fort_headings'))
+#                prep_fs.append(f)
+#                feature_names.append("fort_headings_sin")
+#                feature_names.append("fort_headings_cos")
         self.feature_names = feature_names
         self.state_size = len(self.feature_names)
         self.prep_fs = prep_fs
@@ -479,7 +482,8 @@ class SFEnv(gym.Env):
             
             
         self.ep_counter = 0
-        self.episode_dir = os.path.join(self.config.gl.logs_dir, self.config.model_dir, 
+        self.episode_dir = os.path.join(self.config.gl.logs_dir,
+                                        self.config.model_name, 
                                         'episodes', '_')
         
         print("Using features", ', '.join(self.feature_names))

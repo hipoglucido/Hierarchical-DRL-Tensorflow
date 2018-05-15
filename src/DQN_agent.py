@@ -104,7 +104,9 @@ class DQNAgent(Agent):
         
         
     def train(self):
-        self.start_step = self.step_op.eval()   
+        self.start_step = self.step_op.eval()
+        if self.ag.fresh_start:
+            self.start_step = 0
         self.epsilon = Epsilon(self.ag, self.start_step)
         
         old_obs = self.new_episode()
@@ -124,7 +126,8 @@ class DQNAgent(Agent):
             action = self.predict_next_action(old_obs)    
        
             # 2. act            
-            new_obs, reward, terminal = self.environment.act(action)
+            new_obs, reward, terminal, info = self.environment.act(action)
+            self.process_info(info)
            
             if self.m.is_SF:
                 self.m.add_act(action)

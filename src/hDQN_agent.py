@@ -336,7 +336,8 @@ class HDQNAgent(Agent):
             # Controller acts
             action = self.predict_next_action(old_obs)
                 
-            new_obs, ext_reward, terminal = self.environment.act(action)            
+            new_obs, ext_reward, terminal, info = self.environment.act(action)
+            self.process_info(info)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
             

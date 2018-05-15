@@ -66,6 +66,9 @@ class Agent(object):
             out = self.environment.gym.one_hot_inverse(observation)
         msg = '\nS:\n%s' % str(out)
         self.add_output(msg)
+    def process_info(self, info):
+        if self.environment.env_name == 'SF-v0':
+            self.m.fortress_shots += info['fortress_hits']
     def is_ready_to_learn(self, prefix):
         if prefix == '':
             is_ready = self.step > self.ag.learn_start + self.start_step

@@ -15,10 +15,10 @@ class Constants:
         'Key.up'     : 65362,
         'Key.right'  : 65363,
         'Key.down'   : 65364,
-        'Key.left'  : 65361,
+        'Key.left'   : 65361,
         'Key.space'  : 32,
         'Key.esc'    : -1,
-        'wait'     : 0
+        'wait'       : 0
     }
     
     SF_action_spaces = {
@@ -66,14 +66,14 @@ class Constants:
             },
         'SF-v0'  : {
             0 : [],
-            1 : [] 
+            1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'],
+            2 : ['aim_at_fortress']+ get_region_names(3)
                 },
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
-            1 : [] 
+            1 : []
                 },
         }  
-    
     
     c = 2 * math.pi
     c34 = 3 / 4 * c
@@ -209,7 +209,7 @@ class GlobalSettings(GenericSettings):
                  'ag.mode',
                  'gl.date',
                  'env.env_name',
-#                 'ag.agent_type',
+                 'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
                  'ag.architecture',
@@ -240,6 +240,7 @@ class AgentSettings(GenericSettings):
         self.max_step = self.scale * 5000
         self.double_q = False
         self.dueling = False
+        self.fresh_start = 0
     
     def scale_attrs(self, attr_list):
         for attr in attr_list:
@@ -300,8 +301,9 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-        self.architecture = [25, 25]
-        self.architecture_duel = [25]
+        self.architecture = [64, 64]
+        self.architecture_duel = [64]
+        self.memory_size = 500000
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
@@ -315,6 +317,8 @@ class hDQNSettings(AgentSettings):
         self.c.architecture = self.architecture
         self.mc.architecture_duel = self.architecture_duel
         self.c.architecture_duel = self.architecture_duel
+        self.mc.memory_size = self.memory_size 
+        self.c.memory_size = self.memory_size 
         
     def to_dict(self):       
         dictionary = vars(self).copy()
@@ -339,7 +343,7 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = 1000000        
+        self.memory_size = 500000        
 #        self.max_step = 500 * self.scale        
         self.batch_size = 32
         self.random_start = 30
@@ -381,7 +385,7 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 1000000# * self.scale
+        self.memory_size = 500000# * self.scale
          
         #max_step = 5000 * scale
         
@@ -400,7 +404,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 5000#min(5. * self.scale, 20000)
+        self.learn_start = 100#min(5. * self.scale, 20000)
         
         self.architecture = None
         self.architecture_duel = None

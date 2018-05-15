@@ -11,6 +11,16 @@
 	and must be present in the current directory!
 */
 
+
+
+
+/////////
+#define SHIP_LIFES 5
+#define FORT_LIFES 5
+/////////
+
+
+
 #define JITTER_MODE 1
 #define EXPLOSION_MODE 2
 
@@ -58,7 +68,7 @@
 #define ANIMATION_DELAY_EXP 60  // In Milliseconds
 #define ANIMATION_DELAY_JITTER 10
 // All the color values have been altered to be RGB tuples
-#define MAX_LOOPS 350
+#define MAX_LOOPS 100000
 
 #define SHIP_COLOR YELLOW
 #define HEX_COLOR GREEN

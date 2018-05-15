@@ -56,7 +56,7 @@ class Environment():
 
 
     def _step(self, action):
-        self._screen, self.reward, self.terminal, _ = self.gym.step(action)
+        self._screen, self.reward, self.terminal, self.info = self.gym.step(action)
 
     def _random_step(self):
         action = self.gym.action_space.sample()
@@ -76,15 +76,12 @@ class Environment():
 
     @property
     def state(self):
-        return self.screen, self.reward, self.terminal
+        return self.screen, self.reward, self.terminal, self.info
 
     def render(self):
         self.gym.render()
 
-    def after_act(self, action):
-        pass
-#        if self.display_current_episode:
-#            pass#self.render()
+
         
     def act(self, action, is_training=True):
             cumulated_reward = 0
@@ -111,7 +108,7 @@ class Environment():
     
             self.reward = cumulated_reward
     
-            self.after_act(action)
+
             
             return self.state
         
