@@ -294,6 +294,8 @@ class DQNSettings(AgentSettings):
         self.activation_fn = 'relu'
         self.prefix = ''
         
+        self.memory_minimum = 10000
+        
         
     
 class hDQNSettings(AgentSettings):
@@ -366,7 +368,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 1000#min(5 * self.scale, 500)
+        self.test_step = 10000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -378,6 +380,7 @@ class ControllerSettings(AgentSettings):
         self.learn_start = 1000#min(5. * self.scale, self.test_step)
         self.learnt_threshold = 0.7
     
+        self.memory_minimum = 1000
     
     
     
@@ -417,6 +420,7 @@ class MetaControllerSettings(AgentSettings):
         
 #        self.ignore = ['ignore']
         self.prefix = 'mc'
+        self.memory_minimum = 10000
         
     
 class EnvironmentSettings(GenericSettings):

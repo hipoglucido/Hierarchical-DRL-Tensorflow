@@ -117,7 +117,7 @@ class ReplayMemory:
 #                max_size,
 #                window_size,
 #                input_shape):
-    def __init__(self, config, model_dir, screen_size):
+    def __init__(self, config, screen_size):
         max_size = config.memory_size
         self.batch_size = config.batch_size
         window_size = config.history_length

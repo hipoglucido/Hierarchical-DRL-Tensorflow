@@ -162,7 +162,7 @@ class DQNAgent(Agent):
             self.m.compute_test(prefix = '', update_count = self.m.update_count)
             self.m.compute_state_visits()
             
-            if self.m.has_improved(prefix = ''):
+            if self.m.has_improved():
                 self.step_assign_op.eval(
                         {self.step_input: self.step + 1})
      

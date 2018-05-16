@@ -171,7 +171,7 @@ class Experiment():
                     }
             base_args = {
                     'env_name'              : 'SF-v0',
-                    'scale'                 : 500,
+                    'scale'                 : 1500,
                     'agent_type'            : 'hdqn',
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.001,

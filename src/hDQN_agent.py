@@ -42,7 +42,7 @@ class HDQNAgent(Agent):
         
         self.c_history = History(length_ = self.c.history_length,
                                  size    = self.environment.state_size)
-        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
+        memory_type = PriorityExperienceReplay if self.ag.pmemory else ReplayMemory
         self.mc_memory = memory_type(config       = self.mc,
                                       screen_size  = self.environment.state_size)
         self.c_memory = memory_type(config        = self.c,
@@ -184,19 +184,19 @@ class HDQNAgent(Agent):
         
         self.c_memory.add(old_state, action, int_reward, next_state, terminal)
         
-        if self.c_step > self.c.learn_start:
+        if self.is_ready_to_learn(prefix = 'c'):
             if self.c_step % self.c.train_frequency == 0:
                 self.c_q_learning_mini_batch()
 
             if self.c_step % self.c.target_q_update_step == self.c.target_q_update_step - 1:
                 self.c_update_target_q_network()
 
-    def mc_q_learning_mini_batch(self):
-      
+    def mc_q_learning_mini_batch(self):      
 #        s_t, goal, ext_reward, s_t_plus_1, terminal = self.mc_memory.sample()
         (s_t, goal, ext_reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.mc_memory.sample()
-
+        if self.m.aux:
+            pass#print(s_t, goal, ext_reward, s_t_plus_1, terminal)
 #        if ext_reward[0] > 0:
 #            print("_______---___________")
 #            f=self.config.env.factor
@@ -237,8 +237,7 @@ class HDQNAgent(Agent):
         
 
     def c_q_learning_mini_batch(self):
-        if self.c_memory.count < self.c_history.length:
-            return
+        
         
         (s_t, action, int_reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.c_memory.sample()
@@ -329,7 +328,8 @@ class HDQNAgent(Agent):
                                                   ncols=70, initial=self.c_start_step)
         else:
             iterator = range(self.c_start_step, total_steps)
-        print("\nFilling c_memory (%d) and mc_memory (%d) with random experiences..." % (self.c.memory_size, self.mc.memory_size))
+        print("\nFilling c_memory (%d) and mc_memory (%d) with random experiences..." % \
+                      (self.c.memory_size, self.mc.memory_size))
         
         for self.c_step in iterator:
             if self.c_memory.is_full() and self.c_step == self.c.memory_size:
@@ -339,10 +339,12 @@ class HDQNAgent(Agent):
             
             # Controller acts
             action = self.predict_next_action(old_obs)
-                
+            info = {'goal_name'       : self.current_goal.name,
+                    'is_SF'           : self.m.is_SF,
+                    'display_episode' : self.display_episode}
             new_obs, ext_reward, terminal, info = self.environment.act(
                                         action = action,
-                                        info   = {"goal_name" : self.current_goal.name})
+                                        info   = info)
             self.process_info(info)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
@@ -439,13 +441,13 @@ class HDQNAgent(Agent):
 #            self.m.c_print()
             
             
-            if self.m.has_improved(prefix = 'mc'):
+            if self.m.has_improved():
                 self.c_step_assign_op.eval(
                         {self.c_step_input: self.c_step + 1})
                 self.mc_step_assign_op.eval(
                         {self.mc_step_input: self.mc_step + 1})
-#                self.save_model(self.c_step + 1)
-#                self.save_model(self.mc_step + 1)
+                self.save_model(self.c_step + 1)
+                self.save_model(self.mc_step + 1)
                 self.m.update_best_score()
                 
 

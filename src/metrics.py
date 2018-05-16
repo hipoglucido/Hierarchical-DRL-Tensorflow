@@ -10,11 +10,13 @@ class Metrics:
         self.is_hdqn = isinstance(self.config.ag, hDQNSettings) 
         self.is_pmemory = config.ag.pmemory
         self.is_SF = self.config.env.env_name in CT.SF_envs
+        self.aux = 0
+        lower_bound = -99999
         if self.is_hdqn:        
-            self.mc_max_avg_ep_reward = 0
-            self.c_max_avg_ep_reward = 0 #Not used for now
+            self.mc_max_avg_ep_reward = lower_bound
+            self.c_max_avg_ep_reward = lower_bound #Not used for now
         else:
-            self.max_avg_ep_reward = 0
+            self.max_avg_ep_reward = lower_bound
         self._define_metrics(goals)
         self.restart()
         if self.is_hdqn:
@@ -209,7 +211,7 @@ class Metrics:
             self.max_avg_ep_reward = max(self.max_avg_ep_reward,
                                           self.avg_ep_reward)
         
-    def has_improved(self, prefix):
+    def has_improved(self):
         if self.is_hdqn:
             result = self.mc_max_avg_ep_reward * 0.9 <= self.mc_avg_ep_reward
         else:
@@ -327,8 +329,10 @@ class Metrics:
             setattr(self, prefix + 'max_ep_reward', np.max(ep_rewards))
             setattr(self, prefix + 'min_ep_reward', np.min(ep_rewards))
             setattr(self, prefix + 'avg_ep_reward', np.mean(ep_rewards))
+            self.aux = 1
         except Exception as e:
             print(prefix + ", " + str(e))
+            self.aux = 1
             debug_no_ep_error = 1
             for s in ['max', 'min', 'avg']:
                 setattr(self, prefix + s +'_ep_reward', self.error_value)

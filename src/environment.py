@@ -91,7 +91,8 @@ class Environment():
                 if info['goal_name'] == 'aim_at_fortress':
                     small_step = True
             if self.env_name == 'SF-v0':
-                if CT.action_to_sf[self.env_name][action] == CT.key_to_sf['Key.space']:
+                if CT.action_to_sf[self.env_name][action] == \
+                                                CT.key_to_sf['Key.space']:
                     small_step = True      
            
             # Don't repeat shootings

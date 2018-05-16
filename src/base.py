@@ -70,12 +70,29 @@ class Agent(object):
         if self.environment.env_name == 'SF-v0':
             self.m.fortress_hits += info['fortress_hits']
     def is_ready_to_learn(self, prefix):
-        if prefix == '':
-            is_ready = self.step > self.ag.learn_start + self.start_step
-        elif prefix == 'mc':
-            is_ready = self.mc_step >  self.mc.learn_start
-        elif prefix == 'c':
-            is_ready = self.c_step > self.c.learn_start + self.mc_start_step
+        prefix = prefix + '_' if prefix != '' else prefix
+        memory = getattr(self, prefix + "memory")
+        current_step = getattr(self, prefix + "step")
+        start_step = getattr(self, prefix + "start_step")
+        cnf = 'ag' if prefix == '' else prefix[:-1]
+        learn_start = getattr(getattr(self, cnf), "learn_start")
+        memory_minimum = getattr(getattr(self, cnf), "memory_minimum")
+        is_ready = current_step > start_step + learn_start and \
+                                memory.count > memory_minimum
+#        if prefix == '':
+#            memory = getattr(self,)self.memory
+#            step = self.step
+#            start_step = self.start_step
+#            learn_start = self.ag.learn_start
+#            is_ready = self.step > self.ag.learn_start + self.start_step
+#        elif prefix == 'mc':            
+#            memory = self.mc_memory
+#            step = self.step
+#            start_step = self.start_step
+#            learn_start = self.ag.learn_start
+#            is_ready = self.mc_step >  self.mc.learn_start + self.c_start_step
+#        elif prefix == 'c':
+#            is_ready = self.c_step > self.c.learn_start + self.c_start_step
         return is_ready
     def new_episode(self):
         #screen, reward, action, terminal = self.environment.new_random_game()
@@ -405,7 +422,7 @@ class Agent(object):
         if not os.path.exists(self.checkpoints_dir):
             os.makedirs(self.checkpoints_dir)
         self.saver.save(self.sess, self.checkpoints_dir, global_step=step)
-        msg = "Saved checkpoint step=%d" % (step)#, self.checkpoints_dir)
+        msg = "\nSaved checkpoint step=%d" % (step)#, self.checkpoints_dir)
         print(msg)
 
     def load_model(self):
