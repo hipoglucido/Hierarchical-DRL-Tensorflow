@@ -5,10 +5,9 @@ import inspect
 import tensorflow as tf
 import numpy as np
 import utils
-import ops
 from functools import reduce
 import random
-from ops import linear, clipped_error
+from utils import linear, clipped_error
 from configuration import Constants as CT
 pp = pprint.PrettyPrinter().pprint
 
@@ -49,6 +48,8 @@ class Agent(object):
         self._saver = None
         self.config = config
         self.output = ''
+        
+     
     def display_environment(self, observation):
         if self.m.is_SF:
             self.environment.gym.render()
@@ -69,7 +70,11 @@ class Agent(object):
     def process_info(self, info):
         if self.environment.env_name == 'SF-v0':
             self.m.fortress_hits += info['fortress_hits']
+    def is_playing(self): return self.ag.mode == 'play'
     def is_ready_to_learn(self, prefix):
+        if self.is_playing():
+            return False
+            
         prefix = prefix + '_' if prefix != '' else prefix
         memory = getattr(self, prefix + "memory")
         current_step = getattr(self, prefix + "step")
@@ -315,7 +320,7 @@ class Agent(object):
             number = 'l' + str(i + 1)
             layer_name = name_aux + number
             layer, weights, biases = \
-                ops.linear(input_ = last_layer,
+                utils.linear(input_ = last_layer,
                        output_size = neurons,
                        activation_fn = tf.nn.relu,
                        name = layer_name)

@@ -4,7 +4,7 @@ from base import Epsilon
 import numpy as np
 import math
 from configuration import Constants as CT
-import ops
+import utils
 class Goal(metaclass = ABCMeta):
     def __init__(self, n, name, config = None):
         self.n = n
@@ -110,7 +110,7 @@ class SFGoal(Goal):
         #assert 0, 'denormalize sin and cos'
         
         #Rescale
-        A_pointer = ops.revert_cyclic_feature(X_sin       = A_sin,
+        A_pointer = utils.revert_cyclic_feature(X_sin       = A_sin,
                                               X_cos       = A_cos,
                                               is_scaled   = True,
                                               scale_after = False)
@@ -218,7 +218,7 @@ class SFGoal(Goal):
                     coordinate_fns = ['ship_pos_i', 'ship_pos_j', 'square_pos_i',
                                       'square_pos_j']
                     for fn in coordinate_fns:
-                        new_pfs[fn] = ops.revert_cyclic_feature(
+                        new_pfs[fn] = utils.revert_cyclic_feature(
                                 X_sin         = pfs[fn + '_sin'],
                                 X_cos         = pfs[fn + '_cos'],
                                 is_scaled     = True,
@@ -262,7 +262,7 @@ class SFGoal(Goal):
                     new_pfs = {}
                     coordinate_fns = ['ship_pos_i', 'ship_pos_j']
                     for fn in coordinate_fns:
-                        new_pfs[fn] = ops.revert_cyclic_feature(
+                        new_pfs[fn] = utils.revert_cyclic_feature(
                                 X_sin         = pfs[fn + '_sin'],
                                 X_cos         = pfs[fn + '_cos'],
                                 is_scaled     = True,
@@ -295,7 +295,7 @@ class SFGoal(Goal):
                 new_pfs = {}
                 coordinate_fns = ['ship_pos_i', 'ship_pos_j']
                 for fn in coordinate_fns:
-                    new_pfs[fn] = ops.revert_cyclic_feature(
+                    new_pfs[fn] = utils.revert_cyclic_feature(
                             X_sin         = pfs[fn + '_sin'],
                             X_cos         = pfs[fn + '_cos'],
                             is_scaled     = True,
@@ -321,7 +321,7 @@ class SFGoal(Goal):
                 new_pfs = {}
                 coordinate_fns = ['ship_pos_i', 'ship_pos_j']
                 for fn in coordinate_fns:
-                    new_pfs[fn] = ops.revert_cyclic_feature(
+                    new_pfs[fn] = utils.revert_cyclic_feature(
                             X_sin         = pfs[fn + '_sin'],
                             X_cos         = pfs[fn + '_cos'],
                             is_scaled     = True,

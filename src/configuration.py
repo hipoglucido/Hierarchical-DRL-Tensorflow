@@ -183,10 +183,11 @@ class GlobalSettings(GenericSettings):
         self.log_level = 'INFO'
         self.new_instance = True
         self.date = utils.get_timestamp()
-
+        self.paralel = 0
         self.use_gpu = True
         self.gpu_fraction = '1/1'
         self.random_seed = 7
+        self.watch = 0
         self.root_dir = os.path.normpath(os.path.join(os.path.dirname(
                                         os.path.realpath(__file__)), ".."))
         self.environments_dir = os.path.join(self.root_dir, 'Environments')
@@ -229,7 +230,7 @@ class GlobalSettings(GenericSettings):
                  ]
         self.checkpoints_dir = os.path.join(self.root_dir, 'src', 'checkpoints') #TODO
         self.logs_dir = os.path.join(self.root_dir, 'src', 'logs') #TODO
-        self.settings_dir = '' #TODO
+        self.others_dir = os.path.join(self.root_dir,  'Others')
         self.randomize = False
         self.update(new_attrs)
         
@@ -288,7 +289,7 @@ class DQNSettings(AgentSettings):
         self.architecture = [25, 25]
         self.architecture_duel = [16]
         
-        self.test_step = 3000#int(self.max_step / 10)
+        self.test_step = 3500#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -307,7 +308,7 @@ class hDQNSettings(AgentSettings):
         self.agent_type = 'hdqn'
         self.architecture = [64, 64]
         self.architecture_duel = [64]
-        self.memory_size = 500000
+        self.memory_size = 5e4
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
@@ -321,8 +322,7 @@ class hDQNSettings(AgentSettings):
         self.c.architecture = self.architecture
         self.mc.architecture_duel = self.architecture_duel
         self.c.architecture_duel = self.architecture_duel
-        self.mc.memory_size = self.memory_size 
-        self.c.memory_size = self.memory_size 
+       
         
     def to_dict(self):       
         dictionary = vars(self).copy()
@@ -347,7 +347,7 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = 500000        
+        self.memory_size = 1e6        
 #        self.max_step = 500 * self.scale        
         self.batch_size = 32
         self.random_start = 30
@@ -368,7 +368,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 10000#min(5 * self.scale, 500)
+        self.test_step = 3500#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -378,7 +378,7 @@ class ControllerSettings(AgentSettings):
         self.train_frequency = 4
         #Visualize weights initialization in the histogram
         self.learn_start = 1000#min(5. * self.scale, self.test_step)
-        self.learnt_threshold = 0.7
+        self.learnt_threshold = 0.8
     
         self.memory_minimum = 1000
     
@@ -390,13 +390,12 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 500000# * self.scale
+        self.memory_size = 5e4# * self.scale
          
         #max_step = 5000 * scale
         
         self.batch_size = 32
-        self.random_start = 30
-        
+        self.random_start = 30        
         
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 0.001
@@ -409,7 +408,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 100#min(5. * self.scale, 20000)
+        self.learn_start = 500#min(5. * self.scale, 20000)
         
         self.architecture = None
         self.architecture_duel = None

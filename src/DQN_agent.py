@@ -12,7 +12,7 @@ import time
 from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
-from ops import linear, clipped_error, huber_loss, weighted_huber_loss
+from utils import linear, clipped_error, huber_loss, weighted_huber_loss
 from utils import get_time, save_pkl, load_pkl
 import utils
 class DQNAgent(Agent):

@@ -73,8 +73,9 @@ class HumanAgent():
                                                     action = action,
                                                     info   = {'goal_name' : 'aim_sat_fortress'})
                 observation_str = '\t  '.join([str(round(f,3)) for f in observation])
-                msg = '%s\tA:%s, R: %.3f, T: %s' \
-                            % (observation_str, self.current_key, reward, done)
+                k = self.current_key.replace('Key.', '')
+                msg = '%s\tA:%s, R:%.2f, T%s' \
+                            % (observation_str, k, reward, done)
                 print(msg)
                 for i, goal in self.goals.items():
                     achieved = goal.is_achieved(observation, action)

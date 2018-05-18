@@ -10,25 +10,17 @@ import gym
 import sys
 import inspect
 import argparse
-################################
-#	 CONFIGURATION SETTINGS
-################################
-
-#Running settigns
-
-#Monitoring settings
-USE_TB = 0
-
-#Dir settings
-ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-DATA_DIR = os.path.join(ROOT_DIR, 'data')
-ENVS_DIR = os.path.join(ROOT_DIR, '..', 'Environments')
-
+import tensorflow as tf
+from configuration import Constants as CT
+import math
+from tensorflow.contrib.layers.python.layers import initializers
+from PIL import Image
 
 ################################
 #	 AUXILIARY FUNCTIONS
 ################################
 
+    
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 def get_timestamp():
@@ -39,7 +31,7 @@ def get_timestamp():
 def insert_dirs(dirs):
     for dir_ in dirs:
             sys.path.insert(0, dir_)
-            print("Added", dir_)
+            #print("Added", dir_)
             
 	
 def str2bool(v):
@@ -49,11 +41,22 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
-#Envs
-#insert_envs_paths()
+        
+def revert_cyclic_feature(X_sin, X_cos, is_scaled, scale_after):
+    if is_scaled:
+        # [0, 1] -> [-1, 1]
+        X_sin, X_cos = X_sin * 2 - 1, X_cos * 2 - 1
+    if X_sin > 0:
+        X = math.acos(X_cos)
+    else:
+        X = CT.c - math.acos(X_cos)
+        
+    if scale_after:
+        # [0, 2pi] -> [0, 1]
+        X /= CT.c
+    return X
+    
 
-sys.path.insert(0, os.path.join(ROOT_DIR))
-sys.path.insert(0, os.path.join(ROOT_DIR, 'agents'))
 ################################
 #	 FROM DQN REPO
 ################################
@@ -112,24 +115,112 @@ def load_npy(path):
     return obj
 
 
-#import cv2
-#import numpy as np
-#from matplotlib import pyplot as plt
-#env_height, env_width = 448, 448
-#path = 'sfc.png'
-#env = cv2.imread(path)
-#plt.imshow(env)
-#
-#monitor_width, monitor_height = 300, env_height
-#blank = np.zeros((monitor_height, monitor_width, 3)) + 1
-#monitor = np.hstack([env, blank])
-#plt.imshow(monitor)
-#
+
+################################
+#	 OPS
+################################
+
+def clipped_error(y_true, y_pred):
+    x = tf.abs(y_true - y_pred)
+    # Huber loss
+    try:
+        return tf.select(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
+    except:
+        return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
+
+def linear(input_, output_size, stddev=0.0002, bias_start=0.0,
+    activation_fn = None, name = 'linear'):
+    
+    shape = input_.get_shape().as_list()
+
+    with tf.variable_scope(name):
+        w = tf.get_variable('Matrix', [shape[1], output_size], tf.float32,
+                            tf.contrib.layers.xavier_initializer(uniform = True))
+        b = tf.get_variable('bias', [output_size], 
+                initializer=tf.constant_initializer(bias_start))
+
+        out = tf.nn.bias_add(tf.matmul(input_, w), b)
+#        out = tf.matmul(input_, w)
+    if activation_fn != None:
+        return activation_fn(out), w, b
+    else:
+        return out, w, b
+
+"""Loss functions."""
 
 
 
 
+def huber_loss(y_true, y_pred, max_grad=1.):
+    """Calculate the huber loss.
+    See https://en.wikipedia.org/wiki/Huber_loss
+    Parameters
+    ----------
+    y_true: np.array, tf.Tensor
+      Target value.
+    y_pred: np.array, tf.Tensor
+      Predicted value.
+    max_grad: float, optional
+      Positive floating point value. Represents the maximum possible
+      gradient magnitude.
+    Returns
+    -------
+    tf.Tensor
+      The huber loss.
+    """
+    a = tf.abs(y_true - y_pred)
+    less_than_max = 0.5 * tf.square(a)
+    greater_than_max = max_grad * (a - 0.5 * max_grad)
+    return tf.where(a <= max_grad, x=less_than_max, y=greater_than_max)
 
+
+
+def mean_huber_loss(y_true, y_pred, max_grad=1.):
+    """Return mean huber loss.
+    Same as huber_loss, but takes the mean over all values in the
+    output tensor.
+    Parameters
+    ----------
+    y_true: np.array, tf.Tensor
+      Target value.
+    y_pred: np.array, tf.Tensor
+      Predicted value.
+    max_grad: float, optional
+      Positive floating point value. Represents the maximum possible
+      gradient magnitude.
+    Returns
+    -------
+    tf.Tensor
+      The mean huber loss.
+    """
+    return tf.reduce_mean(huber_loss(y_true, y_pred, max_grad=max_grad))
+
+
+def weighted_huber_loss(y_true, y_pred, weights, max_grad=1.):
+    """Return mean huber loss.
+    Same as huber_loss, but takes the mean over all values in the
+    output tensor.
+    Parameters
+    ----------
+    y_true: np.array, tf.Tensor
+      Target value.
+    y_pred: np.array, tf.Tensor
+      Predicted value.
+    weights: np.array, tf.Tensor
+      weights value.
+    max_grad: float, optional
+      Positive floating point value. Represents the maximum possible
+      gradient magnitude.
+    Returns
+    -------
+    tf.Tensor
+      The mean huber loss.
+    """
+    return tf.reduce_mean(weights*huber_loss(y_true, y_pred, max_grad=max_grad))
+
+    
+
+    
 
 
 

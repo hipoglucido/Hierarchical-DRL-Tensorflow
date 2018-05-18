@@ -29,6 +29,8 @@ gl_args.add_argument("--gpu_fraction", default = None)
 gl_args.add_argument("--random_seed", type=int, help="Random seed for repeatable experiments.")
 gl_args.add_argument("--log_level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO", help="Log level.")
 gl_args.add_argument("--display_prob", default = None, type = float)
+gl_args.add_argument("--watch", default = None, type = utils.str2bool)
+gl_args.add_argument("--paralel", default = 0, type = int)
 gl_args.add_argument("--date", default = None, type = str)
 
 
@@ -61,25 +63,8 @@ ag_args.add_argument("--fresh_start", default = None, type = utils.str2bool)
 """
 
 """
-args = vars(parser.parse_args())
-#### HARD RULES
-if args['agent_type'] == 'human':
-    args['use_gpu'] = 0
-    args['render_delay'] = 0
-    args['mode'] = 'play'
-    args['display_prob'] = 1
-if args['mode'] == 'play':
-    pass#args['display_prob'] = 1
-if args['env_name'] == 'key_mdp-v0':
-    args['action_repeat'] = 1
-#
-if 'exp' in args['mode']:
-    exp_name = args['mode']
-    experiment = Experiment(exp_name)
-    args_list = experiment.get_args_list()
-else:
-    args_list = [args]
-for args in args_list:
+
+def execute_experiment(args):
     if args['architecture']:
         args['architecture'] = args['architecture'].split('-')
     
@@ -107,7 +92,7 @@ for args in args_list:
     else:
         raise ValueError("Wrong agent %s" % args['agent_type'])
      
-    print(args)
+#    print(args)
     ag_st.update(args)
     cnf.set_agent_settings(ag_st)
     
@@ -158,6 +143,7 @@ for args in args_list:
     
     if not gl_st.use_gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
+   
     frac = utils.calc_gpu_fraction(gl_st.gpu_fraction)
     gpu_options = tf.GPUOptions(
             per_process_gpu_memory_fraction=frac)
@@ -188,9 +174,34 @@ for args in args_list:
         
         #agent.show_attrs()
     tf.reset_default_graph()
-    #if __name__ == '__main__':
-    #    tf.app.run()
-"""
-malas samples
-betas mal
-"""
+
+args = vars(parser.parse_args())
+#### HARD RULES
+if args['agent_type'] == 'human':
+    args['use_gpu'] = 0
+    args['render_delay'] = 0
+    args['mode'] = 'play'
+    args['display_prob'] = 1
+if args['mode'] == 'play':
+    pass#args['display_prob'] = 1
+if args['env_name'] == 'key_mdp-v0':
+    args['action_repeat'] = 1
+#
+if 'exp' in args['mode']:
+    exp_name = args['mode']
+    experiment = Experiment(exp_name)
+    args_list = experiment.get_args_list()
+else:
+    args_list = [args]
+if args['paralel'] == 0:
+    for args in args_list:
+        execute_experiment(args)
+else:
+    from multiprocessing import Pool
+    args['use_gpu'] = 0
+    n_processes = args['paralel']
+    
+    with Pool(n_processes = n_processes) as pool:
+        pool.starmap(execute_experiment, zip(args))
+    
+    

@@ -101,12 +101,18 @@ class Environment():
             else:
                 repeat = self.action_repeat
                 
-            for _ in range(repeat):
+            for i in range(repeat):
                 
                 self._step(action)
                 cumulated_reward = cumulated_reward + self.reward
-    
-                
+                if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
+                    if self.gym.goal_has_changed:
+                        self.gym.panel.add(key  = 'goals',
+                                           item = info['goal_name'])
+                        self.gym.goal_has_changed = False
+                if i != repeat - 1 and info['display_episode'] and \
+                                     self.env_name in CT.SF_envs:
+                    self.gym.render()
     
                 if self.terminal:
                     break
