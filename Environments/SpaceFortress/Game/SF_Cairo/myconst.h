@@ -16,7 +16,7 @@
 
 /////////
 #define SHIP_LIFES 5
-#define FORT_LIFES 5
+#define FORT_LIFES 3
 /////////
 
 
@@ -68,7 +68,7 @@
 #define ANIMATION_DELAY_EXP 60  // In Milliseconds
 #define ANIMATION_DELAY_JITTER 10
 // All the color values have been altered to be RGB tuples
-#define MAX_LOOPS 100000
+#define MAX_LOOPS 750
 
 #define SHIP_COLOR YELLOW
 #define HEX_COLOR GREEN

@@ -85,6 +85,12 @@ float* get_symbols()
 	//printf("\n");
 	return symbols;
 }
+int get_vulner_counter(){
+	return Vulner_Counter;
+}
+int get_lifes_remaining(){
+	return SHIP_LIFES - Ship_Killings_Counter;
+}
 int is_frictionless(){
 	#ifdef GRID_MOVEMENT
 		return 0;

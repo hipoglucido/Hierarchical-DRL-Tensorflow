@@ -20,8 +20,72 @@ from configuration import Constants as CT
 import imageio
 import shutil
 import glob
-# SFEnv is a child of the environment template located in gym/core.py
-# This instance handles the space fortress environment
+
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
+
+img = cv2.imread("/home/victorgarcia/Desktop/ep922_16:05:10.058396_R3.0.jpg")
+class Panel:
+    def __init__(self, height, font_path):
+        self.length = 17
+        history_keys = ['goals']#, 'actions']
+        self.history = {}
+        for k in history_keys:
+            self.history[k] = ["..." for _ in range(self.length)]
+        
+        self.height = height
+        self.width = 250
+        
+        self.history_limit_i = 50
+        self.span = (self.height - self.history_limit_i) / self.length
+        
+        self.current_color = (0, 0, 0)
+        self.old_color =  (150, 150, 150)
+        
+        self.font1 = ImageFont.truetype(font = font_path,
+                                             size = 15)
+        self.font2 = ImageFont.truetype(font = font_path,
+                                             size = 25)
+    def empty(self):
+        for key in self.history:
+            self.history[key] = []
+        
+    def add(self, key, item):
+        item = item.replace('Key.', '')
+        self.history[key][:-1] = self.history[key][1:]
+        self.history[key][-1] = item
+    
+        
+    def get_image(self, info):
+        panel = Image.new("RGB", (self.width, self.height), "white")
+        draw = ImageDraw.Draw(panel)
+        j = 10
+        for n, item in enumerate(self.history['goals']):
+            #print(n, item)
+            coords = (j, self.history_limit_i + self.span * n)
+            if n == self.length - 1:
+                color = self.current_color
+                item = '> ' + item
+            else:
+                color = self.old_color
+                if n == 0:
+                    item = '...'
+            draw.text(coords, item, color, font = self.font1)
+      
+        color = (150, 25, 25)
+        draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
+        draw.text((int(self.width / 2), 3), "%d hits" % info['hits'],
+                                          color, font = self.font1)
+        draw.text((int(self.width / 2), 20), "%d lifes" % info['lifes'],
+                                          color, font = self.font1)
+        return panel
+            
+        
+
 class SFEnv(gym.Env):
     # - Class variables, these are needed to communicate with the template in gym/core.py
     metadata = {'render.modes': ['rgb_array', 'human', 'minimal', 'terminal'],
@@ -31,8 +95,8 @@ class SFEnv(gym.Env):
     # Initialize the environment
     def __init__(self):
         self.imgs = []
-        
-        
+        self.step_counter = 0
+        self.goal_has_changed = False
         
     def _seed(self):
         #TODO
@@ -70,16 +134,23 @@ class SFEnv(gym.Env):
                 info['fortress_hits'] += 1
             if done:
                 self.ep_counter += 1
+        self.step_counter += 1
         self.ep_reward += reward
 #        screen = np.ctypeslib.as_array(self.update_screen().contents)
-        
+       
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
+        original = obs.copy()
 #        print('______________________')
 #        for k in self.raw_features_name_to_ix:
 #            print(k, obs[self.raw_features_name_to_ix[k]])
         
         self.scale_observation(obs)
-        preprocessed_obs = self.preprocess_observation(obs)
+        try:
+            preprocessed_obs = self.preprocess_observation(obs)
+        except:
+            print("ORIGINAL", original)
+            print("SCALA", obs)
+            3/0
 #        print("prep_obs", preprocessed_obs)
         
         #symbols = np.ctypeslib.as_array(self.get_symbols().contents)
@@ -171,48 +242,65 @@ class SFEnv(gym.Env):
 #                img = np.reshape(img, (int(self.screen_height/self.scale),
 #                                       int(self.screen_width/self.scale)))
 
-   
-        if self.config.ag.agent_type == 'human':
-            cv2.imshow(self.env_name, img)
-            cv2.waitKey(self.config.env.render_delay)
-        else:
-            if not os.path.exists(self.episode_dir):
-                os.makedirs(self.episode_dir)
+        #print(type(img), img.mean(), img.max(), img.min())
+        
             #image_name = self.env_name + "_" + self.current_time + ".png"
             #img_path = os.path.join(self.episode_dir, image_name)
             
     #
     #            if self.record_path is not None and self.config.env.record:
             #cv2.imwrite(img_path, img)
-            self.imgs.append(img)
+        env_img = Image.fromarray(img)      
+        info = {'steps' : self.step_counter,
+                'hits'  : self.get_vulner_counter(),
+                'lifes' : self.get_lifes_remaining()}
+        panel_img = self.panel.get_image(info)
+        width = self.screen_width + self.panel.width
+        height = self.screen_height
+        full_image = Image.new('RGB', (width, height))
+        full_image.paste(env_img, (0, 0))
+        full_image.paste(panel_img, (self.screen_width, 0))
+        self.imgs.append(full_image)
             #print(img.max(), img.min(),img.shape, type(img))
         
-        
+        if self.config.ag.agent_type == 'human' or self.config.gl.watch:
+            cv2.imshow(self.env_name, np.array(full_image))
+            cv2.waitKey(self.config.env.render_delay)
+        else:
+            if not os.path.exists(self.episode_dir):
+                os.makedirs(self.episode_dir)
         
     def generate_video(self, delete_images = True):
         
-        img_paths = glob.glob(os.path.join(self.episode_dir, '*.png'))
-        img_paths.sort(key=os.path.getatime)
+#        img_paths = glob.glob(os.path.join(self.episode_dir, '*.png'))
+#        img_paths.sort(key=os.path.getatime)
         if self.ep_reward is not None:
             video_path = self.episode_dir + "_R" + str(self.ep_reward)
         else:
             video_path = self.episode_dir
         video_path += '.gif'
-#        for img_path in img_paths:
-#            img = imageio.imread(img_path)
-#            imgs.append(img)
+        perc = .6
+   
+        
+        (original_width, original_heigth) = self.imgs[0].size
+        new_size = (int(perc * original_width), int(perc * original_heigth))
+        
+        self.imgs = [img.resize(new_size, Image.ANTIALIAS) for img in self.imgs]
+        self.imgs = [np.array(img) for img in self.imgs]
         blank = self.imgs[-1].copy() * 0 + 255
         self.imgs.append(blank)
         imageio.mimsave(video_path, self.imgs, duration = .00001)
         if delete_images:
             shutil.rmtree(self.episode_dir)
-            self.imgs = []
+            
 
     def reset(self):
         self.window_active = False
+        self.step_counter = 0
         self.reset_sf()
-        if os.path.exists(self.episode_dir):            
+        if os.path.exists(self.episode_dir): 
             self.generate_video()
+        self.imgs = []
         self.ep_reward = 0
         
         self.episode_dir = os.path.join(self.config.gl.logs_dir,
@@ -254,7 +342,6 @@ class SFEnv(gym.Env):
         return observation[index]
         
     def get_raw_feature(self, observation, feature_name):
-        
         return observation[self.raw_features_name_to_ix[feature_name]]
     def define_features(self):
         if self.env_name == 'SFC-v0':
@@ -383,41 +470,26 @@ class SFEnv(gym.Env):
     def one_hot_inverse(self, screen):
         #TODO remove function adn adapt HDQN
         return None
+    
+        
+        
     def configure(self, cnf):
         # Specify the game name which will be shown at the top of the game window
         
         self.config = cnf
         self.env_name = self.config.env.env_name
+       
         
         self.logger = logging.getLogger()
-        # The game which will be played, the possible games are
-        # located in the enum Games in constants.py
-         # The amount of (down) scaling of the screen height and width
+  
         self.scale = 5.3
         
         libpath=self.config.env.library_path
-#        print(LIBRARY_PATH)
-        
-        # Hard overwrite from constants.py
-#        self.frame_skip = cnf.frameskip
-        #self.mode = self.config.env.render_mode
-        # Get the right shared library for the game
-#        if self.env_name == 'SFS-v0':
-#            libname = self.env_name
-#        elif self.env_name =='AIM-v0' or self.env_name == \
-#                            'SFC-v0' or self.env_name == 'SF-v0':
-#            libname = self.game.lower()
-#        else:
-#            assert False
+
         libname = self.env_name.split('-')[0].lower()
 
-        # There is no need for a window when in RGB_ARRAY mode
-#        if self.config.env.render_mode != "rgb_array":
-#            self.open_window()
 
         libname += '_frame_lib'
-#        if self.config.env.render_mode == 'human':
-#            libname += "_FULL"
 
         libname += ".so"
 
@@ -451,16 +523,18 @@ class SFEnv(gym.Env):
         n_raw_symbols = CT.SF_observation_space_sizes[self.env_name]
         self.get_symbols.restype = ctypes.POINTER(ctypes.c_float * n_raw_symbols)
 
-        self.update_logic = ctypes.CDLL(lib_dir).SF_iteration
-        self.update_screen = ctypes.CDLL(lib_dir).update_screen
+        self.update_logic = library.SF_iteration
+        self.update_screen = library.update_screen
 
 
-        self.terminal_state = ctypes.CDLL(lib_dir).get_terminal_state
-        self.score = ctypes.CDLL(lib_dir).get_score
-        self.stop_drawing = ctypes.CDLL(lib_dir).stop_drawing
-        self.pretty_screen = ctypes.CDLL(lib_dir).get_original_screen
+        self.terminal_state = library.get_terminal_state
+        self.score = library.get_score
+        self.stop_drawing = library.stop_drawing
+        self.pretty_screen = library.get_original_screen
 
-
+        if self.env_name == 'SF-v0':
+            self.get_vulner_counter = library.get_vulner_counter
+            self.get_lifes_remaining = library.get_lifes_remaining
         sixteen_bit_img_bytes = self.screen_width * self.screen_height * 2
         self.pretty_screen.restype = ctypes.POINTER(ctypes.c_ubyte * sixteen_bit_img_bytes)
         self.score.restype = ctypes.c_float    
@@ -475,19 +549,17 @@ class SFEnv(gym.Env):
 
         self.init_game()
 
-       
 
-        # add down movement when in no_direction mode
-
-            
-            
         self.ep_counter = 0
         self.episode_dir = os.path.join(self.config.gl.logs_dir,
                                         self.config.model_name, 
                                         'episodes', '_')
         
         print("Using features", ', '.join(self.feature_names))
-        # The size of the screen when playing in human mode
+        
+       
+        font_path = os.path.join(self.config.gl.others_dir, 'Consolas.ttf')
+        self.panel = Panel(self.screen_height, font_path)
         
 
     
@@ -497,9 +569,9 @@ def aux_decompose_cyclic(x):
     x : normalized feature (float, scalar)
     """
     try:
-        assert 1 >= x >= 0, "X must be normalized (%f)" % x
+        assert 1 >= x >= 0
     except Exception as e:
-        assert 1.1 >= x >= -0.1
+        assert 1.1 >= x >= -0.1, "X must be normalized (%f)" % x
         x = np.clip(x, 0, 1)
 
     sin = math.sin(2 * math.pi * x)
