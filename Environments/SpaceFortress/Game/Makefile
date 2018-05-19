@@ -7,7 +7,7 @@ CREATE_BINARY=no
 PARAM=
 PARAM+=-D GUI_INTERFACE #** Full sized and colored game renders **
 #PARAM+=-D GRID_MOVEMENT #** Lowers the control order to a direct type of control **
-#PARAM+=-D NO_WRAP #** Turns off wrapping **
+PARAM+=-D NO_WRAP #** Turns off wrapping **
 #PARAM+=-D NO_DIRECTION #** Turns off movement based on the ships nose direction **
 #PARAM+=-D DEBUG #** Sounds Effects/Printing messages on soundless linux **
 #PARAM+=-D ROTATE_ANGLE=theta #** The rotation of the ship in degrees **

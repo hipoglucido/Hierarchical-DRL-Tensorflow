@@ -7,7 +7,7 @@ import math
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pprint import pformat
-from pynput.keyboard import Key
+
 class Constants:
     
 

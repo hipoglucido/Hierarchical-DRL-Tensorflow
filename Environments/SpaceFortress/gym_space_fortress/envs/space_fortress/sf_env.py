@@ -28,7 +28,7 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 
-img = cv2.imread("/home/victorgarcia/Desktop/ep922_16:05:10.058396_R3.0.jpg")
+
 class Panel:
     def __init__(self, height, font_path):
         self.length = 17
@@ -278,18 +278,23 @@ class SFEnv(gym.Env):
             video_path = self.episode_dir + "_R" + str(self.ep_reward)
         else:
             video_path = self.episode_dir
-        video_path += '.gif'
-        perc = .6
+        video_path += '.mp4'
+        perc = .7
    
         
         (original_width, original_heigth) = self.imgs[0].size
-        new_size = (int(perc * original_width), int(perc * original_heigth))
+        #new_size = (int(perc * original_width), int(perc * original_heigth))
         
-        self.imgs = [img.resize(new_size, Image.ANTIALIAS) for img in self.imgs]
+        #self.imgs = [img.resize(new_size, Image.ANTIALIAS) for img in self.imgs]
         self.imgs = [np.array(img) for img in self.imgs]
         blank = self.imgs[-1].copy() * 0 + 255
         self.imgs.append(blank)
-        imageio.mimsave(video_path, self.imgs, duration = .00001)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video = cv2.VideoWriter(video_path, fourcc, 20.0, (original_width, original_heigth))
+        #imageio.mimsave(video_path, self.imgs, duration = .00001)
+        for img in self.imgs:
+            video.write(img)
+        video.release()
         if delete_images:
             shutil.rmtree(self.episode_dir)
             

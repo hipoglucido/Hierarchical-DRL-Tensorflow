@@ -65,6 +65,18 @@ ag_args.add_argument("--fresh_start", default = None, type = utils.str2bool)
 """
 
 def execute_experiment(args):
+    #### HARD RULES
+    if args['paralel'] != 0:
+        args['use_gpu'] = 0
+    if args['agent_type'] == 'human':
+        args['use_gpu'] = 0
+        args['render_delay'] = 0
+        args['mode'] = 'play'
+        args['display_prob'] = 1
+    if args['mode'] == 'play':
+        pass#args['display_prob'] = 1
+    if args['env_name'] == 'key_mdp-v0':
+        args['action_repeat'] = 1
     if args['architecture']:
         args['architecture'] = args['architecture'].split('-')
     
@@ -176,32 +188,25 @@ def execute_experiment(args):
     tf.reset_default_graph()
 
 args = vars(parser.parse_args())
-#### HARD RULES
-if args['agent_type'] == 'human':
-    args['use_gpu'] = 0
-    args['render_delay'] = 0
-    args['mode'] = 'play'
-    args['display_prob'] = 1
-if args['mode'] == 'play':
-    pass#args['display_prob'] = 1
-if args['env_name'] == 'key_mdp-v0':
-    args['action_repeat'] = 1
+
+
 #
 if 'exp' in args['mode']:
-    exp_name = args['mode']
-    experiment = Experiment(exp_name)
+    exp_name = args['mode']    
+    experiment = Experiment(exp_name, args['paralel'])
     args_list = experiment.get_args_list()
 else:
     args_list = [args]
+
 if args['paralel'] == 0:
-    for args in args_list:
-        execute_experiment(args)
+    for args_ in args_list:
+        execute_experiment(args_)
 else:
     from multiprocessing import Pool
-    args['use_gpu'] = 0
+    
     n_processes = args['paralel']
     
-    with Pool(n_processes = n_processes) as pool:
-        pool.starmap(execute_experiment, zip(args))
+    with Pool(n_processes) as pool:
+        pool.starmap(execute_experiment, zip(args_list))
     
     
