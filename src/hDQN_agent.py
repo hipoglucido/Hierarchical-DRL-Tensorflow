@@ -241,8 +241,11 @@ class HDQNAgent(Agent):
         
 #        self.writer.add_summary(summary_str, self.mc_step)
         
-        if loss > 50:
-            print("MC",loss,':\n',s_t[0])
+#        if loss > 1000:
+#            print("MC",loss)
+#            for fn, v in zip(self.environment.gym.feature_names, s_t[0][0]):
+#                print(fn,v)
+#            assert 0
         self.m.mc_add_update(loss, q_t.mean(), mc_td_error.mean())
         
 
@@ -300,15 +303,26 @@ class HDQNAgent(Agent):
             feed_dict[self.c_loss_weight] = loss_weight
             pass
             
-        _, q_t, c_td_error, loss = self.sess.run([self.c_optim,
+        _, q_t, c_td_error, loss, loss_aux = self.sess.run([self.c_optim,
                                                                self.c_q,
                                                                self.c_td_error,
-                                                               self.c_loss],
+                                                               self.c_loss,
+                                                               self.c_loss_aux],
                                                                #self.c_q_summary],
                                                             feed_dict)
 #        self.writer.add_summary(summary_str, self.c_step)
-        if loss > 50:
-            print("C",loss,':\n',s_t[0],'\n',g_t,action)
+        for s,l in zip(s_t, loss_aux):
+            if l > 5:
+                print(l)
+                for fn, v in zip(self.environment.gym.feature_names, s[0]):
+                    print(fn,v)  
+#        if loss > 1000 and self.c_step > 10000:
+#            print("C",loss)
+#            for fn, v in zip(self.environment.gym.feature_names, s_t[0][0]):
+#                print(fn,v)
+#            assert 0
+#        else:
+#            print('C', loss)
         self.m.c_add_update(loss, q_t.mean(), c_td_error.mean())
 
 
@@ -542,13 +556,15 @@ class HDQNAgent(Agent):
 
             #self.global_step = tf.Variable(0, trainable=False)
             if self.ag.pmemory:
-                self.mc_loss = tf.reduce_mean(weighted_huber_loss(y_true  = self.mc_target_q_t,
+                self.mc_loss_aux = weighted_huber_loss(y_true  = self.mc_target_q_t,
                                                          y_pred  = mc_q_acted,
-                                                         weights = self.mc_loss_weight),
+                                                         weights = self.mc_loss_weight)
+                self.mc_loss = tf.reduce_mean(self.mc_loss_aux,
                                               name = 'mc_loss')
             else:
-                self.mc_loss = tf.reduce_mean(huber_loss(y_true = self.mc_target_q_t,
-                                                         y_pred = mc_q_acted),
+                self.mc_loss_aux = huber_loss(y_true = self.mc_target_q_t,
+                                                         y_pred = mc_q_acted)
+                self.mc_loss = tf.reduce_mean(self.mc_loss_aux,
                                               name = 'mc_loss')
             self.mc_learning_rate_step = tf.placeholder('int64', None,
                                             name='mc_learning_rate_step')
@@ -633,13 +649,15 @@ class HDQNAgent(Agent):
             #self.global_step = tf.Variable(0, trainable=False)
 
             if self.ag.pmemory:
+                
                 self.c_loss = tf.reduce_mean(weighted_huber_loss(y_true  = self.c_target_q_t,
                                                          y_pred  = c_q_acted,
                                                          weights = self.c_loss_weight),
                                               name = 'c_loss')
             else:
-                self.c_loss = tf.reduce_mean(huber_loss(y_true = self.c_target_q_t,
-                                                         y_pred = c_q_acted),
+                self.c_loss_aux = huber_loss(y_true = self.c_target_q_t,
+                                                         y_pred = c_q_acted)
+                self.c_loss = tf.reduce_mean(self.c_loss_aux,
                                               name = 'c_loss')
             self.c_learning_rate_step = tf.placeholder('int64', None,
                                             name='c_learning_rate_step')

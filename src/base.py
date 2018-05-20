@@ -431,7 +431,7 @@ class Agent(object):
             os.makedirs(self.checkpoints_dir)
         self.saver.save(self.sess, self.checkpoints_dir, global_step=step)
         msg = "\nSaved checkpoint step=%d" % (step)#, self.checkpoints_dir)
-        print(msg)
+        #print(msg)
 
     def load_model(self):
         print(" [*] Loading checkpoints...")

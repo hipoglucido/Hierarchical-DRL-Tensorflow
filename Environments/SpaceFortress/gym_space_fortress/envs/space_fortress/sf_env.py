@@ -168,10 +168,12 @@ class SFEnv(gym.Env):
             raw_obs[2]   = (raw_obs[2] + 5.) / 10.    # Ship_Y_Speed
             raw_obs[3]   = (raw_obs[3] + 5.) / 10.    # Ship_X_Speed 
             raw_obs[4]  /= 360                        # Ship_Headings
-            raw_obs[5]  /= self.screen_height         # Missile_Y_Pos
-            raw_obs[6]  /= self.screen_width          # Missile_X_Pos
+            raw_obs[5]  = np.clip(raw_obs[5] / self.screen_height, 0, 1) # Missile_Y_Pos
+            raw_obs[6]  = np.clip(raw_obs[6] / self.screen_width, 0, 1) # Missile_X_Pos
             raw_obs[7]  /= 360                        # fort_Headings
             raw_obs[8] /= 100                        # Missile_Stock
+            
+            
     
             
     def preprocess_observation(self, obs):
@@ -333,6 +335,8 @@ class SFEnv(gym.Env):
 #        print(self._action_set)
 #        print(CT.action_to_sf[self.env_name])
 #        print(CT.key_to_action[self.env_name])
+  
+        
     def get_prep_feature(self, observation, feature_name):
         index = self.feature_names.index(feature_name)
         return observation[index]
@@ -400,12 +404,12 @@ class SFEnv(gym.Env):
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_i')],
                     lambda obs: [self.get_raw_feature(obs, 'ship_pos_j')],
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
-                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')]
+#                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
                 ]
                 feature_names += ['ship_pos_i', 'ship_pos_j',
-                                  'missile_pos_i', 'missile_pos_j',
-                                  'missile_stock']
+                                  'missile_pos_i', 'missile_pos_j']#,
+                                  #'missile_stock']
             
         else:
             # WRAPPER

@@ -349,7 +349,7 @@ class ControllerSettings(AgentSettings):
         
         self.memory_size = 1e6        
 #        self.max_step = 500 * self.scale        
-        self.batch_size = 1
+        self.batch_size = 32
         self.random_start = 30
         
         
@@ -368,7 +368,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 3500#min(5 * self.scale, 500)
+        self.test_step = 2000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -394,7 +394,7 @@ class MetaControllerSettings(AgentSettings):
          
         #max_step = 5000 * scale
         
-        self.batch_size = 1
+        self.batch_size = 32
         self.random_start = 30        
         
         self.target_q_update_step = 1 * self.scale
