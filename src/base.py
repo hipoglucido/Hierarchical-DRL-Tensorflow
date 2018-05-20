@@ -50,8 +50,8 @@ class Agent(object):
         self.output = ''
         
     def rebuild_environment(self):
-        self.environment = None
-        self.environment = Environment(self.config)
+        if self.m.is_SF:
+            self.environment = Environment(self.config)
     
     def display_environment(self, observation):
         if self.m.is_SF:

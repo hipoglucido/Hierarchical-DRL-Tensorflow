@@ -44,12 +44,13 @@ class Environment():
             gym_env = gym.make(self.env_name)#.env
         else:
             assert False, self.env_name + str(CT.GYM_envs)
-        logging.debug("Gym %s built", self.env_name)
+        #logging.debug("Gym %s built", self.env_name)
         return gym_env
     
     
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
+        self.gym.after_episode()
         self._screen = self.gym.reset()
         
         return self.screen, 0., 0., self.terminal

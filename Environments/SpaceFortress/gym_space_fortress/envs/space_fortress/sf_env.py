@@ -32,10 +32,8 @@ from PIL import ImageDraw
 class Panel:
     def __init__(self, height, font_path):
         self.length = 17
-        history_keys = ['goals']#, 'actions']
-        self.history = {}
-        for k in history_keys:
-            self.history[k] = ["..." for _ in range(self.length)]
+        self.history_keys = ['goals']#, 'actions']
+        self.reset()
         
         self.height = height
         self.width = 250
@@ -50,9 +48,10 @@ class Panel:
                                              size = 15)
         self.font2 = ImageFont.truetype(font = font_path,
                                              size = 25)
-    def empty(self):
-        for key in self.history:
-            self.history[key] = []
+    def reset(self):
+        self.history = {}
+        for k in self.history_keys:
+            self.history[k] = ["..." for _ in range(self.length)]
         
     def add(self, key, item):
         item = item.replace('Key.', '')
@@ -96,7 +95,10 @@ class SFEnv(gym.Env):
     def __init__(self):
         self.imgs = []
         self.step_counter = 0
+        self.ep_counter = 0
+        self.ep_reward = 0
         self.goal_has_changed = False
+        self.print_shit = False
         
     def _seed(self):
         #TODO
@@ -107,7 +109,11 @@ class SFEnv(gym.Env):
         return len(self._action_set)
 
 
-
+    def after_episode(self):
+        self.ep_counter += 1
+        if len(self.imgs) > 0: 
+            self.generate_video()
+       
     def step(self, a):
         
         action = self._action_set[a] # Select the action from the action dictq
@@ -116,47 +122,28 @@ class SFEnv(gym.Env):
         info = {}
         if self.env_name == 'SF-v0':
             info['fortress_hits'] = 0
-        for frame in range(1):#self.config.env.action_repeat):
-          
-            if not isinstance(action, list):
-                self.act(action)
-            else:
-                self.act(action[frame])
-           
-            self.update_logic()
-            reward_delta = self.score() - self.config.env.time_penalty
-            reward += reward_delta
-            done = self.terminal_state()
-            if self.env_name == 'SFC-v0':
-                if reward == 1 - self.config.env.time_penalty:
-                    done = 1
-            elif self.env_name == 'SF-v0' and reward_delta:
-                info['fortress_hits'] += 1
-            if done:
-                self.ep_counter += 1
+
+        if not isinstance(action, list):
+            self.act(action)
+        else:
+            self.act(action[frame])
+       
+        self.update_logic()
+        reward_delta = self.score() - self.config.env.time_penalty
+        reward += reward_delta
+        done = self.terminal_state()
+        if self.env_name == 'SFC-v0':
+            if reward == 1 - self.config.env.time_penalty:
+                done = 1
+        elif self.env_name == 'SF-v0' and reward_delta:
+            info['fortress_hits'] += 1
+       
         self.step_counter += 1
         self.ep_reward += reward
 #        screen = np.ctypeslib.as_array(self.update_screen().contents)
        
-        obs = np.ctypeslib.as_array(self.get_symbols().contents)
-        original = obs.copy()
-#        print('______________________')
-#        for k in self.raw_features_name_to_ix:
-#            print(k, obs[self.raw_features_name_to_ix[k]])
-        
-        self.scale_observation(obs)
-        try:
-            preprocessed_obs = self.preprocess_observation(obs)
-        except:
-            print("ORIGINAL", original)
-            print("SCALA", obs)
-            3/0
-#        print("prep_obs", preprocessed_obs)
-        
-        #symbols = np.ctypeslib.as_array(self.get_symbols().contents)
-#        ob = symbols
-        #ob = symbols
-        return preprocessed_obs, reward, done, info
+        observation = self.get_observation()
+        return observation, reward, done, info
     
     def scale_observation(self, raw_obs):
         if self.env_name == 'SFC-v0':
@@ -266,19 +253,15 @@ class SFEnv(gym.Env):
         if self.config.ag.agent_type == 'human' or self.config.gl.watch:
             cv2.imshow(self.env_name, np.array(full_image))
             cv2.waitKey(self.config.env.render_delay)
-        else:
-            if not os.path.exists(self.episode_dir):
-                os.makedirs(self.episode_dir)
+        
+            
         
     def generate_video(self, delete_images = True):
         
-#        img_paths = glob.glob(os.path.join(self.episode_dir, '*.png'))
-#        img_paths.sort(key=os.path.getatime)
-        if self.ep_reward is not None:
-            video_path = self.episode_dir + "_R" + str(self.ep_reward)
-        else:
-            video_path = self.episode_dir
-        video_path += '.mp4'
+      
+        video_name = "ep%d_%s_R%d.mp4" % (self.ep_counter, self.current_time, self.ep_reward)
+        
+        video_path = os.path.join(self.episode_dir, video_name)
         perc = .7
    
         
@@ -295,29 +278,37 @@ class SFEnv(gym.Env):
         for img in self.imgs:
             video.write(img)
         video.release()
-        if delete_images:
-            shutil.rmtree(self.episode_dir)
+       
             
-
-    def reset(self):
-        self.window_active = False
-        self.step_counter = 0
-        self.reset_sf()
-        if os.path.exists(self.episode_dir): 
-            self.generate_video()
-        self.imgs = []
-        self.ep_reward = 0
-        
-        self.episode_dir = os.path.join(self.config.gl.logs_dir,
-                                        self.config.model_name, 
-                                        'episodes', "ep%d_%s" % \
-                                        (self.ep_counter,self.current_time))
-        
+    def get_observation(self):
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
 #        print("obs:",obs)
         self.scale_observation(obs)
-        preprocessed_obs = self.preprocess_observation(obs)
-        return preprocessed_obs # For some reason should show the observation
+        try:
+            preprocessed_obs = self.preprocess_observation(obs)
+        except:
+            print("ORIGINAL", original)
+            print("SCALA", obs)
+            3/0
+        return preprocessed_obs
+    def reset(self):
+        self.window_active = False
+        self.panel.reset()
+        
+        self.step_counter = 0
+        self.reset_sf()
+        
+        self.imgs = []
+        self.ep_reward = 0
+        
+        #self.episode_dir = os.path.join(self.config.gl.logs_dir,
+         #                               self.config.model_name, 
+          #                              'episodes')
+                                        #, "ep%d_%s" % \
+                                        #(self.ep_counter, self.current_time))
+        
+        observation = self.get_observation()
+        return observation # For some reason should show the observation
 
 
 
@@ -499,13 +490,13 @@ class SFEnv(gym.Env):
         libname += ".so"
 
         
-        self.logger.info("With FrameSkip: %s" % self.config.env.action_repeat)
+
 
         # Link the environment to the shared libraries
         lib_dir = os.path.join(libpath, libname)
 #        print(lib_dir)
         library = ctypes.CDLL(lib_dir)
-        self.logger.info("LOAD "+ lib_dir)
+        #self.logger.info("LOAD "+ lib_dir)
         
         #self.update = library.update_frame
         self.init_game = library.start_drawing
@@ -553,14 +544,13 @@ class SFEnv(gym.Env):
         self.state_space = gym.spaces.Discrete(self.state_size)
 
         self.init_game()
-
-
-        self.ep_counter = 0
         self.episode_dir = os.path.join(self.config.gl.logs_dir,
                                         self.config.model_name, 
-                                        'episodes', '_')
+                                        'episodes')
+        if not self.config.ag == 'human' and not os.path.exists(self.episode_dir):
+            os.makedirs(self.episode_dir)
         
-        print("Using features", ', '.join(self.feature_names))
+        #print("Using features", ', '.join(self.feature_names))
         
        
         font_path = os.path.join(self.config.gl.others_dir, 'Consolas.ttf')

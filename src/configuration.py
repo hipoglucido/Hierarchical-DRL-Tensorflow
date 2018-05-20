@@ -152,8 +152,8 @@ class GenericSettings():
                     continue
                 else:
                     old_value = getattr(self, key) if hasattr(self, key) else '_'
-                    logging.debug("Updated %s: %s -> %s", key, str(old_value),
-                                                          str(value))
+                    #logging.debug("Updated %s: %s -> %s", key, str(old_value),
+                    #                                      str(value))
                     setattr(self, key, value)
                     
         elif isinstance(new_attrs, GenericSettings):
@@ -349,7 +349,7 @@ class ControllerSettings(AgentSettings):
         
         self.memory_size = 1e6        
 #        self.max_step = 500 * self.scale        
-        self.batch_size = 32
+        self.batch_size = 1
         self.random_start = 30
         
         
@@ -394,7 +394,7 @@ class MetaControllerSettings(AgentSettings):
          
         #max_step = 5000 * scale
         
-        self.batch_size = 32
+        self.batch_size = 1
         self.random_start = 30        
         
         self.target_q_update_step = 1 * self.scale

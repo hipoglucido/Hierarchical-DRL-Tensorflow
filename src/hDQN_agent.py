@@ -240,7 +240,9 @@ class HDQNAgent(Agent):
                                                             feed_dict)
         
 #        self.writer.add_summary(summary_str, self.mc_step)
-    
+        
+        if loss > 50:
+            print("MC",loss,':\n',s_t[0])
         self.m.mc_add_update(loss, q_t.mean(), mc_td_error.mean())
         
 
@@ -305,6 +307,8 @@ class HDQNAgent(Agent):
                                                                #self.c_q_summary],
                                                             feed_dict)
 #        self.writer.add_summary(summary_str, self.c_step)
+        if loss > 50:
+            print("C",loss,':\n',s_t[0],'\n',g_t,action)
         self.m.c_add_update(loss, q_t.mean(), c_td_error.mean())
 
 
@@ -384,8 +388,8 @@ class HDQNAgent(Agent):
                     if self.display_episode:
                         self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
-                    self.rebuild_environment()
                     old_obs = self.new_episode()
+                    self.rebuild_environment()
                 else:
                     old_obs = new_obs.copy()
                     
