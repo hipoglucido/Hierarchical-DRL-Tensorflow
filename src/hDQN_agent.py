@@ -384,6 +384,7 @@ class HDQNAgent(Agent):
                     if self.display_episode:
                         self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
+                    self.rebuild_environment()
                     old_obs = self.new_episode()
                 else:
                     old_obs = new_obs.copy()

@@ -59,7 +59,7 @@ class Experiment():
             base_args = {
                     'env_name'              : 'SF-v0',
                     'scale'                 : 1500,
-                    'agent_type'            : 'hdqn',
+                    'agent_type'            : 'dqn',
                     'log_level'             : 'DEBUG',
                     'display_prob'          : 0.001,
                     'use_gpu'               : 1,
@@ -78,10 +78,10 @@ class Experiment():
                     }
             base_args = {
                     'env_name'              : 'SF-v0',
-                    'scale'                 :  50000,
+                    'scale'                 :  5000,
                     'agent_type'            : 'hdqn',
                     'log_level'             : 'DEBUG',
-                    'display_prob'          :  0.01,
+                    'display_prob'          :  0.001,
                     'use_gpu'               :  0,
                     'mode'                  :  'train',
                     'architecture'          : [64, 64],

@@ -113,7 +113,7 @@ class DQNAgent(Agent):
 
         self.m.start_timer()
         total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
-        if self.m.is_SF:   
+        if self.m.is_SF and self.gl.paralel == 0:   
             iterator = tqdm(range(self.start_step, total_steps),
                                                   ncols=70, initial=self.start_step)
         else:
@@ -126,7 +126,9 @@ class DQNAgent(Agent):
             action = self.predict_next_action(old_obs)    
        
             # 2. act            
-            new_obs, reward, terminal, info = self.environment.act(action)
+            info = {'is_SF'           : self.m.is_SF,
+                    'display_episode' : self.display_episode}
+            new_obs, reward, terminal, info = self.environment.act(action, info)
             self.process_info(info)
            
             if self.m.is_SF:
@@ -282,9 +284,9 @@ class DQNAgent(Agent):
 #            print("sum_p", sum_p)
 #            print("count", count)
             
-        _, q_t, td_error, loss, summary_str = self.sess.run([self.optim, self.q,
+        _, q_t, td_error, loss = self.sess.run([self.optim, self.q,
                                                              self.td_error,
-                                             self.loss, self.q_summary], feed_dict)
+                                             self.loss], feed_dict)
         if self.ag.pmemory:
             self.memory.update(idx_list, td_error)
 #       
@@ -297,7 +299,7 @@ class DQNAgent(Agent):
             
         
         
-        self.writer.add_summary(summary_str, self.step) #TODO what does this do?
+        #self.writer.add_summary(summary_str, self.step) #TODO what does this do?
 
         self.m.total_loss += loss
         self.m.total_q += q_t.mean()        

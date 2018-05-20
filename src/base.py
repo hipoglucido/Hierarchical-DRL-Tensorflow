@@ -10,7 +10,7 @@ import random
 from utils import linear, clipped_error
 from configuration import Constants as CT
 pp = pprint.PrettyPrinter().pprint
-
+from environment import Environment
 class Epsilon():
     def __init__(self, config, start_step):
         self.start = config.ep_start
@@ -49,7 +49,10 @@ class Agent(object):
         self.config = config
         self.output = ''
         
-     
+    def rebuild_environment(self):
+        self.environment = None
+        self.environment = Environment(self.config)
+    
     def display_environment(self, observation):
         if self.m.is_SF:
             self.environment.gym.render()
