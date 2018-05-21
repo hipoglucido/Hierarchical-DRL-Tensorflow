@@ -24,8 +24,9 @@ from PIL import Image
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 def get_timestamp():
-#	return time.strftime("%Ss%Hh%Mm%b%d")
-	return time.strftime("%Hh%Mm%Ss")
+	#return time.strftime("%Ss%Hh%Mm%b%d")
+    return time.strftime("%dd%Hh%Mm%Ss")
+#	return time.strftime("%Hh%Mm%Ss")
 
 
 def insert_dirs(dirs):

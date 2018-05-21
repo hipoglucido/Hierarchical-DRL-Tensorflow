@@ -123,10 +123,7 @@ class SFEnv(gym.Env):
         if self.env_name == 'SF-v0':
             info['fortress_hits'] = 0
 
-        if not isinstance(action, list):
-            self.act(action)
-        else:
-            self.act(action[frame])
+        self.act(action)
        
         self.update_logic()
         reward_delta = self.score() - self.config.env.time_penalty
@@ -168,12 +165,18 @@ class SFEnv(gym.Env):
             raw_obs[2]   = (raw_obs[2] + 5.) / 10.    # Ship_Y_Speed
             raw_obs[3]   = (raw_obs[3] + 5.) / 10.    # Ship_X_Speed 
             raw_obs[4]  /= 360                        # Ship_Headings
-            raw_obs[5]  = np.clip(raw_obs[5] / self.screen_height, 0, 1) # Missile_Y_Pos
-            raw_obs[6]  = np.clip(raw_obs[6] / self.screen_width, 0, 1) # Missile_X_Pos
+            raw_obs[5]  /= self.screen_height         # Missile_Y_Pos
+            raw_obs[6]  /= self.screen_width          # Missile_X_Pos
             raw_obs[7]  /= 360                        # fort_Headings
-            raw_obs[8] /= 100                        # Missile_Stock
+            raw_obs[8]  /= 100                         # Missile_Stock
             
-            
+        raw_obs = np.clip(raw_obs, 0, 1)
+        """
+            for i, obs in enumerate(raw_obs):
+                if not 0 <= obs <= 1 and i not in [5, 6, 8]:
+                    print(i, obs)
+        """    
+        return raw_obs    
     
             
     def preprocess_observation(self, obs):
@@ -285,13 +288,9 @@ class SFEnv(gym.Env):
     def get_observation(self):
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
 #        print("obs:",obs)
-        self.scale_observation(obs)
-        try:
-            preprocessed_obs = self.preprocess_observation(obs)
-        except:
-            print("ORIGINAL", original)
-            print("SCALA", obs)
-            3/0
+        obs = self.scale_observation(obs)
+        preprocessed_obs = self.preprocess_observation(obs)
+        assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(), str([obs, preprocessed_obs])
         return preprocessed_obs
     def reset(self):
         self.window_active = False

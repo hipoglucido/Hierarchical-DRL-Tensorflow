@@ -218,8 +218,8 @@ class GlobalSettings(GenericSettings):
                  'ag.architecture',
                  'ag.double_q',
                  'ag.dueling',
-                 'ag.pmemory',
-                 'ag.memory_size',
+                 #'ag.pmemory',
+                 #'ag.memory_size',
                  'env.action_repeat',
                  'gl.random_seed',
                  
