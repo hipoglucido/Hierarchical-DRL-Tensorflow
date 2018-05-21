@@ -403,7 +403,7 @@ class HDQNAgent(Agent):
                         self.console_print_terminal(reward, new_obs)
                     self.m.close_episode()
                     old_obs = self.new_episode()
-                    self.rebuild_environment()
+                    #self.rebuild_environment()
                 else:
                     old_obs = new_obs.copy()
                     
