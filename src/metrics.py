@@ -32,7 +32,7 @@ class Metrics:
         self.scalar_global_tags = ['elapsed_time', 'games',
                                  'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
-                                 'debug_no_ep_error']
+                                 'debug_no_ep_error', 'progress']
         if self.config.env.env_name == 'SF-v0':
             
             self.scalar_global_tags.append('fortress_hits')

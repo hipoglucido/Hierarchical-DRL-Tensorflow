@@ -481,6 +481,9 @@ class SFEnv(gym.Env):
             prep_fs.append(f)
             feature_names.append("ship_headings_sin")
             feature_names.append("ship_headings_cos")
+#            f = lambda obs: [self.get_raw_feature(obs, 'ship_headings')]
+#            prep_fs.append(f)
+#            feature_names.append('ship_headings')
             if self.env_name == 'SF-v0':
                 pass
                 #Fortress is ALWAYS looking at the spaceship, so this is not needed

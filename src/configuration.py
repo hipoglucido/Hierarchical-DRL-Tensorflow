@@ -314,6 +314,7 @@ class hDQNSettings(AgentSettings):
         self.random_start = 30
         self.discount = 0.99
         self.goal_group = 0
+        self.save_step = 4
        
         
     def update(self, *args, **kwargs):

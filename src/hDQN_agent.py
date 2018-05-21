@@ -451,7 +451,7 @@ class HDQNAgent(Agent):
                 continue
             if self.c_step % self.c.test_step != self.c.test_step - 1:
                 continue
-  
+            self.m.progress = self.c_step / total_steps
             self.m.compute_test('c', self.m.c_update_count)
             self.m.compute_test('mc', self.m.mc_update_count, self.mc_step)
             goal_success_rate = self.m.compute_goal_results(self.goals)
@@ -467,15 +467,15 @@ class HDQNAgent(Agent):
 #            self.m.print('mc')
 #            self.m.c_print()
             
-            
-            if self.m.has_improved():
-                self.c_step_assign_op.eval(
-                        {self.c_step_input: self.c_step + 1})
-                self.mc_step_assign_op.eval(
-                        {self.mc_step_input: self.mc_step + 1})
-                self.save_model(self.c_step + 1)
-                self.save_model(self.mc_step + 1)
-                self.m.update_best_score()
+            if self.c_step % self.ag.save_step == 0:
+                if self.m.has_improved():
+                    self.c_step_assign_op.eval(
+                            {self.c_step_input: self.c_step + 1})
+                    self.mc_step_assign_op.eval(
+                            {self.mc_step_input: self.mc_step + 1})
+                    self.save_model(self.c_step + 1)
+                    self.save_model(self.mc_step + 1)
+                    self.m.update_best_score()
                 
 
 #            if self.c_step > 50:
