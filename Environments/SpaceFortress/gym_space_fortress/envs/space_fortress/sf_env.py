@@ -307,7 +307,7 @@ class SFEnv(gym.Env):
           #                              'episodes')
                                         #, "ep%d_%s" % \
                                         #(self.ep_counter, self.current_time))
-        
+        self.configure(self.config)
         observation = self.get_observation()
         return observation # For some reason should show the observation
 
@@ -488,11 +488,7 @@ class SFEnv(gym.Env):
         libname = self.env_name.split('-')[0].lower()
 
 
-        libname += '_frame_lib'
-
-        libname += ".so"
-
-        
+        libname += '_frame_lib.so'
 
 
         # Link the environment to the shared libraries

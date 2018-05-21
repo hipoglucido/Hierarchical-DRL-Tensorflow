@@ -69,9 +69,11 @@ class HumanAgent():
                 square_y_pos_x,
                 square_y_pos_y
                 """
+                info = {'goal_name'       : 'aim_sat_fortress',
+                        'display_episode' : self.display_episode}
                 observation, reward, done, _ = self.environment.act(
                                                     action = action,
-                                                    info   = {'goal_name' : 'aim_sat_fortress'})
+                                                    info   = info)
                 observation_str = '\t  '.join([str(round(f,3)) for f in observation])
                 k = self.current_key.replace('Key.', '')
                 msg = '%s\tA:%s, R:%.2f, T%s' \

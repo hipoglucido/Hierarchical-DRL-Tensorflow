@@ -70,7 +70,7 @@ def execute_experiment(args):
         args['use_gpu'] = 0
     if args['agent_type'] == 'human':
         args['use_gpu'] = 0
-        args['render_delay'] = 0
+        #args['render_delay'] = 0
         args['mode'] = 'play'
         args['display_prob'] = 1
     if args['mode'] == 'play':

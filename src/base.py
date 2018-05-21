@@ -106,13 +106,12 @@ class Agent(object):
         #screen, reward, action, terminal = self.environment.new_random_game()
         screen, _, _, _ = self.environment.new_game()        
         #self.history.fill_up(screen)
-        if self.m.is_hdqn:
-            full_memory = self.mc_memory.is_full()
-        else:
-            full_memory = self.memory.is_full()
-        full_memory = 1
-        self.display_episode = random.random() < self.gl.display_prob and \
-                                                    full_memory
+#        if self.m.is_hdqn:
+#            full_memory = self.mc_memory.is_full()
+#        else:
+#            full_memory = self.memory.is_full()
+#        full_memory = 1
+        self.display_episode = random.random() < self.gl.display_prob
         
         return screen        
     def add_output(self, txt):
