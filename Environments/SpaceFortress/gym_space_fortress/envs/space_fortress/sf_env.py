@@ -32,7 +32,7 @@ from PIL import ImageDraw
 class Panel:
     def __init__(self, height, font_path):
         self.length = 17
-        self.history_keys = ['goals']#, 'actions']
+        self.history_keys = ['goals', 'actions']
         self.reset()
         
         self.height = height
@@ -62,7 +62,8 @@ class Panel:
     def get_image(self, info):
         panel = Image.new("RGB", (self.width, self.height), "white")
         draw = ImageDraw.Draw(panel)
-        j = 10
+        #Draw goals
+        j = int(self.width * .04)
         for n, item in enumerate(self.history['goals']):
             #print(n, item)
             coords = (j, self.history_limit_i + self.span * n)
@@ -72,14 +73,28 @@ class Panel:
             else:
                 color = self.old_color
                 if n == 0:
-                    item = '...'
+                    item = 'Goals:'
+            draw.text(coords, item, color, font = self.font1)
+        #Draw actions
+        j = int(self.width * .7)
+        for n, item in enumerate(self.history['actions']):
+            #print(n, item)
+            coords = (j, self.history_limit_i + self.span * n)
+            if n == self.length - 1:
+                color = self.current_color
+                item = '> ' + item
+            else:
+                color = self.old_color
+                if n == 0:
+                    item = 'Actions:'
             draw.text(coords, item, color, font = self.font1)
       
         color = (150, 25, 25)
+        j = int(self.width * .7)
         draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
-        draw.text((int(self.width / 2), 3), "%d hits" % info['hits'],
+        draw.text((j, 3), "%d hits" % info['hits'],
                                           color, font = self.font1)
-        draw.text((int(self.width / 2), 20), "%d lifes" % info['lifes'],
+        draw.text((j, 20), "%d lifes" % info['lifes'],
                                           color, font = self.font1)
         return panel
             
@@ -169,6 +184,12 @@ class SFEnv(gym.Env):
             raw_obs[6]  /= self.screen_width          # Missile_X_Pos
             raw_obs[7]  /= 360                        # fort_Headings
             raw_obs[8]  /= 100                         # Missile_Stock
+            
+            # If missiles are away from the screen, put them as 0, 0
+            if self.last_missile_coords == (raw_obs[5], raw_obs[6]):
+                raw_obs[5], raw_obs[6] = 0., 0.
+            else:
+                self.last_missile_coords = (raw_obs[5], raw_obs[6])
             
         raw_obs = np.clip(raw_obs, 0, 1)
         """
@@ -290,6 +311,8 @@ class SFEnv(gym.Env):
 #        print("obs:",obs)
         obs = self.scale_observation(obs)
         preprocessed_obs = self.preprocess_observation(obs)
+        
+            
         assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(), str([obs, preprocessed_obs])
         return preprocessed_obs
     def reset(self):
@@ -301,6 +324,8 @@ class SFEnv(gym.Env):
         
         self.imgs = []
         self.ep_reward = 0
+        if self.env_name == 'SF-v0':
+            self.last_missile_coords = (0., 0.)
         
         #self.episode_dir = os.path.join(self.config.gl.logs_dir,
          #                               self.config.model_name, 

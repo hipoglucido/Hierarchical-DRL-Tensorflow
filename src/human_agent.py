@@ -69,15 +69,19 @@ class HumanAgent():
                 square_y_pos_x,
                 square_y_pos_y
                 """
-                info = {'goal_name'       : 'aim_sat_fortress',
+                info = {'goal_name'       : 'aim_at_fortress',
                         'display_episode' : self.display_episode}
                 observation, reward, done, _ = self.environment.act(
                                                     action = action,
                                                     info   = info)
-                observation_str = '\t  '.join([str(round(f,3)) for f in observation])
+                msg = ''
+                for feature, feature_name in zip(observation, \
+                                            self.environment.gym.feature_names):
+                    msg += "%s:\t%.5f\n" % (feature_name, feature)
+                #observation_str = '\t  '.join([str(round(f,3)) for f in observation])
                 k = self.current_key.replace('Key.', '')
-                msg = '%s\tA:%s, R:%.2f, T%s' \
-                            % (observation_str, k, reward, done)
+                msg += '\nA:%s, R:%.2f, T%s' \
+                            % (k, reward, done)
                 print(msg)
                 for i, goal in self.goals.items():
                     achieved = goal.is_achieved(observation, action)
