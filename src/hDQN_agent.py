@@ -335,7 +335,12 @@ class HDQNAgent(Agent):
         self.c_start_step = self.c_step_op.eval()
         self.mc_ready = False
         self.c_learnt = False
-        self.mc_epsilon = Epsilon(self.mc, self.mc_start_step)
+        total_steps = self.ag.max_step# + self.c.memory_size
+        self.mc_epsilon = Epsilon(start_value = 1.,
+                                  end_value   = .05,
+                                  start_t     = self.mc_start_step,
+                                  end_t       = total_steps,
+                                  learn_start = self.mc.learn_start)
         for key, goal in self.goals.items():
             goal.setup_epsilon(self.c, self.c_start_step) #TODO load individual
         
@@ -347,7 +352,7 @@ class HDQNAgent(Agent):
         self.c_step = self.c_start_step
         self.set_next_goal(old_obs)
         
-        total_steps = self.ag.max_step# + self.c.memory_size
+        
         if self.m.is_SF and self.gl.paralel == 0:   
             iterator = tqdm(range(self.c_start_step, total_steps),
                                                   ncols=70, initial=self.c_start_step)
