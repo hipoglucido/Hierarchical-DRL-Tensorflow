@@ -308,7 +308,7 @@ class hDQNSettings(AgentSettings):
         self.agent_type = 'hdqn'
         self.architecture = [64, 64]
         self.architecture_duel = [64]
-        self.memory_size = 5e4
+        self.memory_size = int(5e4)
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
@@ -348,7 +348,7 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = 1e6        
+        self.memory_size = int(1e6)
 #        self.max_step = 500 * self.scale        
         self.batch_size = 32
         self.random_start = 30
@@ -369,7 +369,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 2000#min(5 * self.scale, 500)
+        self.test_step = 4000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -391,7 +391,7 @@ class MetaControllerSettings(AgentSettings):
         
         self.history_length = 1    
         
-        self.memory_size = 5e4# * self.scale
+        self.memory_size = int(5e4)# * self.scale
          
         #max_step = 5000 * scale
         

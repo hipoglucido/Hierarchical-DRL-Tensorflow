@@ -649,10 +649,10 @@ class HDQNAgent(Agent):
             #self.global_step = tf.Variable(0, trainable=False)
 
             if self.ag.pmemory:
-                
-                self.c_loss = tf.reduce_mean(weighted_huber_loss(y_true  = self.c_target_q_t,
+                self.c_loss_aux = weighted_huber_loss(y_true  = self.c_target_q_t,
                                                          y_pred  = c_q_acted,
-                                                         weights = self.c_loss_weight),
+                                                         weights = self.c_loss_weight)
+                self.c_loss = tf.reduce_mean(self.c_loss_aux,
                                               name = 'c_loss')
             else:
                 self.c_loss_aux = huber_loss(y_true = self.c_target_q_t,
