@@ -107,12 +107,16 @@ class DQNAgent(Agent):
         self.start_step = self.step_op.eval()
         if self.ag.fresh_start:
             self.start_step = 0
-        self.epsilon = Epsilon(self.ag, self.start_step)
-        
+        total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
+        self.epsilon = Epsilon(start_value = 1.,
+                                  end_value   = .05,
+                                  start_t     = self.start_step,
+                                  end_t       = total_steps,
+                                  learn_start = self.ag.learn_start)
         old_obs = self.new_episode()
 
         self.m.start_timer()
-        total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
+        
         if self.m.is_SF and self.gl.paralel == 0:   
             iterator = tqdm(range(self.start_step, total_steps),
                                                   ncols=70, initial=self.start_step)

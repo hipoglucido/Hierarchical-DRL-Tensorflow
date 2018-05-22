@@ -266,7 +266,7 @@ class DQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
         #self.max_step = 500 * self.scale
-        self.memory_size = 100000
+        self.memory_size = int(1e6)
         
         self.batch_size = 32
         self.random_start = 30
@@ -276,7 +276,7 @@ class DQNSettings(AgentSettings):
         self.learning_rate = 0.00025
         self.learning_rate_minimum = 0.00025
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = int(.001 * self.max_step)
+        self.learning_rate_decay_step = int(.01 * self.max_step)
         
         self.ep_end = 0.05
         self.ep_start = 1.
@@ -284,10 +284,10 @@ class DQNSettings(AgentSettings):
         
         self.history_length = 1
         self.train_frequency = 4
-        self.learn_start = 1000#5. * self.scale
+        self.learn_start = 500
         
-        self.architecture = [25, 25]
-        self.architecture_duel = [16]
+        self.architecture = [64, 64]
+        self.architecture_duel = [64]
         
         self.test_step = 3500#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -360,11 +360,7 @@ class ControllerSettings(AgentSettings):
         self.learning_rate_decay = 0.96
         self.learning_rate_decay_step = int(.01 * self.max_step)
         
-        self.ep_end = 0.05
-        self.ep_start = 1.
-        self.ep_end_t = int(self.max_step / 2)
-        
-        
+ 
         
         self.architecture = None
         self.architecture_duel = None
@@ -409,7 +405,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 500#min(5. * self.scale, 20000)
+        self.learn_start = 500
         
         self.architecture = None
         self.architecture_duel = None
