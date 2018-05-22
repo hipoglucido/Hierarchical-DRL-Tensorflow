@@ -109,7 +109,7 @@ class Environment():
                 if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
                     if self.gym.goal_has_changed:
                         self.gym.panel.add(key  = 'actions',
-                                       item     = '------')
+                                       item     = 'G_%s:' % info['goal_name'])
                         self.gym.panel.add(key  = 'goals',
                                            item = info['goal_name'])
                         self.gym.goal_has_changed = False

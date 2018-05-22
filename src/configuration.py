@@ -369,7 +369,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 4000#min(5 * self.scale, 500)
+        self.test_step = 5000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -500,6 +500,7 @@ class SpaceFortressSettings(EnvironmentSettings):
 
         self.record = False
         self.stats = False
+        self.mines = False
         self.update(new_attrs)
 
 class SpaceFortressControlSettings(SpaceFortressSettings):

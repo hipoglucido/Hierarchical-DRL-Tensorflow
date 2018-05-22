@@ -282,13 +282,13 @@ class SFEnv(gym.Env):
         
             
         
-    def generate_video(self, delete_images = True):
+    def generate_video(self):
         
       
         video_name = "ep%d_%s_R%d.mp4" % (self.ep_counter, self.current_time, self.ep_reward)
         
         video_path = os.path.join(self.episode_dir, video_name)
-        perc = .7
+        
    
         
         (original_width, original_heigth) = self.imgs[0].size
@@ -513,12 +513,15 @@ class SFEnv(gym.Env):
         
         libpath=self.config.env.library_path
 
-        libname = self.env_name.split('-')[0].lower()
 
-
-        libname += '_frame_lib.so'
-
-
+        first = self.env_name.split('-')[0].lower()
+        if self.config.env.mines:
+            second = '_mines'
+        else:
+            second = ''
+#            assert 0
+        libname =  '%s%s_frame_lib.so' % (first, second)
+        
         # Link the environment to the shared libraries
         lib_dir = os.path.join(libpath, libname)
 #        print(lib_dir)

@@ -43,6 +43,7 @@ env_args.add_argument("--total_states", default = None, type = int)
 env_args.add_argument("--factor", default = None, type = int)
 env_args.add_argument("--render_delay", default = None, type = int)
 env_args.add_argument("--action_repeat", default = None, type = int)
+env_args.add_argument("--mines", default = None, type = utils.str2bool)
 
 
 # AGENT PARAMETERS

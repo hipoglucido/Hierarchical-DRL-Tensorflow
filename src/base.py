@@ -5,6 +5,7 @@ import inspect
 import tensorflow as tf
 import numpy as np
 import utils
+import shutil
 from functools import reduce
 import random
 from utils import linear, clipped_error
@@ -430,7 +431,7 @@ class Agent(object):
             os.makedirs(self.checkpoints_dir)
         self.saver.save(self.sess, self.checkpoints_dir, global_step=step)
         msg = "\nSaved checkpoint step=%d" % (step)#, self.checkpoints_dir)
-        #print(msg)
+        print(msg)
 
     def load_model(self):
         print(" [*] Loading checkpoints...")
@@ -449,6 +450,12 @@ class Agent(object):
             success = False
         self.config.ag.mode = temp
         return success
+    def delete_last_checkpoints(self):
+        try:
+            shutil.rmtree(os.path.join(self.config.gl.checkpoints_dir,
+                                self.config.model_name))
+        except FileNotFoundError:
+            pass
         
     def write_configuration(self):
         filename = self.config.model_name + "_" + "cnf.txt"

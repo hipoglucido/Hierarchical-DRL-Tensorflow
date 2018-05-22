@@ -5,7 +5,7 @@ CREATE_BINARY=no
 
 # Uncomment to specify parameters
 PARAM=
-PARAM+=-D GUI_INTERFACE #** Full sized and colored game renders **
+#PARAM+=-D GUI_INTERFACE #** Full sized and colored game renders **
 #PARAM+=-D GRID_MOVEMENT #** Lowers the control order to a direct type of control **
 #PARAM+=-D NO_WRAP #** Turns off wrapping **
 #PARAM+=-D NO_DIRECTION #** Turns off movement based on the ships nose direction **
