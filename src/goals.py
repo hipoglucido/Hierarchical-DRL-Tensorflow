@@ -15,7 +15,11 @@ class Goal(metaclass = ABCMeta):
         
     def setup_epsilon(self, config, start_step):
         
-        self._epsilon = Epsilon(config, start_step)
+        self._epsilon = Epsilon(start_value = 1.,
+                                  end_value   = .05,
+                                  start_t     = start_step,
+                                  end_t       = config.max_step,
+                                  learn_start = 1000)
         
     @property
     def epsilon(self):
