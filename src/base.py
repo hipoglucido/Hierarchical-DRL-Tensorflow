@@ -13,13 +13,13 @@ from configuration import Constants as CT
 pp = pprint.PrettyPrinter().pprint
 from environment import Environment
 class Epsilon():
-    def __init__(self, config, start_step):
-        self.start = config.ep_start
-        self.end = config.ep_end
-        self.end_t = config.ep_end_t
+    def __init__(self, start_value, end_value, start_t, end_t, learn_start):
+        self.start = start_t
+        self.end = end_t
+        self.end_t = end_t
         
-        self.learn_start = config.learn_start
-        self.step = start_step
+        self.learn_start = learn_start
+        self.step = start_t
     
     def steps_value(self, step, learn_start = None):
         if learn_start is None:
@@ -450,6 +450,7 @@ class Agent(object):
             success = False
         self.config.ag.mode = temp
         return success
+    
     def delete_last_checkpoints(self):
         try:
             shutil.rmtree(os.path.join(self.config.gl.checkpoints_dir,
