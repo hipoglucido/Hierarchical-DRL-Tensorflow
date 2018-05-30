@@ -399,7 +399,7 @@ void SF_iteration()
 	//     if(Mine_Type==FOE) Find_Interval();
 	//     Display_Interval_Flag=OFF;
 	// }
-	// Accumulate_Data();
+	Accumulate_Data();
 	// Handle_Bonus();
 
 //	Score=Points+Velocity+Control+Speed;

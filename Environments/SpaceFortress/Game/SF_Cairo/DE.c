@@ -357,7 +357,7 @@ void set_key(int key_value)
 // For the python interface
 int get_score()
 {
-	return Score;
+	return Score + Penalize_Wrap + 99;
 }
 
 // Resets the Space fortress game (i.e. the non gtk standard drawing for learning surface)

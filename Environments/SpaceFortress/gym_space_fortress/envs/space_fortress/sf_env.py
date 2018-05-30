@@ -114,6 +114,8 @@ class SFEnv(gym.Env):
         self.ep_reward = 0
         self.goal_has_changed = False
         self.print_shit = False
+        self.currently_wrapping = False
+        self.penalize_wrapping = False
         
     def _seed(self):
         #TODO
@@ -142,6 +144,8 @@ class SFEnv(gym.Env):
        
         self.update_logic()
         reward_delta = self.score() - self.config.env.time_penalty
+        if self.penalize_wrapping:
+            reward_delta -= 1
         reward += reward_delta
         done = self.terminal_state()
         if self.env_name == 'SFC-v0':
@@ -304,12 +308,36 @@ class SFEnv(gym.Env):
         for img in self.imgs:
             video.write(img)
         video.release()
-       
-            
+    
+    def check_wrapping(self, obs):
+        """
+        Checks if the spaceship is wrapping. If yes, that should be penalized
+        """
+        i = self.get_raw_feature(obs, 'ship_pos_i')
+        j = self.get_raw_feature(obs, 'ship_pos_j')
+        eps = 0.02
+        if 0 <= i < eps or \
+               0 <= j < eps or \
+               1 - eps < i <= 1 or \
+               1 - eps < j <= 1:
+            if not self.currently_wrapping:
+                self.penalize_wrapping = True
+            else:
+                self.penalize_wrapping = False
+            self.currently_wrapping = True
+        else:
+            self.penalize_wrapping = False
+            self.currently_wrapping = False
+ 
     def get_observation(self):
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
 #        print("obs:",obs)
         obs = self.scale_observation(obs)
+        
+        #Check if spaceship is wrapping and penalize
+        if self.is_wrapper:
+            self.check_wrapping(obs)
+                      
         preprocessed_obs = self.preprocess_observation(obs)
         
             

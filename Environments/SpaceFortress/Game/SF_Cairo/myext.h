@@ -24,6 +24,10 @@
 //	int score;
 //};
 
+////////////////
+extern int Penalize_Wrap;
+///////////////
+
 // Addded for backwards compability
 extern int Missile_X;
 extern int Missile_Y;

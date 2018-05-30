@@ -387,6 +387,7 @@ float get_score()
 {
 	float reward = Score;
 	Score = 0.0;
+	Penalize_Wrap = 0;
 	return reward;
 }
 

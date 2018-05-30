@@ -80,7 +80,7 @@ class HumanAgent():
                     msg += "%s:\t%.5f\n" % (feature_name, feature)
                 #observation_str = '\t  '.join([str(round(f,3)) for f in observation])
                 k = self.current_key.replace('Key.', '')
-                msg += '\nA:%s, R:%.2f, T%s' \
+                msg += '\nA:%s\nR:%.2f, T%s' \
                             % (k, reward, done)
                 print(msg)
                 for i, goal in self.goals.items():

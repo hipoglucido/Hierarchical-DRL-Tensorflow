@@ -18,8 +18,8 @@
 #include "RS.h"
 #include "TCOL.h"
 
-
-//#include "myconst.h"
+//#include "myvars.c"
+#include "myconst.h"
 //#include "myext.h"
 
 // Addded
@@ -342,11 +342,12 @@ void Accumulate_Data()
 
      if((shipcenterdist<SMALL_HEXAGONE_SIZE_FACTOR*MaxX)&&
 	(Last_Center_Dist>SMALL_HEXAGONE_SIZE_FACTOR*MaxX))
-	 Control=Control-5;
+	 Penalize_Wrap = 1;//Control=Control-5;	 
      else
      if(shipcenterdist<BIG_HEXAGONE_SIZE_FACTOR*MaxX) Control=Control+7;
      else
 				     Control=Control+3;
+     Penalize_Wrap = 0;
      Last_Center_Dist=shipcenterdist;
 
 		/* if Wrap_Around  */
@@ -354,8 +355,14 @@ void Accumulate_Data()
      if(Wrap_Around_Flag)
        {
 	 Control=Control-35;
+	 
+	 Penalize_Wrap = 1;
+	 //Score = Score - 1;
 	 Wrap_Around_Flag=OFF;
        }
+       else
+
+       		Penalize_Wrap = 0;
 //     Update_Control(cr);
 //     Update_Points(cr);
 

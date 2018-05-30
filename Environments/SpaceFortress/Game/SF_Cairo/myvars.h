@@ -4,7 +4,7 @@
 #include "myconst.h"
 #include "myext.h"
 #include "myenums.h"
-
+int Penalize_Wrap;
 cairo_t *SF_canvas;
 cairo_surface_t *surface;
 cairo_font_options_t *font_options;

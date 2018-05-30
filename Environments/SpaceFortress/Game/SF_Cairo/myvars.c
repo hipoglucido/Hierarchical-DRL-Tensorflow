@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <math.h>
 
+/////////////////////////
+int Penalize_Wrap;
+////////////////////////
+
 // Addded for backwards compability
 int Missile_X;
 int Missile_Y;
@@ -20,6 +24,7 @@ cairo_surface_t *rgb_surface;
 
 cairo_t *SF_canvas;
 cairo_surface_t *surface;
+
 //cairo_font_options_t *font_options;
 
 //cairo_path_t *PrevShip;
