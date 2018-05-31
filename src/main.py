@@ -37,7 +37,7 @@ gl_args.add_argument("--date", default = None, type = str)
 # ENVIRONMENT PARAMETERS
 env_args = parser.add_argument_group('Environment')
 env_args.add_argument("--mdp_prob", default = None)
-env_args.add_argument("--env_name", choices = CT.env_names ,default = "ez_mdp-v0")
+env_args.add_argument("--env_name", choices = CT.env_names ,default = "SF-v0")
 env_args.add_argument("--right_failure_prob", default = None, type = float)
 env_args.add_argument("--total_states", default = None, type = int)
 env_args.add_argument("--factor", default = None, type = int)
@@ -111,7 +111,7 @@ def execute_experiment(args):
     
     #Environment settings
     utils.insert_dirs(cnf.gl.env_dirs)
-    
+      
     
     if args['env_name'] == 'SFC-v0':
         #Space Fortress

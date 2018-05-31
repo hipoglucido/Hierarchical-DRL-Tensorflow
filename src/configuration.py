@@ -105,7 +105,7 @@ class Configuration:
             try:
                 dictionary[settings] = getattr(self, settings).to_dict()
             except Exception as e:
-                print(e)
+                pass#print(e)
                 
         return dictionary
     
@@ -285,10 +285,10 @@ class DQNSettings(AgentSettings):
         
         self.history_length = 1
         self.train_frequency = 4
-        self.learn_start = 500
+        self.learn_start = 10000
         
         self.architecture = [64, 64]
-        self.architecture_duel = [64]
+        self.architecture_duel = [32, 32]
         
         self.test_step = 3500#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -308,7 +308,7 @@ class hDQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
         self.architecture = [64, 64]
-        self.architecture_duel = [64]
+        self.architecture_duel = [32, 32]
         self.memory_size = int(5e4)
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
@@ -366,7 +366,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 5000#min(5 * self.scale, 500)
+        self.test_step = 3500#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -375,10 +375,10 @@ class ControllerSettings(AgentSettings):
         
         self.train_frequency = 4
         #Visualize weights initialization in the histogram
-        self.learn_start = 1000#min(5. * self.scale, self.test_step)
+        self.learn_start = 10000#min(5. * self.scale, self.test_step)
         self.learnt_threshold = 0.8
     
-        self.memory_minimum = 1000
+        self.memory_minimum = 10000
     
     
     
@@ -406,7 +406,7 @@ class MetaControllerSettings(AgentSettings):
         self.ep_end_t = int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 500
+        self.learn_start = 1000
         
         self.architecture = None
         self.architecture_duel = None
@@ -417,7 +417,7 @@ class MetaControllerSettings(AgentSettings):
         
 #        self.ignore = ['ignore']
         self.prefix = 'mc'
-        self.memory_minimum = 10000
+        self.memory_minimum = 1000
         
     
 class EnvironmentSettings(GenericSettings):

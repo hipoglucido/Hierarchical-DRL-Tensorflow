@@ -11,31 +11,25 @@ class Goal(metaclass = ABCMeta):
         self.name = str(name)
         self.steps_counter = 0.
         self.set_counter = 0.
-        self.achieved_counter = 0.        
+        self.achieved_counter = 0.
         
-    def setup_epsilon(self, config, start_step):
+        self._epsilon = Epsilon()
         
-        self._epsilon = Epsilon(start_value = 1.,
-                                  end_value   = .05,
-                                  start_t     = start_step,
-                                  end_t       = config.max_step,
-                                  learn_start = 1000)
-        
+#    def setup_epsilon(self, config, start_step):
+#        
+#        self._epsilon = Epsilon(start_value = 1.,
+#                                  end_value   = .05,
+#                                  start_t     = start_step,
+#                                  end_t       = config.max_step,
+#                                  learn_start = 1000)
+#        
     @property
     def epsilon(self):
-#        return self._epsilon.mixed_value(self.steps_counter,
-#                                    self.set_counter,
-#                                    self.achieved_counter)
-        
-        result = self._epsilon.successes_value(attempts = self.set_counter,
-                                            successes = self.achieved_counter)
-#        if self.n == 11:
-#            print("_________")
-#            print(self.set_counter)
-#            print(self.achieved_counter)
-#            print(result)
-#            print("_________")
-#            assert result == 1
+
+        result = self._epsilon.successes_value(
+                            attempts = self.set_counter,
+                            successes = self.achieved_counter)
+
         return result
     
     def setup_one_hot(self, length):
@@ -99,8 +93,7 @@ class SFGoal(Goal):
         factor = int(math.sqrt(n))
         l = 1 / factor
         matrix = np.zeros(n, dtype = int)
-        matrix[region] = 1
-        
+        matrix[region] = 1        
         matrix = matrix.reshape((factor, factor))
         R_i, R_j = np.where(matrix == 1)
         R_i, R_j = R_i[0], R_j[0]
@@ -361,7 +354,7 @@ def generate_SF_goals(environment, goal_names):
     goal_names = [gn for gn in goal_names if gn not in goal_names_to_exclude]
     goal_size = len(goal_names) #onehot
     for i, goal_name in enumerate(goal_names):
-        print(goal_name)
+        #print(goal_name)
         goals[i] = SFGoal(n = i,
                           name = goal_name,
                           environment = environment)

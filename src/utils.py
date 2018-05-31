@@ -19,7 +19,11 @@ from PIL import Image
 ################################
 #	 AUXILIARY FUNCTIONS
 ################################
-
+def pp(prefix, word):
+    """
+    Pp stands for preprend prefix
+    """
+    return prefix + word
     
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
@@ -66,7 +70,7 @@ def calc_gpu_fraction(fraction_string):
     idx, num = float(idx), float(num)
 
     fraction = 1 / (num - idx + 1)
-    print(" [*] GPU : %.4f" % fraction)
+#    print(" [*] GPU : %.4f" % fraction)
     return fraction
 
 import numpy as np
@@ -121,13 +125,6 @@ def load_npy(path):
 #	 OPS
 ################################
 
-def clipped_error(y_true, y_pred):
-    x = tf.abs(y_true - y_pred)
-    # Huber loss
-    try:
-        return tf.select(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
-    except:
-        return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
 
 def linear(input_, output_size, stddev=0.0002, bias_start=0.0,
     activation_fn = None, name = 'linear'):
@@ -152,7 +149,7 @@ def linear(input_, output_size, stddev=0.0002, bias_start=0.0,
 
 
 
-def huber_loss(y_true, y_pred, max_grad=1.):
+def huber_loss(TD, weights = None, max_grad=1.):
     """Calculate the huber loss.
     See https://en.wikipedia.org/wiki/Huber_loss
     Parameters
@@ -169,14 +166,14 @@ def huber_loss(y_true, y_pred, max_grad=1.):
     tf.Tensor
       The huber loss.
     """
-    a = tf.abs(y_true - y_pred)
-    less_than_max = 0.5 * tf.square(a)
-    greater_than_max = max_grad * (a - 0.5 * max_grad)
-    return tf.where(a <= max_grad, x=less_than_max, y=greater_than_max)
+    #a = tf.abs(y_true - y_pred)
+    less_than_max = 0.5 * tf.square(TD)
+    greater_than_max = max_grad * (TD - 0.5 * max_grad)
+    return tf.where(TD <= max_grad, x=less_than_max, y=greater_than_max)
 
 
 
-def mean_huber_loss(y_true, y_pred, max_grad=1.):
+def mean_huber_loss(TD, max_grad=1.):
     """Return mean huber loss.
     Same as huber_loss, but takes the mean over all values in the
     output tensor.
@@ -194,10 +191,10 @@ def mean_huber_loss(y_true, y_pred, max_grad=1.):
     tf.Tensor
       The mean huber loss.
     """
-    return tf.reduce_mean(huber_loss(y_true, y_pred, max_grad=max_grad))
+    return tf.reduce_mean(huber_loss(TD, max_grad=max_grad))
 
 
-def weighted_huber_loss(y_true, y_pred, weights, max_grad=1.):
+def weighted_huber_loss(TD, weights, max_grad=1.):
     """Return mean huber loss.
     Same as huber_loss, but takes the mean over all values in the
     output tensor.
@@ -217,7 +214,7 @@ def weighted_huber_loss(y_true, y_pred, weights, max_grad=1.):
     tf.Tensor
       The mean huber loss.
     """
-    return tf.reduce_mean(weights*huber_loss(y_true, y_pred, max_grad=max_grad))
+    return tf.reduce_mean(weights*huber_loss(TD, max_grad=max_grad))
 
     
 

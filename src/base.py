@@ -1,46 +1,55 @@
 import os
-import pprint
-#from configuration import MetaControllerParameters, ControllerParameters
-import inspect
 import tensorflow as tf
 import numpy as np
 import utils
 import shutil
 from functools import reduce
 import random
-from utils import linear, clipped_error
+from utils import linear, pp
 from configuration import Constants as CT
-pp = pprint.PrettyPrinter().pprint
+
 from environment import Environment
 class Epsilon():
-    def __init__(self, start_value, end_value, start_t, end_t, learn_start):
-        self.start = start_t
-        self.end = end_t
+    def __init__(self):
+        pass
+    
+    def setup(self, start_value, end_value, start_t, end_t, learn_start):
+        """
+        Sets up linear decay of epsilon
+        """
+        self.start = start_value
+        self.end = end_value
         self.end_t = end_t
         
         self.learn_start = learn_start
         self.step = start_t
-    
+        
     def steps_value(self, step, learn_start = None):
+        """
+        Epsilon linear decay.
+        Returns the epsilon value for a given step according to the setup
+        """
         if learn_start is None:
             learn_start = self.learn_start
         epsilon = self.end + \
                 max(0., (self.start - self.end) * \
                  (self.end_t -max(0., step - learn_start)) / self.end_t)
-        assert epsilon > 0
+        assert 0 <= epsilon <= 1, epsilon
         return epsilon
     
     def successes_value(self, successes, attempts):
+        """
+        Epsilon goal success decay
+        Returns the epsilon value for a given number of successes / attempts
+        ratio
+        """
         epsilon = 1. - successes / (attempts + 1)
         
         assert epsilon > 0, str(epsilon) + ', '+ str(successes) + ', ' + str(attempts)
-#        print('99999',str(epsilon) + ', '+ str(successes) + ', ' + str(attempts))
+
         return epsilon        
     
-    def mixed_value(self, successes, attempts):
-        successes_value = self.successes_value(successes, attempts)
-        #steps_value = self.steps_value(step)
-        return max(successes_value, .1)
+
         
     
 class Agent(object):
@@ -71,76 +80,118 @@ class Agent(object):
             out = self.environment.gym.one_hot_inverse(observation)
         msg = '\nS:\n%s' % str(out)
         self.add_output(msg)
+        
     def process_info(self, info):
         if self.environment.env_name == 'SF-v0':
             self.m.fortress_hits += info['fortress_hits']
-    def is_playing(self): return self.ag.mode == 'play'
+            
+    def play(self):
+        self.train()
+        
+    def is_playing(self):
+        return self.ag.mode == 'play'
+    
+    def update_target_q_network(self, prefix):
+        """
+        Copies the parameters of the online network to the offile (target)
+        network
+        """
+        #prefix = self.extend_prefix(prefix)
+        w = self.get(prefix, 'w')
+        target_w_assign_op = self.get(prefix, 'target_w_assign_op')
+        target_w_input = self.get(prefix, 'target_w_input')
+        for name in w.keys():
+#            print(name)
+            parameters = w[name].eval()
+#            parameters_target = self.target_w[name].eval()
+#            print(parameters)
+#            print("******")
+#            print(parameters_target)
+            target_w_assign_op[name].eval(
+                            {target_w_input[name]: parameters})
+            
+    def is_testing_time(self, prefix):
+        if not self.is_ready_to_learn(prefix = prefix):
+            return False
+        ag = self.get(prefix, 'ag')
+        step = self.get(prefix, 'step')
+        return step % ag.test_step == ag.test_step - 1 
+                  
+    def extend_prefix(self, prefix):
+        """
+        Adds underscore to prefix if needed
+        The prefix refer to a specific module: controller, meta-controller for
+        hdqn or nothing for the baseline dqn
+        
+        params:
+            prefix: string ('', 'mc', 'c')
+        returns:
+            modified prefix
+        """
+        return prefix + '_' if prefix != '' else prefix
+        
     def is_ready_to_learn(self, prefix):
+        """
+        Checks if all the requirements for starting to update the network
+        parameters are met
+        """
         if self.is_playing():
             return False
             
-        prefix = prefix + '_' if prefix != '' else prefix
-        memory = getattr(self, prefix + "memory")
-        current_step = getattr(self, prefix + "step")
-        start_step = getattr(self, prefix + "start_step")
-        cnf = 'ag' if prefix == '' else prefix[:-1]
-        learn_start = getattr(getattr(self, cnf), "learn_start")
-        memory_minimum = getattr(getattr(self, cnf), "memory_minimum")
-        is_ready = current_step > start_step + learn_start and \
-                                memory.count > memory_minimum
-#        if prefix == '':
-#            memory = getattr(self,)self.memory
-#            step = self.step
-#            start_step = self.start_step
-#            learn_start = self.ag.learn_start
-#            is_ready = self.step > self.ag.learn_start + self.start_step
-#        elif prefix == 'mc':            
-#            memory = self.mc_memory
-#            step = self.step
-#            start_step = self.start_step
-#            learn_start = self.ag.learn_start
-#            is_ready = self.mc_step >  self.mc.learn_start + self.c_start_step
-#        elif prefix == 'c':
-#            is_ready = self.c_step > self.c.learn_start + self.c_start_step
+        #prefix = prefix + '_' if prefix != '' else prefix
+        #prefix = self.extend_prefix(prefix)
+        memory = self.get(prefix, "memory")
+        current_step = self.get(prefix, "step")
+        start_step = self.get(prefix, "start_step")
+        ag = self.get(prefix, 'ag')
+       
+        is_ready = current_step > start_step + ag.learn_start and \
+                                memory.count > ag.memory_minimum
+        if prefix == 'mc':
+            #MC only starts learning if C knows how to achieve goals
+            is_ready = is_ready and self.c_learnt                                
         return is_ready
     def new_episode(self):
-        #screen, reward, action, terminal = self.environment.new_random_game()
-        screen, _, _, _ = self.environment.new_game()        
-        #self.history.fill_up(screen)
-#        if self.m.is_hdqn:
-#            full_memory = self.mc_memory.is_full()
-#        else:
-#            full_memory = self.memory.is_full()
-#        full_memory = 1
-        self.display_episode = random.random() < self.gl.display_prob
+        """
+        Creates a new episode
         
-        return screen        
+        returns:
+            float array with the first environments observation
+        """
+        screen, _, _, _ = self.environment.new_game()
+        # Decide if this episode will be displayed
+        self.display_episode = random.random() < self.gl.display_prob        
+        return screen      
+    
     def add_output(self, txt):
         self.output += txt
         
     def console_print(self, new_obs, action, reward, intrinsic_reward = None):
+        """
+        Auxiliar function for printing information while training
+        it is not useful in SF
+        """
         self.display_environment(new_obs)
-#        msg = '\nS:\n' + str(out) + '\nA: ' + str(action) + '\nR: ' + str(reward)
         msg = '\nA: %d\nR: %.2f' % (action, reward)
         if self.m.is_hdqn:
             extra = ', G: %d, IR: %.2f' % (self.current_goal.n, intrinsic_reward)
-            #extra += '\n' + str(self.goal_probs)
             if intrinsic_reward in [1, 0.99]:
                 extra += ' Goal accomplished!'
             msg += extra
-#            msg = msg + ', G: ' + str(self.current_goal.n) + ', IR: ' + str(intrinsic_reward)
-        
-      
         self.add_output(msg)
         if not self.m.is_SF:
             print(self.output)
+        
     def console_print_terminal(self, reward, observation):
+        """
+        Auxiliar function for printing information while training and
+        particularly at the end of an episode
+        it is not useful in SF
+        """
         if self.m.is_hdqn:
-#            observation = self.c_history.get()[-1]
-            perc = round(100 * self.c_step / self.c.max_step, 4)
+            perc = round(100 * self.c_step / self.c_ag.max_step, 4)
             ep_r = self.m.mc_ep_reward
         else:
-            #observation = self.history.get()[-1]
             perc = round(100 * self.step / self.ag.max_step, 4)
             ep_r = self.m.ep_reward
         if self.environment.env_name == 'key_mdp-v0':
@@ -149,7 +200,6 @@ class Agent(object):
             out = ''
         else:
             out = self.environment.gym.one_hot_inverse(observation)
-#        msg = '\nS:\n' + str(out) + '\nEP_R: ' + str(ep_r)
         msg = '\nS:\n%s\nEP_R: %.2f' % (str(out), ep_r)
         if reward == 1:
             msg += "\tSUCCESS"
@@ -158,16 +208,16 @@ class Agent(object):
         if not self.m.is_SF:
             print(self.output)
         
-        
-#        assert reward != 1
-        
 
             
     def setup_summary(self, scalar_summary_tags, histogram_summary_tags):    
         """
-        average.X   : mean X per step
-        test.X      : total X per testing inverval
-        episode.X Y : X Y per episode
+        Sets up the tensorboard summaries for monitoring the training
+        
+        params:
+            scalar_summary_tags: list of strings with the names of scalars
+            histogram_summary_tags: list of strings with the name of the
+                histograms
         
         """        
         with tf.variable_scope('summary'):
@@ -188,38 +238,73 @@ class Agent(object):
                 self.summary_ops[tag]    = tf.summary.histogram(tag,
                                             self.summary_placeholders[tag])
             
-#            print("Scalars: ", ", ".join(scalar_summary_tags))
-#            print("Histograms: ", ", ".join(histogram_summary_tags))
+            #print("Scalars: ", ", ".join(scalar_summary_tags))
+            #print("Histograms: ", ", ".join(histogram_summary_tags))
         self.writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
+    def get(self, prefix, attr_basename):
+        extended_prefix = self.extend_prefix(prefix)
+        attr_name = pp(extended_prefix, attr_basename)
+        attr = getattr(self, attr_name)
+        return attr
+    def set(self, prefix, attr_basename, value):
+        extended_prefix = self.extend_prefix(prefix)
+        attr_name = pp(extended_prefix, attr_basename)
+        setattr(self, attr_name, value)
+        
+    def learn_if_ready(self, prefix):
+        if not self.is_ready_to_learn(prefix = prefix):
+            return
+        #prefix = self.extend_prefix(prefix)
+      
+        
+        flag_start_training = self.get(prefix, 'flag_start_training')
+        step = self.get(prefix, 'step')
+        cnf = self.get(prefix, 'ag')
+        
+        memory = self.get(prefix, 'memory')
+        #target_q_update_step = self.get(prefix, 'target_q_update_step')
+        #update_target_q_network = self.get(prefix, 'update_target_q_network')
+        q_learning_mini_batch = self.get(prefix, 'q_learning_mini_batch')
+        
+        if not flag_start_training:
+                self.set(prefix, 'flag_start_training', True)
+                name = prefix.upper() if prefix != '' else 'agent'
+                print("\nLearning of %s started at step %d with %d experiences"\
+                                      % (name, step, memory.count))
+        
+        if step % cnf.train_frequency == 0:
+            q_learning_mini_batch()
 
+        if step % cnf.target_q_update_step == cnf.target_q_update_step - 1:
+            self.update_target_q_network(prefix)
+            
+        if prefix == 'mc':
+            #Start mc_epsilon annealing
+            self.mc_epsilon.learn_start = self.c_step
+            
     def generate_target_q_t(self, prefix, reward, s_t_plus_1, terminal, g_t_plus_1 = None):
-        if prefix == '':
-            pass
-        elif prefix == 'mc':
-            pass
-        elif prefix == 'c':
-            pass
-            #g_t = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]]) 
-#            s_t = s_t[:, :, self.ag.goal_size:]
-#            g_t_plus_1 = np.vstack([g[0] for g in s_t[:, :, :self.ag.goal_size]])
-#            s_t_plus_1 = s_t_plus_1[:, :, self.ag.goal_size:]
-        else:
-            assert 0
-        prefix = prefix + '_' if prefix != '' else prefix
+        """
+        Generates y_true that will be used for computing the loss and be
+        able to train.
+        
+        params:
+            
+        """
+        #prefix = self.extend_prefix(prefix)
         
         
-        target_s_t = getattr(self, prefix + 'target_s_t')
+        target_s_t = self.get(prefix, 'target_s_t')
         if self.config.ag.double_q:
             #DOUBLE Q LEARNING
             #Get object references
-            q_action = getattr(self, prefix + 'q_action')
-            s_t = getattr(self, prefix + 's_t')
-            target_q_with_idx = getattr(self, prefix + 'target_q_with_idx')
-            target_q_idx = getattr(self, prefix + 'target_q_idx')
+            q_action = self.get(prefix, 'q_action')
+            s_t = self.get(prefix, 's_t')
+            target_q_with_idx = self.get(prefix, 'target_q_with_idx')
+            target_q_idx = self.get(prefix, 'target_q_idx')
             
             #Predict action with ONLINE Q network
             q_action_input = {s_t: s_t_plus_1}
-            if prefix == 'c_': #Add goal to input
+            if prefix == 'c': #Add goal to input
                 q_action_input[self.c_g_t] = g_t_plus_1
             pred_action = q_action.eval(q_action_input)
             
@@ -228,7 +313,7 @@ class Agent(object):
                     target_s_t: s_t_plus_1,
                     target_q_idx: [[idx, pred_a] for idx, pred_a in \
                                                        enumerate(pred_action)]}
-            if prefix == 'c_': #Add goal to input
+            if prefix == 'c': #Add goal to input
                 target_q_with_idx_input[self.c_target_g_t] = g_t_plus_1
             q_t_plus_1_with_pred_action = target_q_with_idx.eval(target_q_with_idx_input)
        
@@ -236,11 +321,11 @@ class Agent(object):
             target_q_t = (1. - terminal) * self.ag.discount * \
                                         q_t_plus_1_with_pred_action + reward
         else:
-            
-            target_q = getattr(self, prefix + 'target_q')
+            # No double
+            target_q = self.get(prefix, 'target_q')
             terminal = np.array(terminal) + 0.
             target_q_input = {target_s_t: s_t_plus_1}
-            if prefix == 'c_':
+            if prefix == 'c':
                 target_q_input[self.c_target_g_t] = g_t_plus_1
             q_t_plus_1 = target_q.eval(target_q_input)
     
@@ -249,7 +334,7 @@ class Agent(object):
         
         return target_q_t        
     def add_dueling(self, prefix, input_layer):
-        print("ADDING due", prefix)
+        #print("ADDING due", prefix)
         if prefix in ['', 'target']:
             #DQN
             architecture = self.config.ag.architecture_duel
@@ -257,19 +342,19 @@ class Agent(object):
         else:
             #HDQN
             if prefix in ['mc', 'mc_target']:
-                architecture = self.mc.architecture_duel
+                architecture = self.mc_ag.architecture_duel
                 output_length = self.ag.goal_size
             elif prefix in ['c', 'c_target']:
-                architecture = self.c.architecture_duel
+                architecture = self.c_ag.architecture_duel
                 output_length = self.environment.action_size
             else:
                 assert 0
-        prefix = prefix + "_" if prefix != '' else prefix
-        parameters = getattr(self, prefix + 'w')
-        prefix = prefix.replace("target_", "")
+        
+        parameters = self.get(prefix, 'w')
+#        prefix = prefix.replace("target_", "")
         last_layer = input_layer
         
-        print("adding dense into ", prefix+'w')
+        #print("adding dense into ", prefix+'w')
         value_hid, histograms_v = self.add_dense_layers(
                         architecture = architecture,
                         input_layer = last_layer,
@@ -292,7 +377,7 @@ class Agent(object):
         parameters[aux2 + "_b"] = b_adv
         q = value + (adv - tf.reduce_mean(adv, reduction_indices = 1,
                                           keepdims = True))
-        print(q)
+        #print(q)
         return q    
      
     def inject_summary(self, tag_dict, step):
@@ -311,10 +396,102 @@ class Agent(object):
         except:
             pass
         pprint.pprint(attrs)
+        
+    def build_optimizer(self, prefix):
+        if prefix == '':
+            action_space_size = self.environment.action_size
+            cnf = self.ag
+        elif prefix == 'mc':
+            action_space_size = self.ag.goal_size
+            cnf = self.mc_ag
+        elif prefix == 'c':
+            action_space_size = self.environment.action_size
+            cnf = self.c_ag
+        else:
+            assert 0
+        prefix = self.extend_prefix(prefix)
+        with tf.variable_scope(pp(prefix, 'optimizer')):
+            if self.ag.pmemory:
+                loss_weight_name = pp(prefix, 'loss_weight')
+                loss_weight = tf.placeholder('float32', [None],
+                                             name = loss_weight_name)
+                setattr(self, loss_weight_name, loss_weight)
+                
+            target_q_t_name = pp(prefix, 'target_q_t')
+            target_q_t = tf.placeholder('float32', [None],
+                                               name=target_q_t_name)
+            setattr(self, target_q_t_name, target_q_t)
+            action_name = pp(prefix, 'action')
+            action = tf.placeholder('int64', [None],
+                                            name = action_name)
+            setattr(self, action_name, action)
+            action_one_hot_name = pp(prefix, 'action_one_hot')
+            action_one_hot = tf.one_hot(action, action_space_size,
+                                       1.0, 0.0, name = action_one_hot_name)
+            setattr(self, action_one_hot_name, action_one_hot)
+            
+            q_acted_name = pp(prefix, 'q_acted')
+            q = getattr(self, pp(prefix, 'q'))
+            q_acted = tf.reduce_sum(q * action_one_hot,
+                                   reduction_indices = 1, name = q_acted_name)
+            td_error_name = pp(prefix, 'td_error')
+            td_error = tf.abs(target_q_t - q_acted)
+            setattr(self, td_error_name, td_error)
+            #mc_delta = self.mc_target_q_t - mc_q_acted
+
+            #self.global_step = tf.Variable(0, trainable=False)
+            loss_aux_name = pp(prefix, 'loss_aux')
+            loss_name = pp(prefix, 'loss')
+            if self.ag.pmemory:
+                loss_function = utils.weighted_huber_loss
+                loss_weight = getattr(self, pp(prefix, 'loss_weight'))
+            else:
+                loss_function = utils.huber_loss
+                loss_weight = None
+            
+            loss_aux = loss_function(TD      = td_error,
+                                     weights = loss_weight)
+            setattr(self, loss_aux_name, loss_aux)
+            loss = tf.reduce_mean(loss_aux, name = loss_name)
+            setattr(self, loss_name, loss)
+            
+            learning_rate_step_name = pp(prefix, 'learning_rate_step')
+            learning_rate_step = tf.placeholder('int64', None,
+                                            name = learning_rate_step_name)
+            setattr(self, learning_rate_step_name, learning_rate_step)
+            
+            
+            learning_rate_op = tf.maximum(
+                    cnf.learning_rate_minimum,
+                    tf.train.exponential_decay(
+                        learning_rate = cnf.learning_rate,
+                        global_step   = learning_rate_step,
+                        decay_steps   = cnf.learning_rate_decay_step,
+                        decay_rate    = cnf.learning_rate_decay,
+                        staircase     = True))
+            setattr(self, pp(prefix, 'learning_rate_op'), learning_rate_op)
+            optim = tf.train.RMSPropOptimizer(
+                                learning_rate = learning_rate_op,
+                                momentum      = 0.95,
+                                epsilon       = 0.01).minimize(loss)
+            setattr(self, pp(prefix, 'optim'), optim)
+    def send_some_metrics(self, prefix):
+        prefix = self.extend_prefix(prefix)
+        learning_rate_name = pp(prefix, 'learning_rate')
+        learning_rate_op = getattr(self, pp(prefix, 'learning_rate_op'))
+        learning_rate_step = getattr(self, pp(prefix, 'learning_rate_step'))
+        step = getattr(self, pp(prefix, 'step'))
+        
+        learning_rate_value = learning_rate_op.eval({learning_rate_step: step})
+        setattr(self.m, learning_rate_name, learning_rate_value)
+        
+        memory_count = getattr(self, pp(prefix, 'memory')).count
+        setattr(self.m, pp(prefix, 'memory_size'), memory_count)
+        
     def add_dense_layers(self, architecture, input_layer, parameters, name_aux):
         #TODO delete config parameter
         last_layer = input_layer
-        print(last_layer, "as input")
+        #print(last_layer, "as input")
 #        prefix = prefix + "_" if prefix != '' else prefix
 #        
 #        parameters = getattr(self, prefix + 'w')
@@ -335,11 +512,11 @@ class Agent(object):
             parameters[layer_name + "_b"] = biases
             last_layer = layer
 #            print(layer_name, layer.get_shape().as_list(), 'added')        
-            print(layer, 'added', layer_name)
+            #print(layer, 'added', layer_name)
         return last_layer, histograms
 
     def create_target(self, config):
-        print("Creating target...")
+        #print("Creating target...")
 
         prefix = config.prefix + '_' if config.prefix != '' else config.prefix
         #config = config
@@ -386,7 +563,7 @@ class Agent(object):
             
             
             if self.ag.dueling:
-                print(aux4)
+                #print(aux4)
                 target_q = self.add_dueling(prefix = aux1, input_layer = last_layer)
             else:
                 target_q, weights, biases = \
@@ -394,7 +571,7 @@ class Agent(object):
                                    config.q_output_length, name=aux4)  
                 getattr(self, aux3)['q_w'] = weights
                 getattr(self, aux3)['q_b'] = biases                   
-            print(target_q)
+            #print(target_q)
             
             setattr(self, aux2, target_s_t)
             setattr(self, aux4, target_q)
@@ -405,7 +582,7 @@ class Agent(object):
                 setattr(self, aux6, target_q_idx)
                 setattr(self, aux7, target_q_with_idx)
     
-        self.show_attrs()
+        #self.show_attrs()
         with tf.variable_scope(prefix + 'pred_to_target'):
             target_w_input = {}
             target_w_assign_op = {}

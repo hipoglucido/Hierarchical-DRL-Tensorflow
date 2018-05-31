@@ -12,7 +12,7 @@ import time
 from base import Agent, Epsilon
 from history import History
 from replay_memory import ReplayMemory, PriorityExperienceReplay, OldReplayMemory
-from utils import linear, clipped_error, huber_loss, weighted_huber_loss
+from utils import linear, huber_loss, weighted_huber_loss
 from utils import get_time, save_pkl, load_pkl
 import utils
 class DQNAgent(Agent):
@@ -42,74 +42,19 @@ class DQNAgent(Agent):
         self.build_dqn()
 #        if self.ag.mode == 'play':
 #            self.gl.date = utils.get_timestamp() + "-" + self.gl.date
-        time.sleep(1)
-        self.config.print()
+#        time.sleep(1)
+#        self.config.print()
         self.write_configuration()
         
-#        assert self.ag.memory_size < self.ag.max_step
-    def play(self):
-        self.start_step = self.step_op.eval()
-        
-        
-        old_obs = self.new_episode()
-
-        self.m.start_timer()
-        self.step = 0
-        while 1:
-
-            # 1. predict
-            action = self.predict_next_action(old_obs)    
-       
-            # 2. act            
-            new_obs, reward, terminal = self.environment.act(action)
-           
-            if self.m.is_SF:
-                self.m.add_act(action)
-            else:
-                self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
-            if self.display_episode:
-                self.console_print(old_obs, action, reward)
-            
-                
-            
-            # 3. observe
-            self.observe(old_obs, action, reward, new_obs, terminal)
-            self.m.increment_external_reward(reward)
-            
-            if terminal:
-                if self.display_episode:
-                    self.console_print_terminal(reward, new_obs)
-                #self.m.mc_step_reward = 0
-                self.m.close_episode()
-                old_obs = self.new_episode()
-             
-            else:
-                old_obs = new_obs.copy()
-           
-            
-            self.step += 1
-            if self.step % self.ag.test_step != self.ag.test_step - 1:
-                continue   
-            
-            self.m.compute_test(prefix = '', update_count = 0)
-            self.m.compute_state_visits()
-            
-
-            summary = self.m.get_summary()
-            self.m.filter_summary(summary)
-            self.inject_summary(summary, self.step)
-            self.write_output()
-            
-            self.m.restart()
-        
-        
     def train(self):
+        self.flag_start_training = False
         self.start_step = self.step_op.eval()
         if self.ag.fresh_start:
             self.start_step = 0
         total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
-        self.epsilon = Epsilon(start_value = 1.,
-                                  end_value   = .05,
+        self.epsilon = Epsilon()
+        self.epsilon.setup(start_value    = self.ag.ep_start,
+                                  end_value   = self.ag.ep_end,
                                   start_t     = self.start_step,
                                   end_t       = total_steps,
                                   learn_start = self.ag.learn_start)
@@ -123,8 +68,8 @@ class DQNAgent(Agent):
         else:
             iterator = range(self.start_step, total_steps)
         
-        print("\nFilling memory with random experiences until step %d..." % \
-                                  (self.ag.learn_start))
+#        print("\nFilling memory with random experiences until step %d..." % \
+#                                  (self.ag.learn_start))
         for self.step in iterator:
             # 1. predict
             action = self.predict_next_action(old_obs)    
@@ -158,13 +103,14 @@ class DQNAgent(Agent):
             else:
                 old_obs = new_obs.copy()
            
-
-            if not self.is_ready_to_learn(prefix = ''):
-                #Monitor shouldn't start if learning hasn't
+            if not self.is_testing_time(prefix = ''):
                 continue
-            if self.step % self.ag.test_step != self.ag.test_step - 1:# or \
-                                #not self.memory.is_full():
-                continue   
+#            if not self.is_ready_to_learn(prefix = ''):
+#                #Monitor shouldn't start if learning hasn't
+#                continue
+#            if self.step % self.ag.test_step != self.ag.test_step - 1:# or \
+#                                #not self.memory.is_full():
+#                continue   
             self.m.compute_test(prefix = '', update_count = self.m.update_count)
             self.m.compute_state_visits()
             
@@ -176,11 +122,7 @@ class DQNAgent(Agent):
 
                 self.m.update_best_score()
                 
-           
-                
-            self.m.learning_rate = self.learning_rate_op.eval(
-                            {self.learning_rate_step: self.step})
-            self.m.memory_size = self.memory.count
+            self.send_some_metrics(prefix = '')
             summary = self.m.get_summary()
             self.m.filter_summary(summary)
             self.inject_summary(summary, self.step)
@@ -209,7 +151,7 @@ class DQNAgent(Agent):
         #reward = max(self.min_reward, min(self.max_reward, reward)) #TODO understand
         # NB! screen is post-state, after action and reward
         
-        assert np.sum(np.isnan(screen)) == 0, screen
+#        assert np.sum(np.isnan(screen)) == 0, screen
 #        if self.memory.is_full() and reward == -1:
 #            print("_________________rr_____________________")
 #            print("s_t\n",old_screen.reshape(3,3))
@@ -222,15 +164,18 @@ class DQNAgent(Agent):
         #self.memory.add(screen, reward, action, terminal)
         self.memory.add(old_screen, action, reward, screen, terminal)
         #self.history.add(screen)
-        
-        if self.is_ready_to_learn(prefix = '') and self.ag.mode == 'train':
-#        if self.memory.is_full():
-            if self.step % self.ag.train_frequency == 0:
-                self.q_learning_mini_batch()
-
-            if self.step % self.ag.target_q_update_step == \
-                                            self.ag.target_q_update_step - 1:
-                self.update_target_q_network()
+        self.learn_if_ready('')
+#        if self.is_ready_to_learn(prefix = ''):
+#            if not self.flag_start_training:
+#                print("\nLearning started at step %d with %d experiences in memory"\
+#                                      % (self.step, self.memory.count))
+#                self.flag_start_training = True
+#            if self.step % self.ag.train_frequency == 0:
+#                self.q_learning_mini_batch()
+#
+#            if self.step % self.ag.target_q_update_step == \
+#                                            self.ag.target_q_update_step - 1:
+#                self.update_target_q_network(prefix = '')
 
 
     def q_learning_mini_batch(self):
@@ -361,91 +306,71 @@ class DQNAgent(Agent):
 
         
         # optimizer
-        with tf.variable_scope('optimizer'):
-            if self.ag.pmemory:
-                self.loss_weight = tf.placeholder('float32', [None], name='loss_weight')
-            self.target_q_t = tf.placeholder('float32', [None], name='target_q_t')
-            self.action = tf.placeholder('int64', [None], name='action')
+        self.build_optimizer(prefix = '')
 
-            action_one_hot = tf.one_hot(self.action, self.environment.action_size,
-                                       1.0, 0.0, name = 'action_one_hot')
-            q_acted = tf.reduce_sum(self.q * action_one_hot,
-                                   reduction_indices = 1, name = 'q_acted')
-            self.td_error = tf.abs(self.target_q_t - q_acted)
-            #delta = self.target_q_t - q_acted
-
-            if self.ag.pmemory:
-                self.loss = tf.reduce_mean(weighted_huber_loss(y_true = self.target_q_t,
-                                                         y_pred = q_acted,
-                                                            weights = self.loss_weight),
-                                                          name='loss')
-            else:
-                self.loss = tf.reduce_mean(huber_loss(y_true = self.target_q_t,
-                                                         y_pred = q_acted),
-                                                          name='loss')
-                
-            self.learning_rate_step = tf.placeholder('int64', None, #*
-                                            name='learning_rate_step')
-            self.learning_rate_op = tf.maximum(#*
-                    self.ag.learning_rate_minimum,
-                    tf.train.exponential_decay(
-                            learning_rate = self.ag.learning_rate,
-                            global_step   = self.learning_rate_step,
-                            decay_steps   = self.ag.learning_rate_decay_step,
-                            decay_rate    = self.ag.learning_rate_decay,
-                            staircase     = True))
-            self.optim = tf.train.RMSPropOptimizer(
-                                self.learning_rate_op, momentum=0.95,
-                                epsilon=0.01).minimize(self.loss)
-        
         self.setup_summary(self.m.scalar_tags, self.m.histogram_tags)
         tf.global_variables_initializer().run()
         vars_ = list(self.w.values()) + [self.step_op]
         self._saver = tf.train.Saver(vars_, max_to_keep=30)
 
         self.load_model()
-        self.update_target_q_network()
+        self.update_target_q_network(prefix = '')
+        
 
-    def update_target_q_network(self):
-#        print("_____________________")
-#        for name in self.w.keys():
-#            print(name)
-#            parameters = self.w[name].eval()
-#            parameters_target = self.target_w[name].eval()
-##            print(parameters)
-##            print(parameters_target)
-#            print(abs(parameters - parameters_target).sum())
-        for name in self.w.keys():
-#            print(name)
-            parameters = self.w[name].eval()
-#            parameters_target = self.target_w[name].eval()
-#            print(parameters)
-#            print("******")
-#            print(parameters_target)
-            self.target_w_assign_op[name].eval(
-                            {self.target_w_input[name]: parameters})
-
-    def save_weight_to_pkl(self):
-        if not os.path.exists(self.weight_dir):
-            os.makedirs(self.weight_dir)
-
-        for name in self.w.keys():
-            save_pkl(self.w[name].eval(),
-                            os.path.join(self.weight_dir, "%s.pkl" % name))
-
-    def load_weight_from_pkl(self, cpu_mode=False):
-        with tf.variable_scope('load_pred_from_pkl'):
-            self.w_input = {}
-            self.w_assign_op = {}
-
-            for name in self.w.keys():
-                self.w_input[name] = tf.placeholder('float32',
-                            self.w[name].get_shape().as_list(), name=name)
-                self.w_assign_op[name] = self.w[name].assign(self.w_input[name])
-
-        for name in self.w.keys():
-            self.w_assign_op[name].eval({self.w_input[name]: load_pkl(
-                            os.path.join(self.weight_dir, "%s.pkl" % name))})
-
-        self.update_target_q_network()
-
+        
+#        assert self.ag.memory_size < self.ag.max_step
+#    def play(self):
+#        self.start_step = self.step_op.eval()
+#        
+#        
+#        old_obs = self.new_episode()
+#
+#        self.m.start_timer()
+#        self.step = 0
+#        while 1:
+#
+#            # 1. predict
+#            action = self.predict_next_action(old_obs)    
+#       
+#            # 2. act            
+#            new_obs, reward, terminal = self.environment.act(action)
+#           
+#            if self.m.is_SF:
+#                self.m.add_act(action)
+#            else:
+#                self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
+#            if self.display_episode:
+#                self.console_print(old_obs, action, reward)
+#            
+#                
+#            
+#            # 3. observe
+#            self.observe(old_obs, action, reward, new_obs, terminal)
+#            self.m.increment_external_reward(reward)
+#            
+#            if terminal:
+#                if self.display_episode:
+#                    self.console_print_terminal(reward, new_obs)
+#                #self.m.mc_step_reward = 0
+#                self.m.close_episode()
+#                old_obs = self.new_episode()
+#             
+#            else:
+#                old_obs = new_obs.copy()
+#           
+#            
+#            self.step += 1
+#            if self.step % self.ag.test_step != self.ag.test_step - 1:
+#                continue   
+#            
+#            self.m.compute_test(prefix = '', update_count = 0)
+#            self.m.compute_state_visits()
+#            
+#
+#            summary = self.m.get_summary()
+#            self.m.filter_summary(summary)
+#            self.inject_summary(summary, self.step)
+#            self.write_output()
+#            
+#            self.m.restart()
+        
