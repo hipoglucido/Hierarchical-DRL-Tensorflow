@@ -13,27 +13,34 @@ class Epsilon():
     def __init__(self):
         pass
     
-    def setup(self, start_value, end_value, start_t, end_t, learn_start):
+    def setup(self, ag, total_steps):
         """
         Sets up linear decay of epsilon
         """
-        self.start = start_value
-        self.end = end_value
-        self.end_t = end_t
+        self.start = ag.ep_start
+        self.end = ag.ep_end
         
+ 
+        self.end_t = ag.ep_end_t_perc * total_steps
+        
+        
+    def start_decaying(self, learn_start):
         self.learn_start = learn_start
-        self.step = start_t
         
-    def steps_value(self, step, learn_start = None):
+        
+        
+    def steps_value(self, step):
         """
         Epsilon linear decay.
         Returns the epsilon value for a given step according to the setup
         """
-        if learn_start is None:
-            learn_start = self.learn_start
-        epsilon = self.end + \
-                max(0., (self.start - self.end) * \
-                 (self.end_t -max(0., step - learn_start)) / self.end_t)
+    
+    
+        
+        epsilon = (self.end + \
+                   max(0., (self.start - self.end) \
+                   * (self.end_t - max(0., step - self.learn_start)) \
+                   / self.end_t))
         assert 0 <= epsilon <= 1, epsilon
         return epsilon
     
@@ -149,8 +156,31 @@ class Agent(object):
                                 memory.count > ag.memory_minimum
         if prefix == 'mc':
             #MC only starts learning if C knows how to achieve goals
-            is_ready = is_ready and self.c_learnt                                
+            is_ready = is_ready and self.c_learnt      
+
+        flag_start_training = self.get(prefix, 'flag_start_training')
+        if (not flag_start_training) and is_ready:
+            step = self.get(prefix, 'step')
+            memory = self.get(prefix, 'memory')
+            self.set(prefix, 'flag_start_training', True)
+            name = prefix.upper() if prefix != '' else 'agent'
+            print("\nLearning of %s started at step %d with %d experiences"\
+                                  % (name, step, memory.count))  
+#            if prefix == 'mc':
+#                self.mc_epsilon.setup(start_value = self.mc_ag.ep_start,
+#                                     end_value   = self.mc_ag.ep_end,
+#                                     start_t     = self.c_start_step,
+#                                     end_t       = self.total_steps)
+#                
+            
+            if prefix == 'mc':
+                self.mc_epsilon.start_decaying(self.c_step)
+            elif prefix == '':
+                self.epsilon.start_decaying(self.step)
+        
+                
         return is_ready
+    
     def new_episode(self):
         """
         Creates a new episode
@@ -257,20 +287,16 @@ class Agent(object):
         #prefix = self.extend_prefix(prefix)
       
         
-        flag_start_training = self.get(prefix, 'flag_start_training')
+        
         step = self.get(prefix, 'step')
         cnf = self.get(prefix, 'ag')
         
-        memory = self.get(prefix, 'memory')
+        
         #target_q_update_step = self.get(prefix, 'target_q_update_step')
         #update_target_q_network = self.get(prefix, 'update_target_q_network')
         q_learning_mini_batch = self.get(prefix, 'q_learning_mini_batch')
         
-        if not flag_start_training:
-                self.set(prefix, 'flag_start_training', True)
-                name = prefix.upper() if prefix != '' else 'agent'
-                print("\nLearning of %s started at step %d with %d experiences"\
-                                      % (name, step, memory.count))
+
         
         if step % cnf.train_frequency == 0:
             q_learning_mini_batch()
@@ -278,9 +304,7 @@ class Agent(object):
         if step % cnf.target_q_update_step == cnf.target_q_update_step - 1:
             self.update_target_q_network(prefix)
             
-        if prefix == 'mc':
-            #Start mc_epsilon annealing
-            self.mc_epsilon.learn_start = self.c_step
+    
             
     def generate_target_q_t(self, prefix, reward, s_t_plus_1, terminal, g_t_plus_1 = None):
         """
@@ -388,6 +412,7 @@ class Agent(object):
                                                           in tag_dict.items()})
         for summary_str in summary_str_lists:
             self.writer.add_summary(summary_str, step)
+
     def show_attrs(self):
         import pprint
         attrs = vars(self).copy()

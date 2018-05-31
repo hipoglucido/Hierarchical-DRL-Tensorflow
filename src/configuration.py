@@ -281,7 +281,7 @@ class DQNSettings(AgentSettings):
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = int(self.max_step * .75)
+        self.ep_end_t_perc = .75#int(self.max_step * .75)
         
         self.history_length = 1
         self.train_frequency = 4
@@ -403,10 +403,10 @@ class MetaControllerSettings(AgentSettings):
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t = int(self.max_step / 2)
+        self.ep_end_t_perc = .5#int(self.max_step / 2)
         
         self.train_frequency = 4
-        self.learn_start = 1000
+        self.learn_start = 500
         
         self.architecture = None
         self.architecture_duel = None
@@ -417,7 +417,7 @@ class MetaControllerSettings(AgentSettings):
         
 #        self.ignore = ['ignore']
         self.prefix = 'mc'
-        self.memory_minimum = 1000
+        self.memory_minimum = 500
         
     
 class EnvironmentSettings(GenericSettings):

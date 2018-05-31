@@ -53,11 +53,7 @@ class DQNAgent(Agent):
             self.start_step = 0
         total_steps = self.ag.max_step + self.start_step# + self.ag.memory_size
         self.epsilon = Epsilon()
-        self.epsilon.setup(start_value    = self.ag.ep_start,
-                                  end_value   = self.ag.ep_end,
-                                  start_t     = self.start_step,
-                                  end_t       = total_steps,
-                                  learn_start = self.ag.learn_start)
+        self.epsilon.setup(self.ag, total_steps)
         old_obs = self.new_episode()
 
         self.m.start_timer()
@@ -133,17 +129,23 @@ class DQNAgent(Agent):
 
     
     def predict_next_action(self, old_obs):
-        #s_t = self.history.get()
-        s_t = [old_obs]
-        if self.ag.mode == 'play':
-            ep = 0
-        else:
+        
+        if self.is_ready_to_learn(prefix = ''):
             ep = self.epsilon.steps_value(self.step)
+#            print("______")
+#            print("step",self.step)
+#            print("learn_start",self.epsilon.learn_start)
+#            print("start", self.epsilon.start)
+#            print("end",self.epsilon.end)
+#            print("end_t",self.epsilon.end_t)
+#            print("ep",ep)
+        else:
+            ep = 1
         self.m.update_epsilon(value = ep)
         if random.random() < ep:
             action = random.randrange(self.environment.action_size)
         else:
-            action = self.q_action.eval({self.s_t: [s_t]})[0]
+            action = self.q_action.eval({self.s_t: [[old_obs]]})[0]
 
         return action
 

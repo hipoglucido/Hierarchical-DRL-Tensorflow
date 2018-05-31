@@ -86,7 +86,7 @@ class HDQNAgent(Agent):
         return goals
     
     def set_next_goal(self, obs):
-        step = self.c_step #TODO think about this
+#        step = self.c_step #TODO think about this
 #        if not self.c_learnt or 1:
 #            a = list(self.goals.keys())
 #            p = self.goal_probs
@@ -95,11 +95,18 @@ class HDQNAgent(Agent):
 #        else:
 
         if self.is_ready_to_learn(prefix = 'mc'):
-            ep = self.mc_epsilon.steps_value(step)
+            ep = self.mc_epsilon.steps_value(self.c_step)
+#            print("____________")
+#            print("step",self.c_step)
+#            print("learn_start",self.mc_epsilon.learn_start)
+#            print("start", self.mc_epsilon.start)
+#            print("end",self.mc_epsilon.end)
+#            print("end_t",self.mc_epsilon.end_t)
+#            print("ep",ep)
         else:
             ep = 1
         
-        self.m.update_epsilon(goal_name = None, value = ep)
+        self.m.update_epsilon(value = ep)
         if random.random() < ep and not self.is_playing():
             
             n_goal = random.randrange(self.ag.goal_size)
@@ -341,16 +348,11 @@ class HDQNAgent(Agent):
         self.c_start_step = self.c_step_op.eval()
         
         #Total steps for the session
-        total_steps = self.ag.max_step
+        total_steps = self.ag.max_step + self.c_start_step
         
         #Set up epsilon ofr MC (e-greedy, linear decay)
         self.mc_epsilon = Epsilon()
-        self.mc_epsilon.setup(start_value = self.mc_ag.ep_start,
-                                     end_value   = self.mc_ag.ep_end,
-                                     start_t     = self.mc_start_step,
-                                     end_t       = total_steps,
-                                     learn_start = self.mc_ag.learn_start)
-        
+        self.mc_epsilon.setup(self.mc_ag, total_steps)
         #Set up epsilon for C (one per goal)
 #        for key, goal in self.goals.items():
 #            goal.setup_epsilon(self.c_ag, self.c_start_step) 
