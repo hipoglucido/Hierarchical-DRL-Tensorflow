@@ -78,7 +78,7 @@ def execute_experiment(args):
         pass#args['display_prob'] = 1
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
-    if 'architecture' in args:
+    if 'architecture' in args and args['architecture'] is not None:
         args['architecture'] = args['architecture'].split('-')
     
     # Set random seed

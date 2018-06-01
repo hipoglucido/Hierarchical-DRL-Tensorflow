@@ -325,7 +325,7 @@ void set_initial_vals()
 	jitter_switch = 1;
 //	Terminal_State = 0;
 	Init_Game();
-	// Select_Mine_Menus();
+	//Select_Mine_Menus();
 
 //	cairo_path_t *empty_path = cairo_copy_path(cr);
 //	PrevShip = empty_path;
@@ -445,42 +445,42 @@ void clean(cairo_t *cr)
 void update_drawing(cairo_t *cr)
 {
 
-	// if(Explosion_Flag)
-	// {
-	// 	// This actually does nothing the first time around
-	// 	// explosion_step2 is sort of the inner, yellow circle, one step behind step1
-	// 	for(int i = 0; i < Explosion_Step+1; i++)
-	// 	{
-	// 		explosion_step2(cr, ExpX, ExpY, i);
-	// 	}
-	// 	explosion_step1(cr, ExpX, ExpY, Explosion_Step);
-	//
-	// 	if((Explosion_Step * 10) >= ExpRadius)
-	// 	{
-	// 		Terminal_State = Terminal_State_Flag;
-	// 		Explosion_Step = 0;
-	// 		Explosion_Flag = 0;
-	// 		set_initial_vals();
-	// 	}
-	// }
-	// else if(Jitter_Flag)
-	// {
-	//
-	// 	if(jitter_switch)
-	// 	{
-	// 		jitter_step1(cr, Jitter_Step);
-	// 	}
-	// 	else
-	// 	{
-	// 		jitter_step2(cr, Jitter_Step);
-	// 	}
-	//
-	// 	if(Jitter_Step < 1)
-	// 	{
-	// 		Jitter_Step = 8;
-	// 		Jitter_Flag = 0;
-	// 	}
-	// }
+	if(Explosion_Flag)
+	{
+		// This actually does nothing the first time around
+		// explosion_step2 is sort of the inner, yellow circle, one step behind step1
+		for(int i = 0; i < Explosion_Step+1; i++)
+		{
+			explosion_step2(cr, ExpX, ExpY, i);
+		}
+		explosion_step1(cr, ExpX, ExpY, Explosion_Step);
+	
+		if((Explosion_Step * 10) >= ExpRadius)
+		{
+			Terminal_State = Terminal_State_Flag;
+			Explosion_Step = 0;
+			Explosion_Flag = 0;
+			set_initial_vals();
+		}
+	}
+	else if(Jitter_Flag)
+	{
+	
+		if(jitter_switch)
+		{
+			jitter_step1(cr, Jitter_Step);
+		}
+		else
+		{
+			jitter_step2(cr, Jitter_Step);
+		}
+	
+		if(Jitter_Step < 1)
+		{
+			Jitter_Step = 8;
+			Jitter_Flag = 0;
+		}
+	}
 
 	Draw_Ship(cr, Ship_X_Pos,Ship_Y_Pos,Ship_Headings,SHIP_SIZE_FACTOR*MaxX);
 	cairo_stroke(cr);

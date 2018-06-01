@@ -311,27 +311,27 @@ void Handle_Speed_Score()
 // This function is supposed to erease the last show mine identification type
 void Clear_Mine_Type(cairo_t *cr)
 {
-//  int x,y;
-//	Mine_Type_Should_Update = 0;
-//	Mine_Type_Should_Clean = 1;
-//  setviewport( Xmargin, Panel_Y_Start, Xmargin+MaxX, Panel_Y_End, 1);
-//	cairo_translate(cr, 0, Panel_Y_Start);
-//  x=IFF_X; y=Data_Line;
-//	cairo_set_source_rgb(cr, 0, 0, 0);
-//	cairo_rectangle(cr, x, y, TEXT_WIDTH, TEXT_HEIGHT); //
-//	cairo_clip_preserve(cr);
-//	cairo_fill(cr);
-//	cairo_reset_clip(cr);
-//	cairo_translate(cr, 0, -Panel_Y_Start);
-//  putimage(x,y,buffer1,COPY_PUT); /* erase garbage */ // Function to draw over  the mine?
-//  setviewport( Xmargin, 0, Xmargin+MaxX, MaxY, 1);
+ // int x,y;
+	// Mine_Type_Should_Update = 0;
+	// Mine_Type_Should_Clean = 1;
+ // setviewport( Xmargin, Panel_Y_Start, Xmargin+MaxX, Panel_Y_End, 1);
+	// cairo_translate(cr, 0, Panel_Y_Start);
+ // x=IFF_X; y=Data_Line;
+	// cairo_set_source_rgb(cr, 0, 0, 0);
+	// cairo_rectangle(cr, x, y, 8, 10); //
+	// cairo_clip_preserve(cr);
+	// cairo_fill(cr);
+	// cairo_reset_clip(cr);
+	// cairo_translate(cr, 0, -Panel_Y_Start);
+ // putimage(x,y,buffer1,COPY_PUT); /* erase garbage */ // Function to draw over  the mine?
+ // setviewport( Xmargin, 0, Xmargin+MaxX, MaxY, 1);
 }
 
 void Show_Mine_Type(char *Minetype)
 {
-//  int svcolor;
-//  int x,y;
-//	Mine_Type_Should_Update = 1;
+ int svcolor;
+ int x,y;
+ int Mine_Type_Should_Update = 1;
 
 }
 
@@ -362,18 +362,22 @@ void Generate_Mine()
 
   Reset_Mine_Headings();
 
-//  Draw_Mine(cr,Mine_X_Pos,Mine_Y_Pos,MINE_SIZE_FACTOR*MaxX);  /* draw mine first time */
+ // Draw_Mine(cr,Mine_X_Pos,Mine_Y_Pos,MINE_SIZE_FACTOR*MaxX);  /* draw mine first time */
 //	Mine_Should_Clean = 1;
 
-		Mine_Type=FRIEND;
-//  if(randrange(0,1)) Mine_Type=FRIEND; // was random(2)
-//  else
-//    {
-//      Mine_Type=FOE;
-////			gettimeofday(&t0, NULL);
-//			t0 = Loop_Counter;
-////      t0=clock(); /* when "a mine is born .."? */  // Why and how does it access this?
-//    }
+		// Mine_Type=FRIEND;
+ if(randrange(0,1)){
+ 	Mine_Type=FRIEND; // was random(2)
+			//printf("FRIEEEEEEEEEND");
+ }
+ else
+   {
+     Mine_Type=FOE;
+//			gettimeofday(&t0, NULL);
+			t0 = Loop_Counter;
+			//printf("FOOOE");
+//      t0=clock(); /* when "a mine is born .."? */  // Why and how does it access this?
+   }
 
   if (Mine_Type==FRIEND)
 	{
@@ -384,7 +388,7 @@ void Generate_Mine()
 		Mine_Indicator = (char*)Foe_Menu[randrange(0,2)];
 	}
 	Mine_Char = Mine_Indicator;
-//	Show_Mine_Type(Mine_Indicator);
+	Show_Mine_Type(Mine_Indicator);
 }
 
 void Move_Mine()
@@ -424,12 +428,12 @@ void Handle_Mine()
 		}
   case DEAD   : {
 		// Uncomment to spawn mines (and maybe some other stuff)
-//		  if(Mine_Dead_Counter++ >= Mine_Wait_Loops)
-//		    {
-//		      Generate_Mine();
-//		      Mine_Flag=ALIVE;
-//		      Mine_Alive_Counter=0;
-//		    }
+		  if(Mine_Dead_Counter++ >= Mine_Wait_Loops)
+		    {
+		      Generate_Mine();
+		      Mine_Flag=ALIVE;
+		      Mine_Alive_Counter=0;
+		    }
 		   break;
 		}
   case ALIVE  : {

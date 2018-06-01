@@ -389,7 +389,7 @@ void SF_iteration()
 	Handle_Missile();
 	//            if(Sound_Flag>1) Sound_Flag--;
 	//            if(Sound_Flag==1) {Sound_Flag--; nosound();}
-	// Handle_Mine();
+	Handle_Mine();
 	Test_Collisions();
 	Handle_Shell();
 	Handle_Fortress();

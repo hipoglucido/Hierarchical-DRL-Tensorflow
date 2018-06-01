@@ -37,12 +37,12 @@ int Terminal_State;
 int Terminal_State_Flag;
 
 //int Ship_Should_Update = 0;
-//int Mine_Should_Update = 0;
+int Mine_Should_Update = 0;
 //int Fort_Should_Update = 0;
 //int Missile_Should_Update[MAX_NO_OF_MISSILES] = {0};
 //int Shell_Should_Update = 0;
 int Bonus_Char_Should_Update = 0;
-//int Mine_Type_Should_Update = 0;
+int Mine_Type_Should_Update = 0;
 //int Points_Should_Update = 0; // Show the first time around right?
 //int Velocity_Should_Update = 0;
 //int Speed_Should_Update = 0;
@@ -53,11 +53,11 @@ int Bonus_Char_Should_Update = 0;
 
 //int Bonus_Char_Should_Clean = 0;
 //int Ship_Should_Clean = 0;
-//int Mine_Should_Clean = 0;
+// int Mine_Should_Clean = 0;
 //int Fort_Should_Clean;
 //int Missile_Should_Clean[MAX_NO_OF_MISSILES] = {0};
 //int Shell_Should_Clean;
-//int Mine_Type_Should_Clean = 0;
+int Mine_Type_Should_Clean = 0;
 //int Points_Should_Clean = 0;
 //int Velocity_Should_Clean = 0;
 //int Speed_Should_Clean = 0;

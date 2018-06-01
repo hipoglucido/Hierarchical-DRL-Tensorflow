@@ -108,37 +108,37 @@ void Test_Collisions()
   breakflag=OFF;
 
 	/******* mine vs. ship collision ***********/
-  // int goodshot;
-//   if(Mine_Flag==ALIVE)
-//     if(Check_Collision(Ship_X_Pos,Ship_Y_Pos,Mine_X_Pos,Mine_Y_Pos, COLLISION_DIST) )
-//       {
-// 	Ship_Killings_Counter++;
-// 	Ship_Damaged_By_Mines++;
-// 	breakflag=ON; 	/* no use to check others */
-// 	if(Ship_Killings_Counter>=4)
-// 	   {
-// 	     Points=Points-100;
-// 	     Gen_Explosion(Ship_X_Pos,Ship_Y_Pos,80);
-// //			 Terminal_State = 1;
-// 				Terminal_State_Flag = FORT_WON;
-// 	     Ship_Killings_Counter=0;
-// //	     Reset_Screen(cr);
-// 	   }
-// 	 else
-// 	   {
-// 	     Points=Points-50;
-// 	     Mine_Flag=KILL;
-// 	     Handle_Mine(); 		/* kill mine */
-// 	     if(Shell_Flag==ALIVE)
-// 	     {
-// 		  	Shell_Flag=KILL;      /* kill shell */
-// 		  	Handle_Shell();
-// 	     }
-// 	     Reset_All_Missiles();    	/* kill all missiles */
-// //	     Gen_Snap_Effect();
-// 	     Jitter_Ship();		/* leaves ship on screen */
-// 	   }
-//       }  /* end ship vs. mine collision */
+  int goodshot;
+  if(Mine_Flag==ALIVE)
+    if(Check_Collision(Ship_X_Pos,Ship_Y_Pos,Mine_X_Pos,Mine_Y_Pos, COLLISION_DIST) )
+      {
+	Ship_Killings_Counter++;
+	Ship_Damaged_By_Mines++;
+	breakflag=ON; 	/* no use to check others */
+	if(Ship_Killings_Counter>=4)
+	   {
+	     Points=Points-100;
+	     Gen_Explosion(Ship_X_Pos,Ship_Y_Pos,80);
+//			 Terminal_State = 1;
+				Terminal_State_Flag = FORT_WON;
+	     Ship_Killings_Counter=0;
+//	     Reset_Screen(cr);
+	   }
+	 else
+	   {
+	     Points=Points-50;
+	     Mine_Flag=KILL;
+	     Handle_Mine(); 		/* kill mine */
+	     if(Shell_Flag==ALIVE)
+	     {
+		  	Shell_Flag=KILL;      /* kill shell */
+		  	Handle_Shell();
+	     }
+	     Reset_All_Missiles();    	/* kill all missiles */
+//	     Gen_Snap_Effect();
+	     //Jitter_Ship();		/* leaves ship on screen */
+	   }
+      }  /* end ship vs. mine collision */
 
 
 		/******** shell vs. ship collision *********/
@@ -186,40 +186,40 @@ void Test_Collisions()
   if(!breakflag)
   for(i=0;i<MAX_NO_OF_MISSILES;i++)   /* for all  possible missiles */
   {                  /* check against mine and fortress */
-    // if(Mine_Flag==ALIVE)
-    //   if(Missile_Flag[i]==ALIVE)
+     if(Mine_Flag==ALIVE)
+       if(Missile_Flag[i]==ALIVE)
 
 		/***** check missile vs. mine ********/
 
-// 	 if(Check_Collision(Missile_X_Pos[i],Missile_Y_Pos[i],
-// 			    Mine_X_Pos,Mine_Y_Pos,COLLISION_DIST) )
-//
-// 	   {
-// 	     Missile_Flag[i]=KILL;
-// 	     Handle_Missile_Flag=ON;
-// 	     goodshot=OFF;
-// 	     if((Missile_Type==VS_FRIEND)&&(Mine_Type==FRIEND))
-// 	       {
-// 		 goodshot=ON;
-// 		 Points=Points+20;
-// 		 Vulner_Counter++;
-// //		 Update_Vulner(cr);
-//
-// 	       }
-// 	     else
-// 	     if((Missile_Type==VS_FOE)&&(Mine_Type==FOE))
-// 	       {
-// 		 goodshot=ON;
-// 		 Points=Points+30;
-// 	       }
-// 	     if(goodshot)
-// 	       {
-// 		 goodshot=OFF; /* redundant */
-// 		 Gen_Snap_Effect();
-// 		 Mine_Flag=KILL;
-// 		 Handle_Mine();
-// 	       }
-// 	  } /* end missile vs. mine */
+	 if(Check_Collision(Missile_X_Pos[i],Missile_Y_Pos[i],
+			    Mine_X_Pos,Mine_Y_Pos,COLLISION_DIST) )
+
+	   {
+	     Missile_Flag[i]=KILL;
+	     Handle_Missile_Flag=ON;
+	     goodshot=OFF;
+	     if((Missile_Type==VS_FRIEND)&&(Mine_Type==FRIEND))
+	       {
+		 goodshot=ON;
+		 Points=Points+20;
+		 Vulner_Counter++;
+//		 Update_Vulner(cr);
+
+	       }
+	     else
+	     if((Missile_Type==VS_FOE)&&(Mine_Type==FOE))
+	       {
+		 goodshot=ON;
+		 Points=Points+30;
+	       }
+	     if(goodshot)
+	       {
+		 goodshot=OFF; /* redundant */
+		 //Gen_Snap_Effect();
+		 Mine_Flag=KILL;
+		 Handle_Mine();
+	       }
+	  } /* end missile vs. mine */
 
 		/******** misile vs. fortress *********/
 
