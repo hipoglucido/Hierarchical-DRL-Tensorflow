@@ -14,12 +14,12 @@ class Experiment():
             # pmemory effect on hdqn
             hyperparameter_space = {
                     'pmemorys'               : [0, 1],
-                    'random_seeds'           : list(range(2))
+                    'random_seeds'           : list(range(20))
                     }
             base_args = {
                     'agent_type'            : 'dqn',
                     'env_name'              : 'SF-v0',
-                    'scale'                 : 50,                   
+                    'scale'                 : 1000,                   
                     'display_prob'          : 0.05,
                     'use_gpu'               : 0,
                     'mode'                  : 'train',
