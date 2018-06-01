@@ -300,7 +300,14 @@ class Metrics:
             if delete:
                 del summary[key]
            
-
+    def rename_summary(self, summary):
+        rename_dict = {'mc_avg_ep_rewward' : 'avg_ep_reward'}
+        
+        for old, new in rename_dict.items():
+#            try:
+            summary[old] = new
+#            except KeyError:
+#                pass
         
     def get_summary(self):
         summary = {}

@@ -89,6 +89,7 @@ class SFGoal(Goal):
             result[feature_name] = \
                    self.environment.get_prep_feature(observation, feature_name)
         return result
+    
     def is_in_region(self, A_i, A_j, region, n):
         factor = int(math.sqrt(n))
         l = 1 / factor
@@ -104,90 +105,42 @@ class SFGoal(Goal):
         return i_condition and j_condition
      
     def is_aiming_at(self, A_i, A_j, A_sin, A_cos, B_i, B_j, epsilon = .15):
-        #assert 0, 'denormalize sin and cos'
-        
-        #Rescale
+
         A_pointer = utils.revert_cyclic_feature(X_sin       = A_sin,
                                               X_cos       = A_cos,
                                               is_scaled   = True,
                                               scale_after = False)
-#        A_sin, A_cos = A_sin * 2 - 1, A_cos * 2 - 1
+
         result = False
-#        if A_sin > 0:
-#            A_pointer = math.acos(A_cos)
-#        else:
-#            A_pointer = CT.c - math.acos(A_cos)
-#        
+     
         A_min = (A_pointer - epsilon - CT.c14) % CT.c
         A_max = (A_pointer + epsilon - CT.c14) % CT.c
-        A_mean = (A_pointer - CT.c14) % CT.c
+        #A_mean = (A_pointer - CT.c14) % CT.c
         i_dist = B_i - A_i
         j_dist = B_j - A_j
-#        def r(x): return 360 * x / CT.c
+
 
         rel_rad = math.atan2(i_dist, j_dist) + CT.c12
         
-#        print("Ship\t[%.2f, %.2f]" % (r(A_min), r(A_max) ))
-#        print("Rela radian", r(rel_rad))
-        #A_r = (A_max - A_min) / 2
-        
+
         if A_i <= B_i and A_j >= B_j:
-#            print(1)
+            # upper right
             diff = (CT.c - rel_rad)
             A_target = CT.c12 - diff
-            #print(diff, A_target)
         elif A_i >= B_i and A_j >= B_j:
-#            print(2)
+            # bottom right
             A_target = CT.c12 + rel_rad
         elif A_i >= B_i and A_j <= B_j:
-#            print(3)            
+            # bottom left      
             A_target = CT.c12 + rel_rad
         elif A_i <= B_i and A_j <= B_j:
-#            print(4)
+            # upper left
             A_target =  - CT.c12 + rel_rad
         else:
             assert 0
-#        d = -1
-#        gamma = -1
-#        beta, alpha = rel_rad, A_mean
-#        gamma = alpha - (beta - CT.c12)
-#        if A_i <= B_i and A_j >= B_j:
-##            print(1)
-#            
-#            alpha_p = alpha - CT.c12
-#            beta_p = CT.c - beta
-#            d = alpha_p + beta_p
-#            if d > CT.c12:
-#                m = d % CT.c12
-#                d = CT.c12 - m
-#                d = - abs(d)
-#            
-#        elif A_i >= B_i and A_j >= B_j:            
-##            gamma = alpha - (beta - CT.c12)
-#            alpha_p = alpha - CT.c12
-#            
-#            d = 0#CT.c14 + alpha_p + beta_p
-#            if d > CT.c12:
-#                m = d % CT.c12
-#                d = CT.c12 - m
-#                d = - abs(d)
-#        elif A_i >= B_i and A_j <= B_j:
-##            print(3)            
-#            pass#A_target = CT.c12 + rel_rad
-#        elif A_i <= B_i and A_j <= B_j:
-##            print(4)
-#            pass#A_target =  - CT.c12 + rel_rad
-#        else:
-#            assert 0
-#            
-        
+
         weird = abs(A_min - A_max) > 2.1 * epsilon
-#        #d = (abs(A_target - A_mean) % CT.c12)
-#        def r(x): return 360 * x / (CT.c)
-#        print('alpha', r(alpha))
-#        print('beta', r(beta))
-#        print('gamma', r(gamma))
-#        print("d", r(d))
+
         if A_min < A_target < A_max:
             result = True
         elif weird:
@@ -345,10 +298,16 @@ class SFGoal(Goal):
                                   epsilon = .3)   
         return achieved
             
-#def generate_area_goals()
+
  
 def generate_SF_goals(environment, goal_names):
+    """
+    Gnerate Goal objects
     
+    params:
+        environment: gym object
+        goal_names: list of strings with the name of the goals
+    """
     goals = {}
     goal_names_to_exclude = []#['wait']
     goal_names = [gn for gn in goal_names if gn not in goal_names_to_exclude]
@@ -359,18 +318,7 @@ def generate_SF_goals(environment, goal_names):
                           name = goal_name,
                           environment = environment)
         goals[i].setup_one_hot(goal_size)
-    #    i = 0
-#        for i, action_name in enumerate(CT.SF_action_spaces[environment.env_name]):
-#            goals[i] =  SFGoal(
-#                            n = i,
-#                            name = action_name,
-#                            environment = environment)
-#        goals[i + 1] = SFGoal(
-#                            n = i + 1,
-#                            name = 'aim_at_square',
-#                            environment = environment)
-#    goals = generate_area_goals()
-    
+
     return goals
     
     

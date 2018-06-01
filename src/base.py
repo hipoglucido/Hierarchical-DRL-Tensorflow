@@ -19,12 +19,14 @@ class Epsilon():
         """
         self.start = ag.ep_start
         self.end = ag.ep_end
-        
- 
         self.end_t = ag.ep_end_t_perc * total_steps
         
         
     def start_decaying(self, learn_start):
+        """
+        We let epsilon the moment from which we want the larning to happen
+        hence epsilon will decay from learn_start onwards
+        """
         self.learn_start = learn_start
         
         
@@ -34,9 +36,6 @@ class Epsilon():
         Epsilon linear decay.
         Returns the epsilon value for a given step according to the setup
         """
-    
-    
-        
         epsilon = (self.end + \
                    max(0., (self.start - self.end) \
                    * (self.end_t - max(0., step - self.learn_start)) \
@@ -60,26 +59,26 @@ class Epsilon():
         
     
 class Agent(object):
-    """Abstract object representing an Reader model."""
     def __init__(self, config):
         self._saver = None
         self.config = config
         self.output = ''
         
     def rebuild_environment(self):
+        """
+        Restart SF. Needed to avoid crashing
+        """
         if self.m.is_SF:
             self.environment = Environment(self.config)
     
     def display_environment(self, observation):
+        """
+        Only for monitoring purposes
+        """
         if self.m.is_SF:
             self.environment.gym.render()
             self.add_output('')
             return
-#        if self.m.is_hdqn:
-#            observation = self.c_history.get()[-1]
-#        else:
-#            observation = self.history.get()[-1]
-     
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
             
@@ -92,7 +91,7 @@ class Agent(object):
         if self.environment.env_name == 'SF-v0':
             self.m.fortress_hits += info['fortress_hits']
             
-    def play(self):
+    def play(self):        
         self.train()
         
     def is_playing(self):
@@ -103,22 +102,21 @@ class Agent(object):
         Copies the parameters of the online network to the offile (target)
         network
         """
-        #prefix = self.extend_prefix(prefix)
+
         w = self.get(prefix, 'w')
         target_w_assign_op = self.get(prefix, 'target_w_assign_op')
         target_w_input = self.get(prefix, 'target_w_input')
         for name in w.keys():
-#            print(name)
             parameters = w[name].eval()
-#            parameters_target = self.target_w[name].eval()
-#            print(parameters)
-#            print("******")
-#            print(parameters_target)
             target_w_assign_op[name].eval(
                             {target_w_input[name]: parameters})
             
     def is_testing_time(self, prefix):
+        """
+        Testing time means start writting logs to TB
+        """
         if not self.is_ready_to_learn(prefix = prefix):
+            # If the module is not learning yet then its not interesting to write
             return False
         ag = self.get(prefix, 'ag')
         step = self.get(prefix, 'step')
@@ -145,8 +143,7 @@ class Agent(object):
         if self.is_playing():
             return False
             
-        #prefix = prefix + '_' if prefix != '' else prefix
-        #prefix = self.extend_prefix(prefix)
+        
         memory = self.get(prefix, "memory")
         current_step = self.get(prefix, "step")
         start_step = self.get(prefix, "start_step")
@@ -157,22 +154,21 @@ class Agent(object):
         if prefix == 'mc':
             #MC only starts learning if C knows how to achieve goals
             is_ready = is_ready and self.c_learnt      
-
+        
+        
         flag_start_training = self.get(prefix, 'flag_start_training')
         if (not flag_start_training) and is_ready:
+            ##################
+            # Purpose of this is just to print once learning starts
             step = self.get(prefix, 'step')
             memory = self.get(prefix, 'memory')
             self.set(prefix, 'flag_start_training', True)
             name = prefix.upper() if prefix != '' else 'agent'
             print("\nLearning of %s started at step %d with %d experiences"\
                                   % (name, step, memory.count))  
-#            if prefix == 'mc':
-#                self.mc_epsilon.setup(start_value = self.mc_ag.ep_start,
-#                                     end_value   = self.mc_ag.ep_end,
-#                                     start_t     = self.c_start_step,
-#                                     end_t       = self.total_steps)
-#                
+            ##################
             
+            #Start decaying epsilon
             if prefix == 'mc':
                 self.mc_epsilon.start_decaying(self.c_step)
             elif prefix == '':
@@ -271,32 +267,31 @@ class Agent(object):
             #print("Scalars: ", ", ".join(scalar_summary_tags))
             #print("Histograms: ", ", ".join(histogram_summary_tags))
         self.writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
+        
     def get(self, prefix, attr_basename):
         extended_prefix = self.extend_prefix(prefix)
         attr_name = pp(extended_prefix, attr_basename)
         attr = getattr(self, attr_name)
         return attr
+    
     def set(self, prefix, attr_basename, value):
         extended_prefix = self.extend_prefix(prefix)
         attr_name = pp(extended_prefix, attr_basename)
         setattr(self, attr_name, value)
         
     def learn_if_ready(self, prefix):
+        """
+        Update weights of module if this is ready. Also checks if it is the
+        time to do so according to training frequency configuration
+        """
         if not self.is_ready_to_learn(prefix = prefix):
             return
-        #prefix = self.extend_prefix(prefix)
-      
-        
-        
+
         step = self.get(prefix, 'step')
         cnf = self.get(prefix, 'ag')
         
-        
-        #target_q_update_step = self.get(prefix, 'target_q_update_step')
-        #update_target_q_network = self.get(prefix, 'update_target_q_network')
+        # Get the update function
         q_learning_mini_batch = self.get(prefix, 'q_learning_mini_batch')
-        
-
         
         if step % cnf.train_frequency == 0:
             q_learning_mini_batch()
@@ -357,7 +352,11 @@ class Agent(object):
             target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
         
         return target_q_t        
+    
     def add_dueling(self, prefix, input_layer):
+        """
+        Extends module with the Dueling architecture
+        """
         #print("ADDING due", prefix)
         if prefix in ['', 'target']:
             #DQN
@@ -423,6 +422,10 @@ class Agent(object):
         pprint.pprint(attrs)
         
     def build_optimizer(self, prefix):
+        """
+        Adds an optimizer to the module (DQN, MC, or C)
+        (needs clean up)
+        """
         if prefix == '':
             action_space_size = self.environment.action_size
             cnf = self.ag
@@ -500,7 +503,11 @@ class Agent(object):
                                 momentum      = 0.95,
                                 epsilon       = 0.01).minimize(loss)
             setattr(self, pp(prefix, 'optim'), optim)
+            
     def send_some_metrics(self, prefix):
+        """
+        For monitoring training. Copy some scalars to the Metrics object
+        """
         prefix = self.extend_prefix(prefix)
         learning_rate_name = pp(prefix, 'learning_rate')
         learning_rate_op = getattr(self, pp(prefix, 'learning_rate_op'))
@@ -514,6 +521,13 @@ class Agent(object):
         setattr(self.m, pp(prefix, 'memory_size'), memory_count)
         
     def add_dense_layers(self, architecture, input_layer, parameters, name_aux):
+        """
+        Creates an MLP
+        
+        params:
+            architecture: list on ints (hidden layers of the MLP)
+            parameters: dictionary with weights
+        """
         #TODO delete config parameter
         last_layer = input_layer
         #print(last_layer, "as input")
@@ -541,12 +555,14 @@ class Agent(object):
         return last_layer, histograms
 
     def create_target(self, config):
+        """
+        Create a target fro either DQN, MC or C networks
+        (needs to be cleaned up a bit)
+        """
         #print("Creating target...")
 
         prefix = config.prefix + '_' if config.prefix != '' else config.prefix
-        #config = config
-        #config = self.config
-#        # target network
+
         aux1 = prefix + 'target'                         # mc_target
         aux2 = aux1 + '_s_t'                             # mc_target_s_t
         aux3 = aux1 + '_w'                               # mc_target_w

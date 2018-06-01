@@ -14,23 +14,18 @@ class Experiment():
             # pmemory effect on hdqn
             hyperparameter_space = {
                     'pmemorys'               : [0, 1],
-                    'random_seeds'           : [0, 1, 2]
+                    'random_seeds'           : list(range(2))
                     }
             base_args = {
-                    'agent_type'            : 'hdqn',
-                    'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 200,
-                    'factor'                : 3,
-                    'log_level'             : 'DEBUG',
-                    'display_prob'          : 0.001,
-                    'use_gpu'               : 1,
+                    'agent_type'            : 'dqn',
+                    'env_name'              : 'SF-v0',
+                    'scale'                 : 50,                   
+                    'display_prob'          : 0.05,
+                    'use_gpu'               : 0,
                     'mode'                  : 'train',
-                    'architecture'          : [25, 25],
                     'dueling'               : 0,
                     'double_q'              : 0,
-                    'action_repeat'         : 1,
-                    'memory_size'           : 1000000
-#                    'double_q'              : False
+                    'action_repeat'         : 4
             }  
         elif name == 'exp6':
             #hdqn vs dqn in SF

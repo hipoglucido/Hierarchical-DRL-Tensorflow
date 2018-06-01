@@ -78,14 +78,14 @@ def execute_experiment(args):
         pass#args['display_prob'] = 1
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
-    if args['architecture']:
+    if 'architecture' in args:
         args['architecture'] = args['architecture'].split('-')
     
     # Set random seed
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
-                                datefmt='%m/%d/%Y %I:%M:%S %p',
-                                level = getattr(logging, args['log_level']))
-    
+#    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+#                                datefmt='%m/%d/%Y %I:%M:%S %p',
+#                                level = getattr(logging, args['log_level']))
+#    
       
     cnf = configuration.Configuration()
     
