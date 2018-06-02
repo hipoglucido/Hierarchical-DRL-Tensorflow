@@ -162,8 +162,7 @@ class SFEnv(gym.Env):
         return observation, reward, done, info
     
     def scale_observation(self, raw_obs):
-        if self.env_name == 'SFC-v0':
-            
+        if self.env_name == 'SFC-v0':            
             #Normalize
             raw_obs[0] /= self.screen_height    # Ship_Y_Pos
             raw_obs[1] /= self.screen_width     # Ship_X_Pos
@@ -187,13 +186,19 @@ class SFEnv(gym.Env):
             raw_obs[5]  /= self.screen_height         # Missile_Y_Pos
             raw_obs[6]  /= self.screen_width          # Missile_X_Pos
             raw_obs[7]  /= 360                        # fort_Headings
-            raw_obs[8]  /= 100                         # Missile_Stock
+            raw_obs[8]  /= 100                        # Missile_Stock
+            raw_obs[9]  /= self.screen_height         # Mine_Y_Pos
+            raw_obs[10] /= self.screen_width          # Mine_X_Pos
             
             # If missiles are away from the screen, put them as 0, 0
-            if self.last_missile_coords == (raw_obs[5], raw_obs[6]):
+            if self.last_shell_coords == (raw_obs[5], raw_obs[6]):
                 raw_obs[5], raw_obs[6] = 0., 0.
             else:
-                self.last_missile_coords = (raw_obs[5], raw_obs[6])
+                self.last_shell_coords = (raw_obs[5], raw_obs[6])
+            if self.last_mine_coords == (raw_obs[9], raw_obs[10]):
+                raw_obs[9], raw_obs[10] = 0., 0.
+            else:
+                self.last_mine_coords = (raw_obs[9], raw_obs[10])
             
         raw_obs = np.clip(raw_obs, 0, 1)
         """
@@ -353,7 +358,14 @@ class SFEnv(gym.Env):
         self.imgs = []
         self.ep_reward = 0
         if self.env_name == 'SF-v0':
-            self.last_missile_coords = (0., 0.)
+            """
+            Special handling of mine and shell cords. When they are not on the
+            screen they keep their last coordinates until they appear again.
+            With these variables we detect when they are gone so we can set their
+            coordinates to 0,0 until they reapear to not confuse the agent
+            """
+            self.last_shell_coords = (0., 0.)
+            self.last_mine_coords = (0., 0.)
         
         #self.episode_dir = os.path.join(self.config.gl.logs_dir,
          #                               self.config.model_name, 
@@ -426,8 +438,10 @@ class SFEnv(gym.Env):
                     'ship_headings'  : 4,
                     'missile_pos_i'  : 5,
                     'missile_pos_j'  : 6,
-                    'fort_headings' : 7,
-                    'missile_stock'  : 8
+                    'fort_headings'  : 7,
+                    'missile_stock'  : 8,
+                    'mine_pos_i'     : 9,
+                    'mine_pos_j'     : 10
                     }
         
         prep_fs = []
@@ -499,7 +513,14 @@ class SFEnv(gym.Env):
                     lambda obs: [self.get_raw_feature(obs, 'ship_speed_j')]
                     ]
                 feature_names += ['ship_speed_i', 'ship_speed_j']          
-                
+        if self.env_name == 'SF-v0':
+            #Mines don't wrap even if wrapping is activated
+            prep_fs += [
+                lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
+                lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+                ]
+            feature_names += ['mine_pos_i', 'mine_pos_j']
+            
 
         if self.is_no_direction:
             #Head doesn't control direction, no heading of the spaceship needed

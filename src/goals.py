@@ -197,14 +197,28 @@ class SFGoal(Goal):
                 
             elif 'mine' in self.name:
                 # aim_at_mine
-                achieved = self.is_aiming_at(
-                                      A_i     = .5,
-                                      A_j     = .5,
-                                      A_sin   = pfs['ship_headings_sin'],
-                                      A_cos   = pfs['ship_headings_cos'],
-                                      B_i     = pfs['mine_pos_i'],
-                                      B_j     = pfs['mine_pos_j'],
-                                      epsilon = epsilon)
+                epsilon = .2        
+                if self.environment.is_wrapper:
+                    # Rotation activated and WRAPPING
+                    new_pfs = {}
+                    coordinate_fns = ['ship_pos_i', 'ship_pos_j']
+                    for fn in coordinate_fns:
+                        new_pfs[fn] = utils.revert_cyclic_feature(
+                                X_sin         = pfs[fn + '_sin'],
+                                X_cos         = pfs[fn + '_cos'],
+                                is_scaled     = True,
+                                scale_after   = True)
+                    if pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:
+                        achieved = False
+                    else:
+                        achieved = self.is_aiming_at(
+                                          A_i     = new_pfs['ship_pos_i'],
+                                          A_j     = new_pfs['ship_pos_j'],
+                                          A_sin   = pfs['ship_headings_sin'],
+                                          A_cos   = pfs['ship_headings_cos'],
+                                          B_i     = pfs['mine_pos_i'],
+                                          B_j     = pfs['mine_pos_j'],
+                                          epsilon = epsilon)
             elif 'fortress' in self.name:
                 epsilon = .1
                 if self.environment.is_wrapper:

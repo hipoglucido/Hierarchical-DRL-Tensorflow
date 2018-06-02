@@ -59,7 +59,7 @@ int jitter_switch = 1;
 
 
 ////////////////////////////////////
-float symbols[9] = {};
+float symbols[11] = {};
 int get_screen_width(){
 	return WINDOW_WIDTH;
 }
@@ -69,19 +69,22 @@ int get_screen_height(){
 float* get_symbols()
 {
 	//printf("GETTING SYMBOLS:");
-	symbols[0] = Ship_Y_Pos;// /(float) WINDOW_WIDTH;	
-	symbols[1] = Ship_X_Pos;// /(float) WINDOW_HEIGHT;
-	symbols[2] = Ship_Y_Speed;
-	symbols[3] = Ship_X_Speed;
-	symbols[4] = Ship_Headings;// /(float) 360;
-	symbols[5] = Shell_Y_Pos;//(float) Missile_Y_Pos;
-	symbols[6] = Shell_X_Pos;//(float) Missile_X_Pos;	
-	symbols[7] = Fort_Headings;
-	symbols[8]=  Missile_Stock;
+	symbols[0]  = Ship_Y_Pos;// /(float) WINDOW_WIDTH;	
+	symbols[1]  = Ship_X_Pos;// /(float) WINDOW_HEIGHT;
+	symbols[2]  = Ship_Y_Speed;
+	symbols[3]  = Ship_X_Speed;
+	symbols[4]  = Ship_Headings;// /(float) 360;
+	symbols[5]  = Shell_Y_Pos;//(float) Missile_Y_Pos;
+	symbols[6]  = Shell_X_Pos;//(float) Missile_X_Pos;	
+	symbols[7]  = Fort_Headings;
+	symbols[8]  = Missile_Stock;
+	symbols[9]  = Mine_Y_Pos;
+	symbols[10] = Mine_X_Pos;
 	//shell speed?
 	//for (int i = 3; i >= 0; i--)
 	//printf("SPPED Y %f, ",symbols[6]);
-	//printf("SPPED X %f, ",symbols[7]);
+	// printf("X %f, ",(double) Mine_X_Pos);
+	// printf("Y %f, ",(double) Mine_Y_Pos);
 	//printf("\n");
 	return symbols;
 }

@@ -372,7 +372,7 @@ void Generate_Mine()
  }
  else
    {
-     Mine_Type=FOE;
+     Mine_Type=FRIEND;
 //			gettimeofday(&t0, NULL);
 			t0 = Loop_Counter;
 			//printf("FOOOE");
@@ -388,7 +388,7 @@ void Generate_Mine()
 		Mine_Indicator = (char*)Foe_Menu[randrange(0,2)];
 	}
 	Mine_Char = Mine_Indicator;
-	Show_Mine_Type(Mine_Indicator);
+	//Show_Mine_Type(Mine_Indicator);
 }
 
 void Move_Mine()

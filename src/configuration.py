@@ -39,7 +39,7 @@ class Constants:
     
     SF_observation_space_sizes = {
         'SFC-v0'   : 8,
-        'SF-v0'    : 9,
+        'SF-v0'    : 11,
         'SFS-v0'   : 0,
         'AIM-v0'   : 3
             }
@@ -68,8 +68,8 @@ class Constants:
             0 : [],
             1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
             2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
-            3 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'],
-            4 : SF_action_spaces['SF-v0']
+            3 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
+            4 : ['aim_at_fortress', 'aim_at_mine']
                 },
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
@@ -209,7 +209,7 @@ class GlobalSettings(GenericSettings):
                        'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
         self.attrs_in_dir = [
 #                 'env.factor',
-                 'ag.mode',
+#                 'ag.mode',
                  'gl.date',
                  'ag.goal_group',
                  'env.env_name',

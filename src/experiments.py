@@ -83,6 +83,23 @@ class Experiment():
                     'goal_group'            :  3,
                     'dueling'               :  1,
                     'double_q'              :  1 
+            }  
+        elif name == 'exp9':
+            #ACTION REPLAY
+            hyperparameter_space = {
+                    'agent_types'             : ['dqn', 'hdqn'],
+                    'random_seeds'            : list(range(3))
+                    }
+            base_args = {
+                    'env_name'              : 'SF-v0',
+                    'scale'                 :  500,
+                    'display_prob'          :  0.05,
+                    'use_gpu'               :  0,
+                    'mode'                  :  'train',
+                    'goal_group'            :  3,
+                    'dueling'               :  1,
+                    'double_q'              :  1,
+                    'pmemory'               :  0  
             }
         base_args['paralel'] = paralel
         for args in self.get_hyperparameters_iterator(hyperparameter_space,

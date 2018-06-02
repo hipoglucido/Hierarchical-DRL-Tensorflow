@@ -128,6 +128,7 @@ void Test_Collisions()
 	   {
 	     Points=Points-50;
 	     Mine_Flag=KILL;
+		 Score = -1.0;
 	     Handle_Mine(); 		/* kill mine */
 	     if(Shell_Flag==ALIVE)
 	     {
@@ -202,6 +203,7 @@ void Test_Collisions()
 	       {
 		 goodshot=ON;
 		 Points=Points+20;
+		 Score = 1.0;
 		 Vulner_Counter++;
 //		 Update_Vulner(cr);
 
@@ -215,6 +217,7 @@ void Test_Collisions()
 	     if(goodshot)
 	       {
 		 goodshot=OFF; /* redundant */
+		 Score = 1.0;
 		 //Gen_Snap_Effect();
 		 Mine_Flag=KILL;
 		 Handle_Mine();
