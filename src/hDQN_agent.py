@@ -474,7 +474,7 @@ class HDQNAgent(Agent):
             self.send_some_metrics(prefix = 'c')
             summary = self.m.get_summary()
             self.m.filter_summary(summary)
-            self.m.rename_summary(summary)
+            #self.m.rename_summary(summary)
             self.inject_summary(summary, self.c_step)
             self.write_output()
 

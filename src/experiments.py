@@ -3,6 +3,7 @@ import subprocess
 import itertools
 import os
 import utils
+import pprint
 def run_cmd(cmd):
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, universal_newlines=True)
     output, error = process.communicate()
@@ -92,8 +93,8 @@ class Experiment():
                     }
             base_args = {
                     'env_name'              : 'SF-v0',
-                    'scale'                 :  500,
-                    'display_prob'          :  0.05,
+                    'scale'                 :  1000,
+                    'display_prob'          :  0.03,
                     'use_gpu'               :  0,
                     'mode'                  :  'train',
                     'goal_group'            :  3,
@@ -101,6 +102,8 @@ class Experiment():
                     'double_q'              :  1,
                     'pmemory'               :  0  
             }
+         
+        print("Experiment %s:\n%s" % (name, pprint.pformat(hyperparameter_space)))
         base_args['paralel'] = paralel
         for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                       base_args):

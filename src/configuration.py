@@ -229,8 +229,10 @@ class GlobalSettings(GenericSettings):
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
                  ]
-        self.checkpoints_dir = os.path.join(self.root_dir, 'src', 'checkpoints') #TODO
-        self.logs_dir = os.path.join(self.root_dir, 'src', 'logs') #TODO
+        self.data_dir = '/vol/tensusers/vgarciacazorla/'
+        #self.data_dir = os.path.join(self.root_dir, 'src')
+        self.checkpoints_dir = os.path.join(self.data_dir, 'checkpoints') #TODO
+        self.logs_dir = os.path.join(self.data_dir, 'logs') #TODO
         self.others_dir = os.path.join(self.root_dir,  'Others')
         self.randomize = False
         self.update(new_attrs)
