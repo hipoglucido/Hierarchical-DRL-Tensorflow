@@ -1,24 +1,22 @@
-from __future__ import print_function
-import logging
+import os
 import random
+import argparse
+
 import tensorflow as tf
 
 from environment import Environment
-import os
 from experiments import Experiment
 import configuration
 from configuration import Constants as CT
-
 import utils
-import sys
-import argparse
-from pprint import pformat
 from hDQN_agent import HDQNAgent
 from DQN_agent import DQNAgent
 try:
     from human_agent import HumanAgent
 except Exception as e:
     print("Human agent not imported: %s" % (str(e)))
+    
+
 parser = argparse.ArgumentParser()
 
 
@@ -61,9 +59,6 @@ ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
 ag_args.add_argument("--ep_start", default = None, type = float)
-"""
-
-"""
 
 def execute_experiment(args):
     #### HARD RULES
@@ -80,13 +75,7 @@ def execute_experiment(args):
         args['action_repeat'] = 1
     if 'architecture' in args and args['architecture'] is not None:
         args['architecture'] = args['architecture'].split('-')
-    
-    # Set random seed
-#    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
-#                                datefmt='%m/%d/%Y %I:%M:%S %p',
-#                                level = getattr(logging, args['log_level']))
-#    
-      
+        
     cnf = configuration.Configuration()
     
     #Global settings
@@ -188,25 +177,32 @@ def execute_experiment(args):
         #agent.show_attrs()
     tf.reset_default_graph()
 
+
+##############################################
+##                   MAIN
+##############################################
+
+# Parse arguments
 args = vars(parser.parse_args())
 
 
-#
 if 'exp' in args['mode']:
+    # Experiment mode. We will run more than one experiment (Experiments.py)
     exp_name = args['mode']    
     experiment = Experiment(exp_name, args['paralel'])
     args_list = experiment.get_args_list()
 else:
+    # Not in experiment mode means that we are only running one experiment
     args_list = [args]
 
 if args['paralel'] == 0:
+    # Execute experiments sequentially
     for args_ in args_list:
         execute_experiment(args_)
 else:
-    from multiprocessing import Pool
-    
-    n_processes = args['paralel']
-    
+    # Execute experiments in parallel
+    from multiprocessing import Pool    
+    n_processes = args['paralel']    
     with Pool(n_processes) as pool:
         pool.starmap(execute_experiment, zip(args_list))
     

@@ -5,19 +5,15 @@ import gym.spaces
 from mdp import MDP
 import random
 
-        
-
 
 class Key_MDPEnv(MDP):
-
-    def __init__(self):
-        
+    def __init__(self):        
         self.mapping = {0 : (self.apply_up, 'up'),
                         1 : (self.apply_right, 'right'),
                         2 : (self.apply_down, 'down'),
                         3 : (self.apply_left, 'left')}
         self.big_reward = 1
-        self.small_reward = 0
+        self.small_reward = 1e-2
         self.negative_reward = -1
         
     def reset(self):

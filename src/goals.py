@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from base import Epsilon
+from epsilon import Epsilon
 import numpy as np
 import math
 from configuration import Constants as CT
 import utils
+
+
 class Goal(metaclass = ABCMeta):
     def __init__(self, n, name, config = None):
         self.n = n

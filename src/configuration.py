@@ -1,13 +1,7 @@
 import os
-import inspect
-import sys
-import platform
-import glob
-import utils
 import math
-import logging
-from abc import ABCMeta, abstractmethod, abstractproperty
-from pprint import pformat
+import pprint
+import utils
 
 class Constants:
     
@@ -110,11 +104,12 @@ class Configuration:
                 
         return dictionary
     
-    def to_str(self): return pformat(self.to_dict())
+    def to_str(self): return pprint.pformat(self.to_dict())
     
-    def print(self):
-        msg =  "\n" + self.to_str()
-        logging.info(msg)   
+#    def print(self):
+#        msg =  "\n" + self.to_str()
+#        #logging.info(msg)   
+#        print(msg)
         
     @property
     def model_name(self):
@@ -134,6 +129,7 @@ class Configuration:
             chain.append(part)
         result = '_'.join(chain)
         return result        
+
 class GenericSettings():
         
     def update(self, new_attrs, add = False):
@@ -153,7 +149,7 @@ class GenericSettings():
                     we keep the instance value"""
                     continue
                 else:
-                    old_value = getattr(self, key) if hasattr(self, key) else '_'
+                    #old_value = getattr(self, key) if hasattr(self, key) else '_'
                     #logging.debug("Updated %s: %s -> %s", key, str(old_value),
                     #                                      str(value))
                     setattr(self, key, value)
@@ -168,8 +164,8 @@ class GenericSettings():
         
     def print(self):
         msg =  "\n" + self.to_str()
-        #print(msg)
-        logging.info(msg)
+        print(msg)
+#        logging.info(msg)
             
     
     def to_disk(self, filepath):
@@ -230,15 +226,16 @@ class GlobalSettings(GenericSettings):
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
                  ]
+        self.others_dir = os.path.join(self.root_dir,  'Others')
+        import platform
         if platform.linux_distribution()[0] == 'Ubuntu':
             #Ponyland server
             self.data_dir = '/vol/tensusers/vgarciacazorla/'
         else:
             #NLR server
-            self.data_dir = os.path.join(self.root_dir, 'src')
+            self.data_dir = self.others_dir
         self.checkpoints_dir = os.path.join(self.data_dir, 'checkpoints') #TODO
         self.logs_dir = os.path.join(self.data_dir, 'logs') #TODO
-        self.others_dir = os.path.join(self.root_dir,  'Others')
         self.randomize = False
         self.update(new_attrs)
         
@@ -281,14 +278,14 @@ class DQNSettings(AgentSettings):
         
         self.discount = 0.99
         self.target_q_update_step = 1 * self.scale
-        self.learning_rate = 0.00025
-        self.learning_rate_minimum = 0.00025
+        self.learning_rate = 5*1e-4
+        self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = int(.01 * self.max_step)
+        self.learning_rate_decay_step = self.max_step
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .75#int(self.max_step * .75)
+        self.ep_end_t_perc = .7#int(self.max_step * .75)
         
         self.history_length = 1
         self.train_frequency = 4
@@ -331,7 +328,7 @@ class hDQNSettings(AgentSettings):
         self.c.architecture = self.architecture
         self.mc.architecture_duel = self.architecture_duel
         self.c.architecture_duel = self.architecture_duel
-        self.mc.ep_start = args['ep_start']
+        self.mc.update({'ep_start' : args['ep_start']})
        
         
     def to_dict(self):       
@@ -364,13 +361,12 @@ class ControllerSettings(AgentSettings):
         
         
         self.target_q_update_step = 1 * self.scale
-        self.learning_rate = 0.0005
-        self.learning_rate_minimum = 0.00025
+        self.learning_rate = 5*1e-4
+        self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = int(.01 * self.max_step)
+        self.learning_rate_decay_step = self.max_step
         
- 
-        
+       
         self.architecture = None
         self.architecture_duel = None
         
@@ -404,14 +400,14 @@ class MetaControllerSettings(AgentSettings):
         self.random_start = 30        
         
         self.target_q_update_step = 1 * self.scale
-        self.learning_rate = 0.001
-        self.learning_rate_minimum = 0.00025
+        self.learning_rate = 5*1e-4
+        self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.94
-        self.learning_rate_decay_step = 5 * self.scale
+        self.learning_rate_decay_step = self.max_step
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .75#int(self.max_step / 2)
+        self.ep_end_t_perc = .7#int(self.max_step / 2)
         
         self.train_frequency = 4
         self.learn_start = 1000

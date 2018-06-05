@@ -16,7 +16,7 @@
 
 /////////
 #define SHIP_LIFES 5
-#define FORT_LIFES 3
+#define FORT_LIFES 7
 /////////
 
 

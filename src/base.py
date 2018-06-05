@@ -1,75 +1,28 @@
 import os
 import tensorflow as tf
 import numpy as np
-import utils
-import shutil
-from functools import reduce
 import random
-from utils import linear, pp
+
+from tqdm import tqdm
+from functools import reduce
+
+from utils import pp
+import utils
 from configuration import Constants as CT
 
-from environment import Environment
-class Epsilon():
-    def __init__(self):
-        pass
-    
-    def setup(self, ag, total_steps):
-        """
-        Sets up linear decay of epsilon
-        """
-        self.start = ag.ep_start
-        self.end = ag.ep_end
-        self.end_t = ag.ep_end_t_perc * total_steps
-        
-        
-    def start_decaying(self, learn_start):
-        """
-        We let epsilon the moment from which we want the larning to happen
-        hence epsilon will decay from learn_start onwards
-        """
-        self.learn_start = learn_start
-        
-        
-        
-    def steps_value(self, step):
-        """
-        Epsilon linear decay.
-        Returns the epsilon value for a given step according to the setup
-        """
-        epsilon = (self.end + \
-                   max(0., (self.start - self.end) \
-                   * (self.end_t - max(0., step - self.learn_start)) \
-                   / self.end_t))
-        assert 0 <= epsilon <= 1, epsilon
-        return epsilon
-    
-    def successes_value(self, successes, attempts):
-        """
-        Epsilon goal success decay
-        Returns the epsilon value for a given number of successes / attempts
-        ratio
-        """
-        epsilon = 1. - successes / (attempts + 1)
-        
-        assert epsilon > 0, str(epsilon) + ', '+ str(successes) + ', ' + str(attempts)
 
-        return epsilon        
-    
 
-        
-    
 class Agent(object):
+    """
+    This is the agent class that is extended from both DQN and hDQN
+    It contains the methods that are shared among these two types of models
+    The hDQN has a controller 'c' and a meta-controller 'mc'. 'c' and 'mc' can
+    be understood to some extent as a DQN that act on top of each other
+    """
     def __init__(self, config):
         self._saver = None
         self.config = config
         self.output = ''
-        
-    def rebuild_environment(self):
-        """
-        Restart SF. Needed to avoid crashing
-        """
-        if self.m.is_SF:
-            self.environment = Environment(self.config)
     
     def display_environment(self, observation):
         """
@@ -172,9 +125,7 @@ class Agent(object):
             if prefix == 'mc':
                 self.mc_epsilon.start_decaying(self.c_step)
             elif prefix == '':
-                self.epsilon.start_decaying(self.step)
-        
-                
+                self.epsilon.start_decaying(self.step)             
         return is_ready
     
     def new_episode(self):
@@ -206,8 +157,21 @@ class Agent(object):
             msg += extra
         self.add_output(msg)
         if not self.m.is_SF:
-            print(self.output)
+            # Key MDP
+            # Printing slows training
+            pass#print(self.output)
         
+    def get_iterator(self, start_step, total_steps):
+        if self.gl.paralel == 0:
+            #Visualize progress bar
+            iterator = tqdm(iterable = range(start_step, total_steps),
+                            ncols    = 70,
+                            initial  = start_step)
+        else:
+            #No progress bar
+            iterator = range(start_step, total_steps)
+        return iterator
+    
     def console_print_terminal(self, reward, observation):
         """
         Auxiliar function for printing information while training and
@@ -232,7 +196,9 @@ class Agent(object):
         msg += "\n________________ " + str(perc) + "% ________________"[:150]
         self.add_output(msg)
         if not self.m.is_SF:
-            print(self.output)
+            # Key MDP
+            # Printing slows training
+            pass#print(self.output)
         
 
             
@@ -247,11 +213,8 @@ class Agent(object):
         
         """        
         with tf.variable_scope('summary'):
-            
-
             self.summary_placeholders = {}
             self.summary_ops = {}
-            
             for tag in scalar_summary_tags:
                 self.summary_placeholders[tag] = tf.placeholder(
                                 'float32', None, name=tag)
@@ -263,20 +226,19 @@ class Agent(object):
                                          None, name=tag)
                 self.summary_ops[tag]    = tf.summary.histogram(tag,
                                             self.summary_placeholders[tag])
-            
             #print("Scalars: ", ", ".join(scalar_summary_tags))
             #print("Histograms: ", ", ".join(histogram_summary_tags))
         self.writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
         
     def get(self, prefix, attr_basename):
         extended_prefix = self.extend_prefix(prefix)
-        attr_name = pp(extended_prefix, attr_basename)
+        attr_name = utils.pp(extended_prefix, attr_basename)
         attr = getattr(self, attr_name)
         return attr
     
     def set(self, prefix, attr_basename, value):
         extended_prefix = self.extend_prefix(prefix)
-        attr_name = pp(extended_prefix, attr_basename)
+        attr_name = utils.pp(extended_prefix, attr_basename)
         setattr(self, attr_name, value)
         
     def learn_if_ready(self, prefix):
@@ -309,9 +271,7 @@ class Agent(object):
         params:
             
         """
-        #prefix = self.extend_prefix(prefix)
-        
-        
+
         target_s_t = self.get(prefix, 'target_s_t')
         if self.config.ag.double_q:
             #DOUBLE Q LEARNING
@@ -391,8 +351,8 @@ class Agent(object):
         aux1 = 'value_out'
         aux2 = 'adv_out'
         
-        value, w_val, b_val = linear(value_hid, 1, name= aux1)
-        adv, w_adv, b_adv = linear(adv_hid, output_length,
+        value, w_val, b_val = utils.linear(value_hid, 1, name= aux1)
+        adv, w_adv, b_adv = utils.linear(adv_hid, output_length,
                                            name= aux2)
         parameters[aux1 + "_w"] = w_val
         parameters[aux1 + "_b"] = b_val
@@ -404,7 +364,9 @@ class Agent(object):
         return q    
      
     def inject_summary(self, tag_dict, step):
-
+        """
+        Writes summary to log file (disk)
+        """
         summary_str_lists = self.sess.run(
                     [self.summary_ops[tag] for tag in tag_dict.keys()],
                     {self.summary_placeholders[tag]: value for tag, value \
@@ -413,6 +375,9 @@ class Agent(object):
             self.writer.add_summary(summary_str, step)
 
     def show_attrs(self):
+        """
+        Prints class attributes in a structured way
+        """
         import pprint
         attrs = vars(self).copy()
         try:
@@ -437,57 +402,54 @@ class Agent(object):
             cnf = self.c_ag
         else:
             assert 0
-        prefix = self.extend_prefix(prefix)
-        with tf.variable_scope(pp(prefix, 'optimizer')):
-            if self.ag.pmemory:
-                loss_weight_name = pp(prefix, 'loss_weight')
-                loss_weight = tf.placeholder('float32', [None],
-                                             name = loss_weight_name)
-                setattr(self, loss_weight_name, loss_weight)
-                
-            target_q_t_name = pp(prefix, 'target_q_t')
-            target_q_t = tf.placeholder('float32', [None],
-                                               name=target_q_t_name)
-            setattr(self, target_q_t_name, target_q_t)
-            action_name = pp(prefix, 'action')
-            action = tf.placeholder('int64', [None],
-                                            name = action_name)
-            setattr(self, action_name, action)
-            action_one_hot_name = pp(prefix, 'action_one_hot')
-            action_one_hot = tf.one_hot(action, action_space_size,
-                                       1.0, 0.0, name = action_one_hot_name)
-            setattr(self, action_one_hot_name, action_one_hot)
             
-            q_acted_name = pp(prefix, 'q_acted')
-            q = getattr(self, pp(prefix, 'q'))
+        extended_prefix = self.extend_prefix(prefix)
+        with tf.variable_scope(extended_prefix + 'optimizer'):
+            if self.ag.pmemory:
+                loss_weight = tf.placeholder('float32', [None],
+                                        name = extended_prefix + 'loss_weight')
+                self.set(prefix, 'loss_weight', loss_weight)
+                
+            target_q_t = tf.placeholder('float32', [None],
+                                         name = extended_prefix + 'target_q_t')
+            self.set(prefix, 'target_q_t', target_q_t)
+            
+            action = tf.placeholder('int64', [None],
+                                    name = extended_prefix + 'action')
+            self.set(prefix, 'action', action)
+            
+           
+            action_one_hot = tf.one_hot(action, action_space_size,
+                           1.0, 0.0, name = extended_prefix + 'action_one_hot')
+            self.set(prefix, 'action_one_hot', action_one_hot)
+            
+           
+            q = self.get(prefix, 'q')
             q_acted = tf.reduce_sum(q * action_one_hot,
-                                   reduction_indices = 1, name = q_acted_name)
-            td_error_name = pp(prefix, 'td_error')
+                                    reduction_indices = 1,
+                                    name = extended_prefix + 'q_acted')
+            
             td_error = tf.abs(target_q_t - q_acted)
-            setattr(self, td_error_name, td_error)
-            #mc_delta = self.mc_target_q_t - mc_q_acted
-
-            #self.global_step = tf.Variable(0, trainable=False)
-            loss_aux_name = pp(prefix, 'loss_aux')
-            loss_name = pp(prefix, 'loss')
+            self.set(prefix, 'td_error', td_error)
+                        
             if self.ag.pmemory:
                 loss_function = utils.weighted_huber_loss
-                loss_weight = getattr(self, pp(prefix, 'loss_weight'))
+                loss_weight = self.get(prefix, 'loss_weight')
             else:
                 loss_function = utils.huber_loss
                 loss_weight = None
             
             loss_aux = loss_function(TD      = td_error,
                                      weights = loss_weight)
-            setattr(self, loss_aux_name, loss_aux)
-            loss = tf.reduce_mean(loss_aux, name = loss_name)
-            setattr(self, loss_name, loss)
+            self.set(prefix, 'loss_aux', loss_aux)
             
-            learning_rate_step_name = pp(prefix, 'learning_rate_step')
+            loss = tf.reduce_mean(loss_aux, name = extended_prefix + 'loss')
+            
+            self.set(prefix, 'loss', loss)
             learning_rate_step = tf.placeholder('int64', None,
-                                            name = learning_rate_step_name)
-            setattr(self, learning_rate_step_name, learning_rate_step)
+                                name = extended_prefix + 'learning_rate_step')
             
+            self.set(prefix, 'learning_rate_step', learning_rate_step)            
             
             learning_rate_op = tf.maximum(
                     cnf.learning_rate_minimum,
@@ -497,28 +459,36 @@ class Agent(object):
                         decay_steps   = cnf.learning_rate_decay_step,
                         decay_rate    = cnf.learning_rate_decay,
                         staircase     = True))
-            setattr(self, pp(prefix, 'learning_rate_op'), learning_rate_op)
+            self.set(prefix, 'learning_rate_op', learning_rate_op)
+            
             optim = tf.train.RMSPropOptimizer(
                                 learning_rate = learning_rate_op,
                                 momentum      = 0.95,
                                 epsilon       = 0.01).minimize(loss)
-            setattr(self, pp(prefix, 'optim'), optim)
+            self.set(prefix, 'optim', optim)
+            
             
     def send_some_metrics(self, prefix):
         """
         For monitoring training. Copy some scalars to the Metrics object
         """
-        prefix = self.extend_prefix(prefix)
-        learning_rate_name = pp(prefix, 'learning_rate')
-        learning_rate_op = getattr(self, pp(prefix, 'learning_rate_op'))
-        learning_rate_step = getattr(self, pp(prefix, 'learning_rate_step'))
-        step = getattr(self, pp(prefix, 'step'))
+        #prefix = self.extend_prefix(prefix)
+        #learning_rate_name = pp(prefix, 'learning_rate')
+        learning_rate_op = self.get(prefix, 'learning_rate_op')
+        #getattr(self, pp(prefix, 'learning_rate_op'))
+        learning_rate_step = self.get(prefix, 'learning_rate_step')
+        #learning_rate_step = getattr(self, pp(prefix, 'learning_rate_step'))
+        step = self.get(prefix, 'step')
+        #step = getattr(self, pp(prefix, 'step'))
         
-        learning_rate_value = learning_rate_op.eval({learning_rate_step: step})
-        setattr(self.m, learning_rate_name, learning_rate_value)
+        learning_rate = learning_rate_op.eval({learning_rate_step: step})
+        extended_prefix = self.extend_prefix(prefix)
+        setattr(self.m, extended_prefix + 'learning_rate', learning_rate)
         
-        memory_count = getattr(self, pp(prefix, 'memory')).count
-        setattr(self.m, pp(prefix, 'memory_size'), memory_count)
+        memory_count = self.get(prefix, 'memory').count
+        setattr(self.m, extended_prefix + 'memory_size', memory_count)
+        
+        self.m.progress = step / self.total_steps
         
     def add_dense_layers(self, architecture, input_layer, parameters, name_aux):
         """
@@ -608,7 +578,7 @@ class Agent(object):
                 target_q = self.add_dueling(prefix = aux1, input_layer = last_layer)
             else:
                 target_q, weights, biases = \
-                            linear(last_layer,
+                            utils.linear(last_layer,
                                    config.q_output_length, name=aux4)  
                 getattr(self, aux3)['q_w'] = weights
                 getattr(self, aux3)['q_b'] = biases                   
@@ -670,6 +640,7 @@ class Agent(object):
         return success
     
     def delete_last_checkpoints(self):
+        import shutil
         try:
             shutil.rmtree(os.path.join(self.config.gl.checkpoints_dir,
                                 self.config.model_name))

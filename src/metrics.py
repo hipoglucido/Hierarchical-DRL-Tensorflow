@@ -40,7 +40,7 @@ class Metrics:
         if self.is_hdqn:
             #hDQN
             self.mc_scalar_tags = ['mc_step_reward', 'mc_epsilon']
-            self.c_scalar_tags = ['c_avg_goal_success', 'c_steps_by_goal']
+            self.c_scalar_tags = ['c_avg_goal_success']#, 'c_steps_by_goal']
             self.scalar_global_tags.append('debug_goals_rfreq_sum')
         else:
             #DQN

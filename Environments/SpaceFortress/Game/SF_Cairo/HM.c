@@ -329,9 +329,9 @@ void Clear_Mine_Type(cairo_t *cr)
 
 void Show_Mine_Type(char *Minetype)
 {
- int svcolor;
- int x,y;
- int Mine_Type_Should_Update = 1;
+ // int svcolor;
+ // int x,y;
+ // int Mine_Type_Should_Update = 1;
 
 }
 

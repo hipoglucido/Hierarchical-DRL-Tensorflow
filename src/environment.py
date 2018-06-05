@@ -50,7 +50,9 @@ class Environment():
     
     def new_game(self, from_random_game=False):
         #if self.lives == 0:
-        self.gym.after_episode()
+        if self.env_name in CT.SF_envs:
+            self.gym.after_episode()
+        
         self._screen = self.gym.reset()
         
         return self.screen, 0., 0., self.terminal
@@ -113,7 +115,7 @@ class Environment():
                         self.gym.panel.add(key  = 'goals',
                                            item = info['goal_name'])
                         self.gym.panel.add(key  = 'rewards',
-                                           item = '-')
+                                           item = ' ')
                         self.gym.goal_has_changed = False
                 if self.env_name in CT.SF_envs:
                     action_name = CT.SF_action_spaces[self.env_name][action]
