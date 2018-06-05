@@ -1,6 +1,7 @@
 import os
 import inspect
 import sys
+import platform
 import glob
 import utils
 import math
@@ -216,10 +217,10 @@ class GlobalSettings(GenericSettings):
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
-                 'ag.architecture',
+#                 'ag.architecture',
                  'ag.double_q',
                  'ag.dueling',
-                 #'ag.pmemory',
+                 'ag.pmemory',
                  #'ag.memory_size',
                  'env.action_repeat',
                  'gl.random_seed',
@@ -229,8 +230,12 @@ class GlobalSettings(GenericSettings):
 #                 'ag.learning_rate',
 #                 'ag.learning_rate_decay'
                  ]
-        self.data_dir = '/vol/tensusers/vgarciacazorla/'
-        #self.data_dir = os.path.join(self.root_dir, 'src')
+        if platform.linux_distribution()[0] == 'Ubuntu':
+            #Ponyland server
+            self.data_dir = '/vol/tensusers/vgarciacazorla/'
+        else:
+            #NLR server
+            self.data_dir = os.path.join(self.root_dir, 'src')
         self.checkpoints_dir = os.path.join(self.data_dir, 'checkpoints') #TODO
         self.logs_dir = os.path.join(self.data_dir, 'logs') #TODO
         self.others_dir = os.path.join(self.root_dir,  'Others')
@@ -320,12 +325,13 @@ class hDQNSettings(AgentSettings):
         self.save_step = 4
        
         
-    def update(self, *args, **kwargs):
-        super().update(*args, **kwargs)
+    def update(self, args):
+        super().update(args)
         self.mc.architecture = self.architecture
         self.c.architecture = self.architecture
         self.mc.architecture_duel = self.architecture_duel
         self.c.architecture_duel = self.architecture_duel
+        self.mc.ep_start = args['ep_start']
        
         
     def to_dict(self):       

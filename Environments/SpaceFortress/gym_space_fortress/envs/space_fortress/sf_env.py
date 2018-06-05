@@ -30,13 +30,17 @@ from PIL import ImageDraw
 
 
 class Panel:
+    """
+    This class only serves for visualization purposes. It appends an image
+    to each frame with information about goals, action, rewards etc.
+    """
     def __init__(self, height, font_path):
         self.length = 17
-        self.history_keys = ['goals', 'actions']
+        self.history_keys = ['goals', 'actions', 'rewards']
         self.reset()
         
         self.height = height
-        self.width = 250
+        self.width = 315
         
         self.history_limit_i = 50
         self.span = (self.height - self.history_limit_i) / self.length
@@ -54,7 +58,9 @@ class Panel:
             self.history[k] = ["..." for _ in range(self.length)]
         
     def add(self, key, item):
-        item = item.replace('Key.', '')
+        if not isinstance(item, str) and item % 1 == 0:
+            item = int(item)
+        item = str(item).replace('Key.', '')
         self.history[key][:-1] = self.history[key][1:]
         self.history[key][-1] = item
     
@@ -75,6 +81,20 @@ class Panel:
                 if n == 0:
                     item = 'Goals:'
             draw.text(coords, item, color, font = self.font1)
+        #Draw rewards
+        j = int(self.width * .6)
+        for n, item in enumerate(self.history['rewards']):
+            #print(n, item)
+            coords = (j, self.history_limit_i + self.span * n)
+            if n == self.length - 1:
+                color = self.current_color
+                item = '> ' + item
+            else:
+                color = self.old_color
+                if n == 0:
+                    item = 'R:'
+            draw.text(coords, item, color, font = self.font1)
+        
         #Draw actions
         j = int(self.width * .7)
         for n, item in enumerate(self.history['actions']):
@@ -101,12 +121,11 @@ class Panel:
         
 
 class SFEnv(gym.Env):
-    # - Class variables, these are needed to communicate with the template in gym/core.py
-    metadata = {'render.modes': ['rgb_array', 'human', 'minimal', 'terminal'],
-                        'configure.required' : True}
+    """
+    Space Fortress Gym
+    """
     
-      
-    # Initialize the environment
+  
     def __init__(self):
         self.imgs = []
         self.step_counter = 0
@@ -120,6 +139,7 @@ class SFEnv(gym.Env):
     def _seed(self):
         #TODO
         pass
+    
     @property
     # Returns the amount of actions
     def n_actions(self):
@@ -132,16 +152,19 @@ class SFEnv(gym.Env):
             self.generate_video()
        
     def step(self, a):
-        
-        action = self._action_set[a] # Select the action from the action dictq
+        """
+        Performs one action on the environment. Always atomic actions 
+        (granularity = 1). This method is agnostic to the
+        action_repeat / frameskip that is being used by the agent.
+        """
+        action = self._action_set[a]
         reward = 0.0
         done = False
         info = {}
         if self.env_name == 'SF-v0':
             info['fortress_hits'] = 0
-
-        self.act(action)
-       
+        #Call the C++ function
+        self.act(action)       
         self.update_logic()
         reward_delta = self.score() - self.config.env.time_penalty
         if self.penalize_wrapping:
@@ -150,14 +173,12 @@ class SFEnv(gym.Env):
         done = self.terminal_state()
         if self.env_name == 'SFC-v0':
             if reward == 1 - self.config.env.time_penalty:
-                done = 1
+                done = 1 #TODO: Revise if this ugly code can be removed
         elif self.env_name == 'SF-v0' and reward_delta:
             info['fortress_hits'] += 1
        
         self.step_counter += 1
         self.ep_reward += reward
-#        screen = np.ctypeslib.as_array(self.update_screen().contents)
-       
         observation = self.get_observation()
         return observation, reward, done, info
     
@@ -211,67 +232,52 @@ class SFEnv(gym.Env):
             
     def preprocess_observation(self, obs):
         """
-        symbols[0] = Ship_X_Pos;// /(float) WINDOW_WIDTH;	
-        	symbols[1] = Ship_Y_Pos;// /(float) WINDOW_HEIGHT;
-        	symbols[2] = Ship_Headings;// /(float) 360;
-        	symbols[3] = Square_X;// /(float) WINDOW_WIDTH;
-        	symbols[4] = Square_Y;// /(float) WINDOW_HEIGHT;
-        	symbols[5] = Square_Step;//
-        """
+        Takes one scaled environment state and applies some preprocessing. Note
+        that the resulting vector may have different dimension that the input
         
+        params:
+            obs: array of floats
+        returns:
+            preprocessed_obs: array of floatss
+        """        
         features = []
-        
         for prep_f in self.prep_fs:
-#            print(prep_f)
             packed = prep_f(obs)
-#            print(packed)
             for feature in packed:
-#                print(feature)
                 features.append(feature)
         preprocessed_obs = np.array(features)
-
-        
         return preprocessed_obs
+    
     @property
     def current_time(self):
         return str(datetime.datetime.now().time().isoformat())\
                                                 .replace("/", ":")
-    # Renders the current state of the game, only for our visualisation purposes
-    # it is not important for the learning algorithm
+    
     def render(self):
-        
-        if not self.window_active and self.config.ag == 'human':
+        """
+        Renders the current state of the game, only for our visualisation
+        purposes it is not important for the learning algorithm. Visualization
+        means either through a window or just for making a video file from the
+        current episode that will be written to disk (and not visualized in a 
+        window)
+        """
+        if not self.window_active and self.config.ag.agent_type == 'human' or \
+                                                self.config.gl.watch:
+            #Opens a window if is needed
             self.open_window()
             self.window_active = True
+        
+        #Calls C++ function to update screen content
         self.update_screen()
         
-#    if not self.config.env.render_mode == "rgb_array":
-#            img = None
-#            render_delay = None
-#            new_frame=None
-
-#            if self.config.env.render_mode == 'human':
+        #Build the image out of that
         new_frame = self.pretty_screen().contents
-#            else:
-#                new_frame = self.screen().contents
         img = np.ctypeslib.as_array(new_frame)
-
-#            if self.config.env.render_mode =='human':
         img = np.reshape(img, (self.screen_height, self.screen_width, 2))
         img = cv2.cvtColor(img, cv2.COLOR_BGR5652RGB)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-#            elif self.config.env.render_mode == 'minimal':
-#                img = np.reshape(img, (int(self.screen_height/self.scale),
-#                                       int(self.screen_width/self.scale)))
 
-        #print(type(img), img.mean(), img.max(), img.min())
-        
-            #image_name = self.env_name + "_" + self.current_time + ".png"
-            #img_path = os.path.join(self.episode_dir, image_name)
-            
-    #
-    #            if self.record_path is not None and self.config.env.record:
-            #cv2.imwrite(img_path, img)
+        #Adds the panel to right of the image
         env_img = Image.fromarray(img)      
         info = {'steps' : self.step_counter,
                 'hits'  : self.get_vulner_counter(),
@@ -282,31 +288,33 @@ class SFEnv(gym.Env):
         full_image = Image.new('RGB', (width, height))
         full_image.paste(env_img, (0, 0))
         full_image.paste(panel_img, (self.screen_width, 0))
-        self.imgs.append(full_image)
-            #print(img.max(), img.min(),img.shape, type(img))
         
-        if self.config.ag.agent_type == 'human' or self.config.gl.watch:
+        #Appends the full image to the current episode's list of images
+        self.imgs.append(full_image)
+
+        if self.window_active:
+            # Displays image on a window if this is opened
             cv2.imshow(self.env_name, np.array(full_image))
             cv2.waitKey(self.config.env.render_delay)
         
             
         
     def generate_video(self):
-        
+        """
+        Takes the list of images of the current episode and makes a video out
+        of them
+        """
       
-        video_name = "ep%d_%s_R%d.mp4" % (self.ep_counter, self.current_time, self.ep_reward)
-        
+        video_name = "ep%d_%s_R%d.mp4" % (self.ep_counter, self.current_time, \
+                                                              self.ep_reward)
         video_path = os.path.join(self.episode_dir, video_name)
-        
-   
-        
         (original_width, original_heigth) = self.imgs[0].size
-        #new_size = (int(perc * original_width), int(perc * original_heigth))
-        
-        #self.imgs = [img.resize(new_size, Image.ANTIALIAS) for img in self.imgs]
+        # PIL image >>> np.array
         self.imgs = [np.array(img) for img in self.imgs]
+        #Adds a white frame at the end (useful if .gif is produced)
         blank = self.imgs[-1].copy() * 0 + 255
         self.imgs.append(blank)
+        #Make video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         video = cv2.VideoWriter(video_path, fourcc, 20.0, (original_width, original_heigth))
         #imageio.mimsave(video_path, self.imgs, duration = .00001)
@@ -335,20 +343,41 @@ class SFEnv(gym.Env):
             self.currently_wrapping = False
  
     def get_observation(self):
+        """
+        Reads the raw vector environment state from the C++ code and
+            1) scales it between 0 and 1
+            2) checks if the spaceship is wrapping (if that matters)
+            3) preprocess the raw vector
+        """
+        #Read raw vector
         obs = np.ctypeslib.as_array(self.get_symbols().contents)
-#        print("obs:",obs)
+        
+        #Scale
         obs = self.scale_observation(obs)
         
         #Check if spaceship is wrapping and penalize
         if self.is_wrapper:
             self.check_wrapping(obs)
-                      
+        
+        #Preprocessing
         preprocessed_obs = self.preprocess_observation(obs)
         
-            
+        #Make sure that the resulting vector is properly scaled
         assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(), str([obs, preprocessed_obs])
         return preprocessed_obs
+    
     def reset(self):
+        """
+        Resets the environment. It also loads all the C++ code again so ensure
+        a full fresh restart. This is needed because sometimes the game
+        goes crazy and the features start being corrputed. The game stays
+        corrupted unless a full restart like this is performed. I didn't have time
+        to fix this so the workaround consists in calling this function after
+        every episode :\
+        
+        returns:
+            observation: first observation of the new game
+        """
         self.window_active = False
         self.panel.reset()
         
@@ -367,39 +396,33 @@ class SFEnv(gym.Env):
             self.last_shell_coords = (0., 0.)
             self.last_mine_coords = (0., 0.)
         
-        #self.episode_dir = os.path.join(self.config.gl.logs_dir,
-         #                               self.config.model_name, 
-          #                              'episodes')
-                                        #, "ep%d_%s" % \
-                                        #(self.ep_counter, self.current_time))
+        #Reload game
         self.configure(self.config)
+        
+        #Get first observation
         observation = self.get_observation()
         return observation # For some reason should show the observation
 
 
 
     def close(self):
-#        if self.write_stats:
-#            self.write_out_stats()
-        # maybe condition the stats?
-#        self.write_out_stats()
+        """
+        Closes the window of the game and stops execution
+        """
         print("Closing!")
         self.stop_drawing()
         sys.exit(0)
+        
     def open_window(self):
-        print("Opening window!")
         cv2.namedWindow(self.env_name)
-    # Configure the space fortress gym environment
+    
     def define_action_set(self):
         if self.is_no_direction:
+            #If no direction is set we reconfigure the key to action mappings
             CT.key_to_action[self.env_name]['Key.down'] = 4
             CT.action_to_sf[self.env_name][4] = CT.key_to_sf['Key.down']
         self._action_set = CT.action_to_sf[self.env_name]
        
-#        print(self._action_set)
-#        print(CT.action_to_sf[self.env_name])
-#        print(CT.key_to_action[self.env_name])
-  
         
     def get_prep_feature(self, observation, feature_name):
         index = self.feature_names.index(feature_name)
@@ -407,7 +430,12 @@ class SFEnv(gym.Env):
         
     def get_raw_feature(self, observation, feature_name):
         return observation[self.raw_features_name_to_ix[feature_name]]
-    def define_features(self):
+    
+    def define_raw_feature_mappings(self):
+        """
+        Define dictionary that will be used to get the index of each feature
+        in the array of numbers (environment state) that is read from the C++
+        """
         if self.env_name == 'SFC-v0':
             self.raw_features_name_to_ix = {
                     'ship_pos_i'   : 0,
@@ -443,6 +471,15 @@ class SFEnv(gym.Env):
                     'mine_pos_i'     : 9,
                     'mine_pos_j'     : 10
                     }
+            
+    def define_features(self):
+        """
+        Define the type of features that the agent will receive.
+        
+        This depends on the SF version of the game and also on game parameters
+        such as friction-less, grid-movement, no-direction
+        """
+        self.define_raw_feature_mappings()
         
         prep_fs = []
         feature_names = [] 
@@ -550,8 +587,14 @@ class SFEnv(gym.Env):
         
         
     def configure(self, cnf):
-        # Specify the game name which will be shown at the top of the game window
+        """
+        Configure the space fortress environment.
         
+        - Sets some attributes so that they are more handy to use.
+        - Loads the C++ functions from the C++ compiled code
+        - Set the appropiate action and state spaces
+        - Initializes variables
+        """
         self.config = cnf
         self.env_name = self.config.env.env_name
        

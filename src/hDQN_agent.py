@@ -86,23 +86,11 @@ class HDQNAgent(Agent):
         return goals
     
     def set_next_goal(self, obs):
-#        step = self.c_step #TODO think about this
-#        if not self.c_learnt or 1:
-#            a = list(self.goals.keys())
-#            p = self.goal_probs
-#            
-#            n_goal = random.randrange(self.ag.goal_size)#np.random.choice(a = a, p = p)
-#        else:
-
+        
         if self.is_ready_to_learn(prefix = 'mc'):
             ep = self.mc_epsilon.steps_value(self.c_step)
-#            print("____________")
-#            print("step",self.c_step)
-#            print("learn_start",self.mc_epsilon.learn_start)
-#            print("start", self.mc_epsilon.start)
-#            print("end",self.mc_epsilon.end)
-#            print("end_t",self.mc_epsilon.end_t)
-#            print("ep",ep)
+
+
         else:
             ep = 1
         
@@ -114,7 +102,6 @@ class HDQNAgent(Agent):
             
             n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
         self.mc_old_obs = obs
-#        n_goal = 5
         self.m.mc_goals.append(n_goal)
         goal = self.get_goal(n_goal)
         goal.set_counter += 1

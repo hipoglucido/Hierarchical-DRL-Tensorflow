@@ -648,7 +648,7 @@ class Agent(object):
         if not os.path.exists(self.checkpoints_dir):
             os.makedirs(self.checkpoints_dir)
         self.saver.save(self.sess, self.checkpoints_dir, global_step=step)
-        msg = "\nSaved checkpoint step=%d" % (step)#, self.checkpoints_dir)
+        msg = "\nSaved checkpoint step=%d at %s" % (step, self.checkpoints_dir2)
         print(msg)
 
     def load_model(self):
@@ -689,6 +689,11 @@ class Agent(object):
        
     @property
     def checkpoints_dir(self):
+        """
+        For some weird reason that I don't have time to understand I have to
+        set the directory like this so the logs of tensorboard are saved how I
+        wanted
+        """
         return os.path.join(self.config.gl.checkpoints_dir,
                             self.config.model_name,
                             self.config.model_name)

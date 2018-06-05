@@ -109,14 +109,18 @@ class Environment():
                 if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
                     if self.gym.goal_has_changed:
                         self.gym.panel.add(key  = 'actions',
-                                       item     = '[*] %s:' % info['goal_name'])
+                                       item     = '%s:' % info['goal_name'])
                         self.gym.panel.add(key  = 'goals',
                                            item = info['goal_name'])
+                        self.gym.panel.add(key  = 'rewards',
+                                           item = '-')
                         self.gym.goal_has_changed = False
                 if self.env_name in CT.SF_envs:
                     action_name = CT.SF_action_spaces[self.env_name][action]
                     self.gym.panel.add(key  = 'actions',
                                        item = action_name)
+                    self.gym.panel.add(key  = 'rewards',
+                                       item = self.reward)
                 if i != repeat - 1 and info['display_episode'] and \
                                      self.env_name in CT.SF_envs:
                     self.gym.render()

@@ -209,7 +209,13 @@ class SFGoal(Goal):
                                 is_scaled     = True,
                                 scale_after   = True)
                     if pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:
-                        achieved = False
+                        """
+                        If there is no mine in the screen we set the goal to
+                        True so that the agent doesn't get stuck trying to
+                        achieve something that is impossible (at least until
+                        one mine appears)
+                        """
+                        achieved = True
                     else:
                         achieved = self.is_aiming_at(
                                           A_i     = new_pfs['ship_pos_i'],
