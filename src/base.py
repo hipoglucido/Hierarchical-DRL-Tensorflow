@@ -8,7 +8,7 @@ from functools import reduce
 
 from utils import pp
 import utils
-from configuration import Constants as CT
+from constants import Constants as CT
 
 
 
@@ -151,7 +151,8 @@ class Agent(object):
         self.display_environment(new_obs)
         msg = '\nA: %d\nR: %.2f' % (action, reward)
         if self.m.is_hdqn:
-            extra = ', G: %d, IR: %.2f' % (self.current_goal.n, intrinsic_reward)
+            extra = ', G: %d, IR: %.2f' % \
+                (self.current_goal.n, intrinsic_reward)
             if intrinsic_reward in [1, 0.99]:
                 extra += ' Goal accomplished!'
             msg += extra
@@ -256,6 +257,7 @@ class Agent(object):
         q_learning_mini_batch = self.get(prefix, 'q_learning_mini_batch')
         
         if step % cnf.train_frequency == 0:
+            
             q_learning_mini_batch()
 
         if step % cnf.target_q_update_step == cnf.target_q_update_step - 1:

@@ -7,7 +7,7 @@ import cv2 # remove at one point
 from time import sleep
 from environment import Environment
 from pynput.keyboard import KeyCode, Key, Listener
-from configuration import Constants as CT
+from constants import Constants as CT
 from goals import generate_SF_goals
 #from constants import GAME, Games, SCRIPTS, ScriptsAIM_3_All, LIBRARY_PATH, EnableScripts,\
 #    LIBRARY_NAME, FRAMESKIP, ScriptsSF_9, RECORD, RENDER_SPEED, RenderMode,\
@@ -26,7 +26,7 @@ class HumanAgent():
         goal_names =  \
             CT.goal_groups[self.environment.env_name][self.config.ag.goal_group]
         self.goals = generate_SF_goals(self.environment, goal_names)
-        self.config.print()
+        #self.config.print()
         # Current key has to be initialized before first input of keyboard
         self.key_to_action = CT.key_to_action[self.config.env.env_name]
         print(self.key_to_action)

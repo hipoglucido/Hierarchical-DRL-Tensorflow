@@ -3,19 +3,14 @@
 Auxiliary functions and configuration settings
 """
 
-import os
 import time
-import glob
-import gym
 import sys
-import inspect
 import argparse
 import tensorflow as tf
-from configuration import Constants as CT
 import math
-from tensorflow.contrib.layers.python.layers import initializers
-from PIL import Image
 
+
+from constants import Constants as CT
 ################################
 #	 AUXILIARY FUNCTIONS
 ################################

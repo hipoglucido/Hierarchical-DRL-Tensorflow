@@ -88,6 +88,31 @@ float* get_symbols()
 	//printf("\n");
 	return symbols;
 }
+
+
+int did_I_hit_mine(){
+	int result = Mine_Hit;
+	Mine_Hit  = 0;
+	return result;
+}
+int did_I_hit_fortress(){
+	int result = Fortress_Hit;
+	Fortress_Hit = 0;
+	return result;
+}
+
+int did_mine_hit_me(){
+	int result = Hit_by_Mine;
+	Hit_by_Mine  = 0;
+	return result;
+}
+int did_fortress_hit_me(){
+	int result = Hit_by_Fortress;
+	Hit_by_Fortress = 0;
+	return result;
+}
+
+
 int get_vulner_counter(){
 	return Vulner_Counter;
 }
@@ -391,6 +416,8 @@ float get_score()
 	float reward = Score;
 	Score = 0.0;
 	Penalize_Wrap = 0;
+	//Mine_Hit = 0;
+	//Fortress_Hit = 0;
 	return reward;
 }
 

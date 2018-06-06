@@ -111,6 +111,12 @@ int Missile_Vs_Mine_Only=OFF;
 int Sound_Flag;
 int Loop_Counter=0;
 status Mine_Flag;
+///////////////////////////////
+int Mine_Hit=0;
+int Fortress_Hit=0;
+int Hit_by_Mine=0;
+int Hit_by_Fortress=0;
+/////////////////////////////
 int Mine_X_Pos;
 int Mine_Y_Pos;
 int Mine_Headings;

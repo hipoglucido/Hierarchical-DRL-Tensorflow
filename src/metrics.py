@@ -2,9 +2,14 @@
 import numpy as np
 import time
 import re
-from configuration import hDQNSettings, DQNSettings, Constants as CT
+from configuration import hDQNSettings, DQNSettings
+from constants import Constants as CT
 
 class Metrics:
+    """
+    Class for recording learning metrics. Meant to be written to tensorboard
+    periodically
+    """
     def __init__(self, config, goals = {}):
         self.config = config
         self.is_hdqn = isinstance(self.config.ag, hDQNSettings) 
@@ -30,7 +35,6 @@ class Metrics:
 
     def _define_metrics(self, goals):
         self.scalar_global_tags = ['elapsed_time', 'games',
-                                 'steps_per_episode',
                                  'total_episodes', 'debug_states_rfreq_sum',
                                  'debug_no_ep_error', 'progress']
         if self.config.env.env_name == 'SF-v0':
@@ -39,7 +43,7 @@ class Metrics:
                                            
         if self.is_hdqn:
             #hDQN
-            self.mc_scalar_tags = ['mc_step_reward', 'mc_epsilon']
+            self.mc_scalar_tags = ['mc_step_reward', 'mc_epsilon', 'mc_steps']
             self.c_scalar_tags = ['c_avg_goal_success']#, 'c_steps_by_goal']
             self.scalar_global_tags.append('debug_goals_rfreq_sum')
         else:
@@ -51,7 +55,7 @@ class Metrics:
                      'max_ep_reward', 'min_ep_reward', \
                      'avg_ep_reward', 'learning_rate', 'total_reward', \
                      'ep_reward', 'total_loss', 'total_q', 'update_count',
-                     'memory_size', 'td_error']
+                     'memory_size', 'td_error', 'steps_per_episode']
         if self.is_pmemory:
             self.scalar_dual_tags.append('beta')
         for tag in self.scalar_dual_tags:
@@ -317,15 +321,17 @@ class Metrics:
           
         return summary
     
-    def compute_test(self, prefix, update_count, mc_steps = None):
+    def compute_test(self, prefix, update_count = None, mc_steps = None):
+        assert prefix in ['c', 'mc', '']
+        prefix = prefix + '_' if prefix != '' else prefix
+        update_count = getattr(self, prefix + 'update_count')
         if not update_count > 0:
             #Model hasn't started training
             pass
-        assert prefix in ['c', 'mc', '']
-        prefix = prefix + '_' if prefix != '' else prefix
+        
         config = getattr(self, prefix + 'params')
         if prefix == 'mc_':
-            test_step = mc_steps    
+            test_step = self.mc_steps    
         else:
             test_step = config.test_step
         total_reward = getattr(self, prefix + 'total_reward')
@@ -357,7 +363,7 @@ class Metrics:
             steps_per_episode = test_step / total_episodes
         except ZeroDivisionError:
             steps_per_episode = self.error_value
-        setattr(self, 'steps_per_episode', steps_per_episode)
+        setattr(self, prefix + 'steps_per_episode', steps_per_episode)
         
     def add_act(self, action, state = None):
         if self.is_hdqn:

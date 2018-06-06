@@ -3,81 +3,7 @@ import math
 import pprint
 import utils
 
-class Constants:
-    
 
-    key_to_sf = {
-        'Key.up'     : 65362,
-        'Key.right'  : 65363,
-        'Key.down'   : 65364,
-        'Key.left'   : 65361,
-        'Key.space'  : 32,
-        'Key.esc'    : -1,
-        'wait'       : 0
-    }
-    
-    SF_action_spaces = {
-        'SFC-v0'   : ['Key.up', 'Key.right', 'Key.left', 'wait'],
-        'SF-v0'    : ['Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'],
-        'SFS-v0'   : [],
-        'AIM-v0'   : ['Key.right', 'Key.left', 'wait', 'Key.space']
-            }
-    SF_envs = list(SF_action_spaces.keys())
-    key_to_action = {}
-    action_to_sf = {}
-    
-    for game in SF_envs:
-        key_to_action[game] = {str(k) : i for i, k in enumerate(SF_action_spaces[game])}
-        action_to_sf[game] = {}
-        for i, v in enumerate(SF_action_spaces[game]):
-            action_to_sf[game][i] = key_to_sf[str(v)]
-    
-    SF_observation_space_sizes = {
-        'SFC-v0'   : 8,
-        'SF-v0'    : 11,
-        'SFS-v0'   : 0,
-        'AIM-v0'   : 3
-            }
-#    print(key_to_action)
-#    print(action_to_sf)
-    
-    MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
-    GYM_envs = ['CartPole-v0']
-    env_names = SF_envs + MDP_envs + GYM_envs
-    
-    ### GOALS
-    def get_region_names(factor):
-        total_regions = factor ** 2
-        names = ['region_%d_%d' % (i, total_regions) for i in range(total_regions)]
-        return names
-    goal_groups = {
-        'SFC-v0' : {
-            0 : [],
-            1 : get_region_names(4),
-            2 : ['aim_at_square'] + get_region_names(4),
-            3 : ['aim_at_square'] + SF_action_spaces['SFC-v0'] + get_region_names(4),
-            4 : SF_action_spaces['SFC-v0'],
-            5 : ['aim_at_square'] + SF_action_spaces['SFC-v0']
-            },
-        'SF-v0'  : {
-            0 : [],
-            1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
-            2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
-            3 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
-            4 : ['aim_at_fortress', 'aim_at_mine']
-                },
-        'AIM-v0' : {
-            0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
-            1 : []
-                },
-        }  
-    
-    c = 2 * math.pi
-    c34 = 3 / 4 * c
-    c12 = 1 / 2 * c
-    c14 = 1 / 4 * c
-    
-    #oneqpi = math.pi * 1 / 4
     
 class Configuration:
     def __init__(self):
@@ -130,8 +56,7 @@ class Configuration:
         result = '_'.join(chain)
         return result        
 
-class GenericSettings():
-        
+class GenericSettings():        
     def update(self, new_attrs, add = False):
         """
         Add new attributes and overwrite existing ones.
@@ -160,7 +85,7 @@ class GenericSettings():
             raise ValueError
                 
     def to_dict(self): return vars(self).copy()
-    def to_str(self): return pformat(self.to_dict())
+    def to_str(self): return pprint.pformat(self.to_dict())
         
     def print(self):
         msg =  "\n" + self.to_str()
@@ -262,7 +187,7 @@ class HumanSettings(AgentSettings):
         self.agent_type = 'human'
         self.goal_group = 1
         
-        
+
 class DQNSettings(AgentSettings):
     """
     Configuration of the DQN agent
@@ -270,7 +195,6 @@ class DQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'dqn'
-        #self.max_step = 500 * self.scale
         self.memory_size = int(1e6)
         
         self.batch_size = 32
@@ -281,11 +205,11 @@ class DQNSettings(AgentSettings):
         self.learning_rate = 5*1e-4
         self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = self.max_step
+        self.learning_rate_decay_step = 5 * self.scale
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .7#int(self.max_step * .75)
+        self.ep_end_t_perc = .6#int(self.max_step * .75)
         
         self.history_length = 1
         self.train_frequency = 4
@@ -319,8 +243,7 @@ class hDQNSettings(AgentSettings):
         self.random_start = 30
         self.discount = 0.99
         self.goal_group = 0
-        self.save_step = 4
-       
+        self.save_step = 4       
         
     def update(self, args):
         super().update(args)
@@ -328,7 +251,8 @@ class hDQNSettings(AgentSettings):
         self.c.architecture = self.architecture
         self.mc.architecture_duel = self.architecture_duel
         self.c.architecture_duel = self.architecture_duel
-        self.mc.update({'ep_start' : args['ep_start']})
+        if 'ep_start' in args:
+            self.mc.update({'ep_start' : args['ep_start']})
        
         
     def to_dict(self):       
@@ -364,7 +288,7 @@ class ControllerSettings(AgentSettings):
         self.learning_rate = 5*1e-4
         self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.96
-        self.learning_rate_decay_step = self.max_step
+        self.learning_rate_decay_step = 5 * self.scale
         
        
         self.architecture = None
@@ -403,11 +327,11 @@ class MetaControllerSettings(AgentSettings):
         self.learning_rate = 5*1e-4
         self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.94
-        self.learning_rate_decay_step = self.max_step
+        self.learning_rate_decay_step = 5 * self.scale
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .7#int(self.max_step / 2)
+        self.ep_end_t_perc = .6#int(self.max_step / 2)
         
         self.train_frequency = 4
         self.learn_start = 1000
@@ -448,8 +372,8 @@ class Key_MDPSettings(EnvironmentSettings):
         self.update(new_attrs)
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
-        self.random_reset = True
-        self.time_penalty = 0.
+        self.random_reset = False
+        self.time_penalty = 0#1e-2
         
         
 class Stochastic_MDPSettings(EnvironmentSettings):
@@ -476,14 +400,7 @@ class Trap_MDPSettings(EnvironmentSettings):
      
         self.trap_states = [3, 4]
         
-
-     
-class RenderSpeed():
-	# actually more of a render delay than speed 
-	DEBUG=0
-	SLOW=42
-	MEDIUM=20
-	FAST=8        
+   
     
 class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
@@ -493,16 +410,17 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')
         self.libsuffix = ""
-        
-#        self.screen_width = 84
-#        self.screen_height = 84
-#        self.render_mode = "idk" #minimal, rgb_array
         self.render_delay = 1
 
         self.record = False
         self.stats = False
         self.mines = False
+        self.min_steps_between_shots = 5
+        self.ship_lifes = 100
+        self.fortress_lifes = 5
+        self.max_loops = 10000
         self.update(new_attrs)
+        
 
 class SpaceFortressControlSettings(SpaceFortressSettings):
     def __init__(self, new_attrs):

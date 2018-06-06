@@ -129,6 +129,7 @@ void Test_Collisions()
 	     Points=Points-50;
 	     Mine_Flag=KILL;
 		 Score = -1.0;
+		 Hit_by_Mine = 1;
 	     Handle_Mine(); 		/* kill mine */
 	     if(Shell_Flag==ALIVE)
 	     {
@@ -152,6 +153,7 @@ void Test_Collisions()
 	     Ship_Damaged_By_Fortress++;
 	     breakflag=ON;
        Score = -1.0; // Breakflag is when something is already hit?
+       Hit_by_Fortress = 1;
 	     if(Ship_Damaged_By_Fortress>=SHIP_LIFES) // was 4
 	     {
 	     	Shell_Flag=KILL;
@@ -204,6 +206,7 @@ void Test_Collisions()
 		 goodshot=ON;
 		 Points=Points+20;
 		 Score = 1.0;
+		 Mine_Hit = 1;
 		 Vulner_Counter++;
 //		 Update_Vulner(cr);
 
@@ -218,6 +221,7 @@ void Test_Collisions()
 	       {
 		 goodshot=OFF; /* redundant */
 		 Score = 1.0;
+		 Mine_Hit = 1;
 		 //Gen_Snap_Effect();
 		 Mine_Flag=KILL;
 		 Handle_Mine();
@@ -239,6 +243,7 @@ void Test_Collisions()
 	     Handle_Missile_Flag=ON;
 		
 	      Score = 1.0;
+	      Fortress_Hit = 1;
 	      if(Vulner_Counter > FORT_LIFES) // was >= 4 (DEATH)
 	      {
 	      	#ifdef DEBUG

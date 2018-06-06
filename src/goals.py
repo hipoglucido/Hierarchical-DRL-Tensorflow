@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from epsilon import Epsilon
 import numpy as np
 import math
-from configuration import Constants as CT
+from constants import Constants as CT
 import utils
 
 
@@ -151,6 +151,7 @@ class SFGoal(Goal):
                 result = True
  
         return result
+    
     def is_achieved(self, screen, action):
         
         pfs = self.get_prep_features(screen)

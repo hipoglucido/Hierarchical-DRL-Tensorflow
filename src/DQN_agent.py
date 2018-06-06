@@ -102,13 +102,6 @@ class DQNAgent(Agent):
         
         if self.is_ready_to_learn(prefix = ''):
             ep = self.epsilon.steps_value(self.step)
-#            print("______")
-#            print("step",self.step)
-#            print("learn_start",self.epsilon.learn_start)
-#            print("start", self.epsilon.start)
-#            print("end",self.epsilon.end)
-#            print("end_t",self.epsilon.end_t)
-#            print("ep",ep)
         else:
             ep = 1
         self.m.update_epsilon(value = ep)
@@ -121,12 +114,11 @@ class DQNAgent(Agent):
 
     def observe(self, old_screen, action, reward, screen, terminal):
         self.memory.add(old_screen, action, reward, screen, terminal)
-        self.learn_if_ready('')
+        self.learn_if_ready(prefix = '')
 
-    def q_learning_mini_batch(self):
-      
+    def q_learning_mini_batch(self):        
         (s_t, action, reward, s_t_plus_1, terminal), idx_list, p_list, \
-                                        sum_p, count = self.memory.sample()
+                                        sum_p, count = self.memory.sample()                                          
         target_q_t = self.generate_target_q_t(prefix       = '',
                                               reward       = reward,
                                               s_t_plus_1   = s_t_plus_1,

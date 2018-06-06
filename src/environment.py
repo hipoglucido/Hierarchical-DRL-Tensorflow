@@ -1,19 +1,18 @@
-
-import random
-import numpy as np
-import sys
 import gym
-import utils
-import logging
-from configuration import Constants as CT
+from constants import Constants as CT
 
 
 class Environment():
+    """
+    Interface between the agent and the gym environments
+    Initially taken from:
+    https://github.com/devsisters/DQN-tensorflow/blob/master/dqn/environment.py
+    but needs readaptation.
+    """
     def __init__(self, cnf):
         self.env_name = cnf.env.env_name
         self.gym = self.load_gym()
         self.gym.configure(cnf)
-#        print(type(self.gym), vars(self.gym))
         self.action_size = self.gym.action_space.n
         self.state_size = self.gym.state_space.n
         self.action_repeat, self.random_start = \
@@ -26,7 +25,7 @@ class Environment():
         
         #Update configuration
         cnf.env.update({"state_size" : self.state_size,
-                       "action_size": self.action_size}, add = True)
+                       "action_size" : self.action_size}, add = True)
         self.gym.reset()
       
     def load_gym(self):
@@ -49,7 +48,6 @@ class Environment():
     
     
     def new_game(self, from_random_game=False):
-        #if self.lives == 0:
         if self.env_name in CT.SF_envs:
             self.gym.after_episode()
         
@@ -67,15 +65,7 @@ class Environment():
 
     @property
     def screen(self):
-        #return imresize(rgb2gray(self._screen)/255., self.dims)
-        #return cv2.resize(cv2.cvtColor(self._screen, cv2.COLOR_BGR2YCR_CB)/255., self.dims)[:,:,0]
         return self._screen
-
-
-    @property
-    def lives(self):
-        #return self.gym.ale.lives()
-        return self.gym.lives()
 
     @property
     def state(self):
@@ -84,58 +74,76 @@ class Environment():
     def render(self):
         self.gym.render()
 
-
-        
+       
     def act(self, action, info = {}):
-            cumulated_reward = 0
-            
-            small_step = False
-            if 'goal_name' in info.keys():
-                if info['goal_name'] == 'aim_at_fortress':
-                    small_step = True
-            if self.env_name == 'SF-v0':
-                if CT.action_to_sf[self.env_name][action] == \
-                                                CT.key_to_sf['Key.space']:
-                    small_step = True      
-           
-            # Don't repeat shootings
-            if small_step:
-                repeat = 1
-            else:
-                repeat = self.action_repeat
-                
-            for i in range(repeat):
-                
-                self._step(action)
-                cumulated_reward = cumulated_reward + self.reward
-                if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
-                    if self.gym.goal_has_changed:
-                        self.gym.panel.add(key  = 'actions',
-                                       item     = '%s:' % info['goal_name'])
-                        self.gym.panel.add(key  = 'goals',
-                                           item = info['goal_name'])
-                        self.gym.panel.add(key  = 'rewards',
-                                           item = ' ')
-                        self.gym.goal_has_changed = False
-                if self.env_name in CT.SF_envs:
-                    action_name = CT.SF_action_spaces[self.env_name][action]
-                    self.gym.panel.add(key  = 'actions',
-                                       item = action_name)
-                    self.gym.panel.add(key  = 'rewards',
-                                       item = self.reward)
-                if i != repeat - 1 and info['display_episode'] and \
-                                     self.env_name in CT.SF_envs:
-                    self.gym.render()
-    
-                if self.terminal:
-                    break
-    
-            self.reward = cumulated_reward
-    
-
-            
-            return self.state
+        """
+        Peforms an action of the gym environment.
         
+        params:
+            action: int, id of the action to perform. It will be applied
+                multiple times on the environment depending on self.action_repeat
+                There are a couple of exceptions to this: in the Space Fortress
+                gym when using hDQN, even if action_repeat is > 1, when some
+                goals are activated action_repeat will be set to 1 because
+                otherwise it can be difficult to achieve the goal. Also in SF,
+                when the agent is shooting action_repeat will be set to 1 because
+                shooting multiple times may be penalized.
+            info: dictionary, it contains information like which is the goal
+                that is being pursued by the hDQN agent or if the current episode
+                needs to be displayed or not.
+        """
+        cumulated_reward = 0        
+        
+        #First we decide if we have to force action_repeat to be 1 or not        
+        small_step = False
+        if 'goal_name' in info.keys():
+            # We force if the goal is to aim at something
+            if 'aim_at' in info['goal_name']:
+                small_step = True
+        if self.env_name == 'SF-v0':
+            # We force it if the action is shooting
+            if CT.action_to_sf[self.env_name][action] == \
+                                            CT.key_to_sf['Key.space']:
+                small_step = True      
+       
+        
+        if small_step:
+            repeat = 1
+        else:
+            repeat = self.action_repeat
+        # Perform the action repeat times            
+        for i in range(repeat):            
+            self._step(action) # Perform the action
+            cumulated_reward = cumulated_reward + self.reward
+            ##############################################################
+            #  This code is only for the panel of Space Fortress
+            #
+            if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
+                if self.gym.goal_has_changed:
+                    self.gym.panel.add(key  = 'actions',
+                                   item     = '%s:' % info['goal_name'])
+                    self.gym.panel.add(key  = 'goals',
+                                       item = info['goal_name'])
+                    self.gym.panel.add(key  = 'rewards',
+                                       item = ' ')
+                    self.gym.goal_has_changed = False
+            if self.env_name in CT.SF_envs:
+                action_name = CT.SF_action_spaces[self.env_name][action]
+                self.gym.panel.add(key  = 'actions',
+                                   item = action_name)
+                self.gym.panel.add(key  = 'rewards',
+                                   item = self.reward)
+            if i != repeat - 1 and info['display_episode'] and \
+                                 self.env_name in CT.SF_envs:
+                # In SpaceFortress we render the skipped frames as well
+                self.gym.render()
+            #
+            ##############################################################
+            if self.terminal:
+                break
+        self.reward = cumulated_reward
+        return self.state
+    
 
                 
 

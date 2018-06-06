@@ -88,14 +88,13 @@ class Experiment():
         elif name == 'exp9':
             #ACTION REPLAY
             hyperparameter_space = {
-                    'agent_types'             : ['dqn', 'hdqn'],
-                    'random_seeds'            : list(range(3))
+                    'agent_types'             : ['dqn', 'hdqn']
                     }
             base_args = {
                     'env_name'              : 'SF-v0',
-                    'scale'                 :  1000,
+                    'scale'                 :  500,
                     'display_prob'          :  0.03,
-                    'use_gpu'               :  0,
+                    'use_gpu'               :  1,
                     'mode'                  :  'train',
                     'goal_group'            :  3,
                     'dueling'               :  1,
@@ -111,9 +110,7 @@ class Experiment():
             if 'architecture' in args:
                 args['architecture'] = '-'.join([str(l) for l in args['architecture']])
             args_list.append(args)
-                
-    
-            
+       
         self._args_list = args_list
         
     def get_hyperparameters_iterator(self, hyperparameters_space, base_dict):

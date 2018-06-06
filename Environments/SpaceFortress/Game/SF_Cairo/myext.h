@@ -166,6 +166,12 @@ extern int Loop_Counter;
 extern status Mine_Flag;
 extern int Mine_X_Pos;
 extern int Mine_Y_Pos;
+////////////////////////
+extern int Mine_Hit;
+extern int Fortress_Hit;
+extern int Hit_by_Mine;
+extern int Hit_by_Fortress;
+////////////////////////
 extern int Mine_Headings;
 extern int Mine_X_Speed;
 extern int Mine_Y_Speed;

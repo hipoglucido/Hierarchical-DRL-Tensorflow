@@ -7,7 +7,7 @@ import tensorflow as tf
 from environment import Environment
 from experiments import Experiment
 import configuration
-from configuration import Constants as CT
+from constants import Constants as CT
 import utils
 from hDQN_agent import HDQNAgent
 from DQN_agent import DQNAgent

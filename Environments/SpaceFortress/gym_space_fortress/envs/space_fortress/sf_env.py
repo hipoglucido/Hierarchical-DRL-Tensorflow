@@ -16,7 +16,7 @@ import math
 from enum import Enum
 import time
 import logging
-from configuration import Constants as CT
+from constants import Constants as CT
 import imageio
 import shutil
 import glob
@@ -131,6 +131,7 @@ class SFEnv(gym.Env):
         self.step_counter = 0
         self.ep_counter = 0
         self.ep_reward = 0
+        self.steps_since_last_shot = 1e10 
         self.goal_has_changed = False
         self.print_shit = False
         self.currently_wrapping = False
@@ -150,7 +151,9 @@ class SFEnv(gym.Env):
         self.ep_counter += 1
         if len(self.imgs) > 0: 
             self.generate_video()
-       
+    def custom_reward(self, action):
+        
+        
     def step(self, a):
         """
         Performs one action on the environment. Always atomic actions 
@@ -161,19 +164,31 @@ class SFEnv(gym.Env):
         reward = 0.0
         done = False
         info = {}
-        if self.env_name == 'SF-v0':
-            info['fortress_hits'] = 0
         #Call the C++ function
         self.act(action)       
         self.update_logic()
         reward_delta = self.score() - self.config.env.time_penalty
+        
+        if self.env_name == 'SF-v0':
+            info['fortress_hits'] = 0
+#            if action == CT.key_to_action[self.env_name]['Key.space'] and \
+#                            self.steps_since_last_shot <  \
+#                                            self.config.min_steps_between_shots:
+#                reward_delta  -= 1
+        print("/ndid_I_hit_mine", self.did_I_hit_mine())
+        print("did_I_hit_fortress", self.did_I_hit_fortress())
+        print("did_mine_hit_me", self.did_mine_hit_me())
+        print("did_fortress_hit_me\n", self.did_fortress_hit_me())
+        
         if self.penalize_wrapping:
             reward_delta -= 1
+       
         reward += reward_delta
         done = self.terminal_state()
         if self.env_name == 'SFC-v0':
             if reward == 1 - self.config.env.time_penalty:
                 done = 1 #TODO: Revise if this ugly code can be removed
+            
         elif self.env_name == 'SF-v0' and reward_delta:
             info['fortress_hits'] += 1
        
@@ -341,7 +356,10 @@ class SFEnv(gym.Env):
         else:
             self.penalize_wrapping = False
             self.currently_wrapping = False
- 
+    def generate_extra_features(self, observation):
+        pass
+        
+        
     def get_observation(self):
         """
         Reads the raw vector environment state from the C++ code and
@@ -651,6 +669,10 @@ class SFEnv(gym.Env):
         self.pretty_screen = library.get_original_screen
 
         if self.env_name == 'SF-v0':
+            self.did_I_hit_mine = library.did_I_hit_mine
+            self.did_I_hit_fortress = library.did_I_hit_fortress
+            self.did_mine_hit_me = library.did_mine_hit_me
+            self.did_fortress_hit_me = library.did_fortress_hit_me
             self.get_vulner_counter = library.get_vulner_counter
             self.get_lifes_remaining = library.get_lifes_remaining
         sixteen_bit_img_bytes = self.screen_width * self.screen_height * 2

@@ -237,6 +237,12 @@ int Score_X;            /* Score value location within data line	*/
 int One_Game_Loops=3600; /*  number of loops in one game  3*60*20	*/
 int Game_Counter=0;
 float Score=0.0;
+/////////////////////////
+int Mine_Hit=0;
+int Fortress_Hit=0;
+int Hit_by_Fortress=0;
+int Hit_by_Mine=0;
+////////////////////////////////
 int Points=0;
 int Velocity=0;
 int Control=0;

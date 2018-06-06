@@ -10,7 +10,7 @@ from replay_memory import PriorityExperienceReplay, OldReplayMemory#, ReplayMemo
 import utils
 from goals import MDPGoal, generate_SF_goals
 from metrics import Metrics
-from configuration import Constants as CT
+from constants import Constants as CT
 from epsilon import Epsilon
         
 class HDQNAgent(base.Agent):
@@ -236,6 +236,7 @@ class HDQNAgent(base.Agent):
         self.mc_epsilon.setup(self.mc_ag, self.total_steps)
         old_obs = self.new_episode()        
         self.m.start_timer()
+        
         # Initial goal
         self.mc_step = self.mc_start_step
         self.c_step = self.c_start_step
@@ -289,8 +290,13 @@ class HDQNAgent(base.Agent):
 
                 else:
                     old_obs = new_obs.copy()
-  
-                self.mc_step += 1
+                """
+                self.mc_step is the MC equivalent for self.c_step (global counter)
+                and self.m_mc_steps is the MC equivalent for self.c.test_step,
+                which is constant in the case of C but not in the case of MC
+                """
+                self.mc_step += 1   
+                self.m.mc_steps += 1
                 
                 # Meta-controller sets goal
                 self.set_next_goal(old_obs)
@@ -301,8 +307,8 @@ class HDQNAgent(base.Agent):
             if not self.is_testing_time(prefix = 'c'):
                 continue
             
-            self.m.compute_test('c', self.m.c_update_count)
-            self.m.compute_test('mc', self.m.mc_update_count, self.mc_step)
+            self.m.compute_test('c')#, self.m.c_update_count)
+            self.m.compute_test('mc')#, self.m.mc_update_count, self.mc_step)
             goal_success_rate = self.m.compute_goal_results(self.goals)
             self.c_learnt = goal_success_rate > self.c_ag.learnt_threshold
 
@@ -315,7 +321,7 @@ class HDQNAgent(base.Agent):
                         {self.mc_step_input: self.mc_step + 1})
                 self.delete_last_checkpoints()
                 self.save_model(self.c_step + 1)
-                self.save_model(self.mc_step + 1)
+                #self.save_model(self.mc_step + 1)
                 self.m.update_best_score()
                 
 
@@ -329,8 +335,6 @@ class HDQNAgent(base.Agent):
             # Restart metrics
             self.m.restart()
             
- 
-
         
         
     def build_meta_controller(self):
