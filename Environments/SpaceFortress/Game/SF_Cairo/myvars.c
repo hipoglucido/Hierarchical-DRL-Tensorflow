@@ -240,6 +240,7 @@ float Score=0.0;
 /////////////////////////
 int Mine_Hit=0;
 int Fortress_Hit=0;
+int Too_Fast = 1;
 int Hit_by_Fortress=0;
 int Hit_by_Mine=0;
 ////////////////////////////////

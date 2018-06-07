@@ -176,11 +176,11 @@ void Test_Collisions()
   		//  Points=Points-50;
   		 Shell_Flag=KILL;        /* kill shell */
   		 Handle_Shell(); // Uncomment when done
-  		 if(Mine_Flag==ALIVE)    /* kill  mine  */
-  		   {
-  		     Mine_Flag=KILL;
-  		     Handle_Mine(); /* erase mine and reset counters */
-  		   }
+  		 // if(Mine_Flag==ALIVE)    /* kill  mine  */
+  		 //   {
+  		 //     Mine_Flag=KILL;
+  		 //     Handle_Mine(); /* erase mine and reset counters */
+  		 //   }
   		 Reset_All_Missiles();
   		//  Jitter_Ship();     	/* leaves ship on screen */
 	     }
@@ -234,7 +234,7 @@ void Test_Collisions()
 //    if(Missile_Flag[i]==ALIVE) // same as above
 	 if(Check_Collision(Missile_X_Pos[i],Missile_Y_Pos[i],
 			    MaxX/2,MaxY/2,COLLISION_DIST) )
-	 {
+	 {Fortress_Hit = 1;
 	    // New: (copied from shell vs. ship)
 	     Missile_Flag[i]=KILL;
 //		printf("Loop_Counter: %d Last_Missile_Hit: %d\n", Loop_Counter, Last_Missile_Hit);
@@ -266,6 +266,7 @@ void Test_Collisions()
 	      }
     	}
 	    else {
+	        Too_Fast = 1;
 	      	#ifdef DEBUG
 	      	system("say \"Too fast.\"&");
 	      	#endif

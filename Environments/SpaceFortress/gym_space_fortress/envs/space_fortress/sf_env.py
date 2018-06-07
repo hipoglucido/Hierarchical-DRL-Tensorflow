@@ -112,9 +112,9 @@ class Panel:
         color = (150, 25, 25)
         j = int(self.width * .7)
         draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
-        draw.text((j, 3), "%d hits" % info['hits'],
+        draw.text((j, 3), "%d ship" % info['ship'],
                                           color, font = self.font1)
-        draw.text((j, 20), "%d lifes" % info['lifes'],
+        draw.text((j, 20), "%d fortress" % info['fortress'],
                                           color, font = self.font1)
         return panel
             
@@ -131,11 +131,15 @@ class SFEnv(gym.Env):
         self.step_counter = 0
         self.ep_counter = 0
         self.ep_reward = 0
-        self.steps_since_last_shot = 1e10 
+        self.steps_since_last_shot = 1e10
+        self.steps_since_last_fortress_hit = 1e10
         self.goal_has_changed = False
         self.print_shit = False
         self.currently_wrapping = False
         self.penalize_wrapping = False
+        self.win = False
+        
+    
         
     def _seed(self):
         #TODO
@@ -151,50 +155,140 @@ class SFEnv(gym.Env):
         self.ep_counter += 1
         if len(self.imgs) > 0: 
             self.generate_video()
-    def custom_reward(self, action):
+            
+    def get_custom_reward(self, action):
+        
+        reward = 0
+        
+        # Penalize shooting fast
+        if self.is_shot(action) and \
+                    self.steps_since_last_shot < \
+                                self.config.env.min_steps_between_shots and \
+                    self.fortress_lifes > 2:
+            reward -= self.config.env.fast_shooting_penalty
+        if self.is_shot(action):
+            self.steps_since_last_shot = 0
+        else:
+            self.steps_since_last_shot += 1
+
+        if self.did_I_hit_mine() and self.config.env.mines_activated:
+            reward += 1
+            
+        if self.did_I_hit_fortress():
+            self.fortress_lifes -= 1
+            if self.fortress_lifes == 0 and \
+                    self.steps_since_last_fortress_hit < \
+                            self.config.env.min_steps_between_fortress_hits:
+                reward += self.config.env.final_double_shot_reward
+                self.win = True
+            elif self.steps_since_last_fortress_hit > \
+                            self.config.env.min_steps_between_fortress_hits:
+                reward += 1
+            else:
+                self.fortress_lifes += 1
+            self.steps_since_last_fortress_hit = 0
+        else:            
+            self.steps_since_last_fortress_hit += 1
+            if self.steps_since_last_fortress_hit > 3 and self.fortress_lifes == 1:
+                self.fortress_lifes = 2
+            
+            
+        if self.fortress_lifes == 1 > self.steps_since_last_fortress_hit >= 3:
+            self.fortress_lifes += 1
+            
+        # Bad
+        if self.did_mine_hit_me() and self.config.env.mines_activated:
+            reward -= 1
+            self.ship_lifes -= 1
+        if self.did_fortress_hit_me():
+            reward -= 1
+            self.ship_lifes -= 1
+        
+        # Time penalty
+        reward -= self.config.env.time_penalty
+        
+        # Penalize wrapping
+        if self.penalize_wrapping:
+            reward -= 1
         
         
-    def step(self, a):
+        
+        return reward
+    
+#    def can_destroy_fortress(self, action):
+#        return self.is_shot(action)
+        
+    def is_shot(self, action):
+        return action == CT.key_to_action[self.env_name]['Key.space']
+        
+    def perform_action(self, action):
+        key_id = self._action_set[action]
+        self.set_key(key_id)        
+        self.SF_iteration()
+        #self.steps_since_last_fortress_hit
+#        if self.is_shot(action) and self.steps_since_last_shot < 3:
+#            pass
+#        if self.is_shot(action):
+#            self.steps_since_last_shot = 0
+#        else:
+#            self.steps_since_last_shot += 1
+#            if self.steps_since_last_shot < self.config.env.min_steps_between_shots:
+                
+    def is_terminal(self):
+        is_terminal = False
+        if self.win:
+            is_terminal = True
+        elif self.fortress_lifes == 0:
+            
+            is_terminal = True
+        elif self.step_counter >= self.config.env.max_loops:
+            
+            is_terminal = True        
+        return is_terminal
+    
+    def step(self, action):
         """
         Performs one action on the environment. Always atomic actions 
         (granularity = 1). This method is agnostic to the
         action_repeat / frameskip that is being used by the agent.
         """
-        action = self._action_set[a]
-        reward = 0.0
-        done = False
-        info = {}
-        #Call the C++ function
-        self.act(action)       
-        self.update_logic()
-        reward_delta = self.score() - self.config.env.time_penalty
         
-        if self.env_name == 'SF-v0':
-            info['fortress_hits'] = 0
+#        reward = 0.0
+#        done = False
+        
+        #Call the C++ function
+        self.perform_action(action)       
+#        print('***', self.fortress_lifes)
+#        reward_delta = self.score() - self.config.env.time_penalty
+#        print("\ndid_I_hit_fortress", self.did_I_hit_fortress())
+#        print("\nwas_I_too_fast", self.was_I_too_fast())
+        reward = self.get_custom_reward(action)
+#        if self.env_name == 'SF-v0':
+#            info['fortress_hits'] = 0
 #            if action == CT.key_to_action[self.env_name]['Key.space'] and \
 #                            self.steps_since_last_shot <  \
 #                                            self.config.min_steps_between_shots:
 #                reward_delta  -= 1
-        print("/ndid_I_hit_mine", self.did_I_hit_mine())
-        print("did_I_hit_fortress", self.did_I_hit_fortress())
-        print("did_mine_hit_me", self.did_mine_hit_me())
-        print("did_fortress_hit_me\n", self.did_fortress_hit_me())
+#        print("/ndid_I_hit_mine", self.did_I_hit_mine())
         
-        if self.penalize_wrapping:
-            reward_delta -= 1
-       
-        reward += reward_delta
-        done = self.terminal_state()
-        if self.env_name == 'SFC-v0':
-            if reward == 1 - self.config.env.time_penalty:
-                done = 1 #TODO: Revise if this ugly code can be removed
-            
-        elif self.env_name == 'SF-v0' and reward_delta:
-            info['fortress_hits'] += 1
-       
+#        print("did_mine_hit_me", self.did_mine_hit_me())
+#        print("did_fortress_hit_me\n", self.did_fortress_hit_me())
+#        
+#        if self.penalize_wrapping:
+#            reward_delta -= 1
+#       
+#        
+        done = self.is_terminal()
+        info = {'fortress_hits' : self.did_I_hit_fortress()}
+        
+        
+        self.restart_variables()
         self.step_counter += 1
         self.ep_reward += reward
         observation = self.get_observation()
+        
+        
+     
         return observation, reward, done, info
     
     def scale_observation(self, raw_obs):
@@ -225,6 +319,11 @@ class SFEnv(gym.Env):
             raw_obs[8]  /= 100                        # Missile_Stock
             raw_obs[9]  /= self.screen_height         # Mine_Y_Pos
             raw_obs[10] /= self.screen_width          # Mine_X_Pos
+            raw_obs[11] /= self.config.env.fortress_lifes
+            raw_obs[12] = np.tanh(raw_obs[12] * .1)#1 / (1 + np.exp(-raw_obs[12]))
+ 
+#            feature_names += ['mine_pos_i', 'mine_pos_j', 'fortress_lifes',
+#                              'steps_since_last_shot']
             
             # If missiles are away from the screen, put them as 0, 0
             if self.last_shell_coords == (raw_obs[5], raw_obs[6]):
@@ -294,9 +393,9 @@ class SFEnv(gym.Env):
 
         #Adds the panel to right of the image
         env_img = Image.fromarray(img)      
-        info = {'steps' : self.step_counter,
-                'hits'  : self.get_vulner_counter(),
-                'lifes' : self.get_lifes_remaining()}
+        info = {'steps'     : self.step_counter,
+                'fortress'  : self.fortress_lifes,
+                'ship'      : self.ship_lifes}
         panel_img = self.panel.get_image(info)
         width = self.screen_width + self.panel.width
         height = self.screen_height
@@ -359,7 +458,17 @@ class SFEnv(gym.Env):
     def generate_extra_features(self, observation):
         pass
         
+    def get_raw_observation(self):  
+        # From C++ game
+        game_obs = np.ctypeslib.as_array(self.get_symbols().contents)
         
+        # Extra features
+        extra_obs = np.array([self.fortress_lifes, self.steps_since_last_shot], dtype = np.float)
+        
+        # Concat
+        raw_observation = np.hstack([game_obs, extra_obs])
+        return raw_observation
+    
     def get_observation(self):
         """
         Reads the raw vector environment state from the C++ code and
@@ -368,20 +477,21 @@ class SFEnv(gym.Env):
             3) preprocess the raw vector
         """
         #Read raw vector
-        obs = np.ctypeslib.as_array(self.get_symbols().contents)
+        raw_obs = self.get_raw_observation()
         
         #Scale
-        obs = self.scale_observation(obs)
+        scaled_obs = self.scale_observation(raw_obs)
         
         #Check if spaceship is wrapping and penalize
         if self.is_wrapper:
-            self.check_wrapping(obs)
+            self.check_wrapping(scaled_obs)
         
         #Preprocessing
-        preprocessed_obs = self.preprocess_observation(obs)
+        preprocessed_obs = self.preprocess_observation(scaled_obs)
         
         #Make sure that the resulting vector is properly scaled
-        assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(), str([obs, preprocessed_obs])
+        assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(),\
+                    str([raw_obs, scaled_obs, preprocessed_obs])
         return preprocessed_obs
     
     def reset(self):
@@ -415,6 +525,7 @@ class SFEnv(gym.Env):
             self.last_mine_coords = (0., 0.)
         
         #Reload game
+        self.__init__()
         self.configure(self.config)
         
         #Get first observation
@@ -477,17 +588,19 @@ class SFEnv(gym.Env):
             
         elif self.env_name == 'SF-v0':
             self.raw_features_name_to_ix = {
-                    'ship_pos_i'     : 0,
-                    'ship_pos_j'     : 1,
-                    'ship_speed_i'   : 2,
-                    'ship_speed_j'   : 3,
-                    'ship_headings'  : 4,
-                    'missile_pos_i'  : 5,
-                    'missile_pos_j'  : 6,
-                    'fort_headings'  : 7,
-                    'missile_stock'  : 8,
-                    'mine_pos_i'     : 9,
-                    'mine_pos_j'     : 10
+                    'ship_pos_i'            : 0,
+                    'ship_pos_j'            : 1,
+                    'ship_speed_i'          : 2,
+                    'ship_speed_j'          : 3,
+                    'ship_headings'         : 4,
+                    'missile_pos_i'         : 5,
+                    'missile_pos_j'         : 6,
+                    'fort_headings'         : 7,
+                    'missile_stock'         : 8,
+                    'mine_pos_i'            : 9,
+                    'mine_pos_j'            : 10,
+                    'fortress_lifes'        : 11,
+                    'steps_since_last_shot' : 12
                     }
             
     def define_features(self):
@@ -572,9 +685,13 @@ class SFEnv(gym.Env):
             #Mines don't wrap even if wrapping is activated
             prep_fs += [
                 lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
-                lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+                lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')],
+                lambda obs: [self.get_raw_feature(obs, 'fortress_lifes')],
+                lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')]
                 ]
-            feature_names += ['mine_pos_i', 'mine_pos_j']
+            feature_names += ['mine_pos_i', 'mine_pos_j', 'fortress_lifes',
+                              'steps_since_last_shot']
+          
             
 
         if self.is_no_direction:
@@ -640,7 +757,7 @@ class SFEnv(gym.Env):
         
         #self.update = library.update_frame
         self.init_game = library.start_drawing
-        self.act = library.set_key
+        self.set_key = library.set_key
         self.reset_sf = library.reset_sf
         #self.screen = library.get_screen
         self.get_screen_width = library.get_screen_width
@@ -659,7 +776,7 @@ class SFEnv(gym.Env):
         n_raw_symbols = CT.SF_observation_space_sizes[self.env_name]
         self.get_symbols.restype = ctypes.POINTER(ctypes.c_float * n_raw_symbols)
 
-        self.update_logic = library.SF_iteration
+        self.SF_iteration = library.SF_iteration
         self.update_screen = library.update_screen
 
 
@@ -670,11 +787,13 @@ class SFEnv(gym.Env):
 
         if self.env_name == 'SF-v0':
             self.did_I_hit_mine = library.did_I_hit_mine
+            self.was_I_too_fast = library.was_I_too_fast
             self.did_I_hit_fortress = library.did_I_hit_fortress
             self.did_mine_hit_me = library.did_mine_hit_me
             self.did_fortress_hit_me = library.did_fortress_hit_me
             self.get_vulner_counter = library.get_vulner_counter
             self.get_lifes_remaining = library.get_lifes_remaining
+            self.restart_variables = library.restart_variables
         sixteen_bit_img_bytes = self.screen_width * self.screen_height * 2
         self.pretty_screen.restype = ctypes.POINTER(ctypes.c_ubyte * sixteen_bit_img_bytes)
         self.score.restype = ctypes.c_float    
@@ -699,6 +818,9 @@ class SFEnv(gym.Env):
        
         font_path = os.path.join(self.config.gl.others_dir, 'Consolas.ttf')
         self.panel = Panel(self.screen_height, font_path)
+        
+        self.fortress_lifes = self.config.env.fortress_lifes
+        self.ship_lifes = self.config.env.ship_lifes
         
 
     

@@ -15,8 +15,8 @@
 
 
 /////////
-#define SHIP_LIFES 1000
-#define FORT_LIFES 1000
+#define SHIP_LIFES 10000
+#define FORT_LIFES 10000
 /////////
 
 

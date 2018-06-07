@@ -89,29 +89,30 @@ float* get_symbols()
 	return symbols;
 }
 
+int was_I_too_fast(){
+	return Too_Fast;
 
+}
 int did_I_hit_mine(){
-	int result = Mine_Hit;
-	Mine_Hit  = 0;
-	return result;
+	return Mine_Hit;
 }
 int did_I_hit_fortress(){
-	int result = Fortress_Hit;
-	Fortress_Hit = 0;
-	return result;
+	return Fortress_Hit;
 }
 
 int did_mine_hit_me(){
-	int result = Hit_by_Mine;
-	Hit_by_Mine  = 0;
-	return result;
+	return Hit_by_Mine;
 }
 int did_fortress_hit_me(){
-	int result = Hit_by_Fortress;
-	Hit_by_Fortress = 0;
-	return result;
+	return Hit_by_Fortress;
 }
-
+void restart_variables(){
+	Hit_by_Fortress = 0;
+	Hit_by_Mine = 0;
+	Too_Fast = 0;
+	Mine_Hit = 0;
+	Fortress_Hit = 0;
+}
 
 int get_vulner_counter(){
 	return Vulner_Counter;

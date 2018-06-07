@@ -104,15 +104,15 @@ def execute_experiment(args):
     
     if args['env_name'] == 'SFC-v0':
         #Space Fortress
-        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
+        env_st = configuration.SpaceFortressSettings(new_attrs = args)
         
     elif args['env_name'] == 'AIM-v0':
         #Space Fortress
-        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
+        env_st = configuration.SpaceFortressSettings(new_attrs = args)
         
     elif args['env_name'] == 'SF-v0':
         #Space Fortress
-        env_st = configuration.SpaceFortressControlSettings(new_attrs = args)
+        env_st = configuration.SpaceFortressSettings(new_attrs = args)
         
     elif args['env_name'] == 'stochastic_mdp-v0':
         #MDP

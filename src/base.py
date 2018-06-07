@@ -41,7 +41,7 @@ class Agent(object):
         self.add_output(msg)
         
     def process_info(self, info):
-        if self.environment.env_name == 'SF-v0':
+        if self.environment.env_name == 'SF-v0':            
             self.m.fortress_hits += info['fortress_hits']
             
     def play(self):        
