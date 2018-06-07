@@ -41,8 +41,11 @@ class Agent(object):
         self.add_output(msg)
         
     def process_info(self, info):
-        if self.environment.env_name == 'SF-v0':            
-            self.m.fortress_hits += info['fortress_hits']
+        if self.environment.env_name == 'SF-v0':       
+            
+            self.m.fortress_hits += info['fortress_hit']
+            self.m.mine_hits += info['mine_hit']
+            self.m.wins += info['win']
             
     def play(self):        
         self.train()

@@ -64,7 +64,7 @@ class Constants:
             1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
             2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
             3 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
-            4 : ['aim_at_fortress', 'aim_at_mine']
+            4 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
                 },
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],

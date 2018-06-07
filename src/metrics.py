@@ -39,7 +39,7 @@ class Metrics:
                                  'debug_no_ep_error', 'progress']
         if self.config.env.env_name == 'SF-v0':
             
-            self.scalar_global_tags.append('fortress_hits')
+            self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits']
                                            
         if self.is_hdqn:
             #hDQN

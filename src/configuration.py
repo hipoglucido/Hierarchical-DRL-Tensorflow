@@ -218,7 +218,7 @@ class DQNSettings(AgentSettings):
         self.architecture = [64, 64]
         self.architecture_duel = [32, 32]
         
-        self.test_step = 3500#int(self.max_step / 10)
+        self.test_step = 5000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -414,11 +414,11 @@ class SpaceFortressSettings(EnvironmentSettings):
 
         self.record = False
         self.stats = False
-        self.mines_activated = False
+        self.mines_activated = 1
         self.min_steps_between_shots = 5
         self.ship_lifes = 100
         self.fortress_lifes = 5
-        self.max_loops = 10000
+        self.max_loops = 2000
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 10

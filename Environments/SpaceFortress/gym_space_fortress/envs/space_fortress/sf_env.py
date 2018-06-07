@@ -139,6 +139,7 @@ class SFEnv(gym.Env):
         self.penalize_wrapping = False
         self.win = False
         
+        
     
         
     def _seed(self):
@@ -153,7 +154,7 @@ class SFEnv(gym.Env):
 
     def after_episode(self):
         self.ep_counter += 1
-        if len(self.imgs) > 0: 
+        if len(self.imgs) > 0 and self.step_counter < self.config.env.max_loops: 
             self.generate_video()
             
     def get_custom_reward(self, action):
@@ -166,6 +167,7 @@ class SFEnv(gym.Env):
                                 self.config.env.min_steps_between_shots and \
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
+            
         if self.is_shot(action):
             self.steps_since_last_shot = 0
         else:
@@ -174,27 +176,34 @@ class SFEnv(gym.Env):
         if self.did_I_hit_mine() and self.config.env.mines_activated:
             reward += 1
             
-        if self.did_I_hit_fortress():
+            
+        if self.did_I_hit_fortress() and self.step_counter != 0:
+            
             self.fortress_lifes -= 1
             if self.fortress_lifes == 0 and \
                     self.steps_since_last_fortress_hit < \
                             self.config.env.min_steps_between_fortress_hits:
                 reward += self.config.env.final_double_shot_reward
+                # WIN!
                 self.win = True
             elif self.steps_since_last_fortress_hit > \
                             self.config.env.min_steps_between_fortress_hits:
                 reward += 1
+                
             else:
-                self.fortress_lifes += 1
+                # You shoot too fast when it was not allowed
+                self.fortress_lifes += 1           
             self.steps_since_last_fortress_hit = 0
         else:            
+            # Didn't hit the fortress
             self.steps_since_last_fortress_hit += 1
-            if self.steps_since_last_fortress_hit > 3 and self.fortress_lifes == 1:
-                self.fortress_lifes = 2
+            if self.steps_since_last_fortress_hit > \
+                        self.config.env.min_steps_between_fortress_hits and \
+                                        self.fortress_lifes == 1:
+                # fortress_lifes 1 -> 2
+                pass#self.fortress_lifes = 2
             
-            
-        if self.fortress_lifes == 1 > self.steps_since_last_fortress_hit >= 3:
-            self.fortress_lifes += 1
+    
             
         # Bad
         if self.did_mine_hit_me() and self.config.env.mines_activated:
@@ -210,13 +219,8 @@ class SFEnv(gym.Env):
         # Penalize wrapping
         if self.penalize_wrapping:
             reward -= 1
-        
-        
-        
         return reward
     
-#    def can_destroy_fortress(self, action):
-#        return self.is_shot(action)
         
     def is_shot(self, action):
         return action == CT.key_to_action[self.env_name]['Key.space']
@@ -225,24 +229,14 @@ class SFEnv(gym.Env):
         key_id = self._action_set[action]
         self.set_key(key_id)        
         self.SF_iteration()
-        #self.steps_since_last_fortress_hit
-#        if self.is_shot(action) and self.steps_since_last_shot < 3:
-#            pass
-#        if self.is_shot(action):
-#            self.steps_since_last_shot = 0
-#        else:
-#            self.steps_since_last_shot += 1
-#            if self.steps_since_last_shot < self.config.env.min_steps_between_shots:
-                
+
     def is_terminal(self):
         is_terminal = False
         if self.win:
             is_terminal = True
         elif self.fortress_lifes == 0:
-            
             is_terminal = True
         elif self.step_counter >= self.config.env.max_loops:
-            
             is_terminal = True        
         return is_terminal
     
@@ -279,7 +273,9 @@ class SFEnv(gym.Env):
 #       
 #        
         done = self.is_terminal()
-        info = {'fortress_hits' : self.did_I_hit_fortress()}
+        info = {'fortress_hit' : self.did_I_hit_fortress(),
+                'mine_hit'     : self.did_I_hit_mine(),
+                'win'           : int(self.win)}
         
         
         self.restart_variables()
@@ -419,8 +415,8 @@ class SFEnv(gym.Env):
         of them
         """
       
-        video_name = "ep%d_%s_R%d.mp4" % (self.ep_counter, self.current_time, \
-                                                              self.ep_reward)
+        video_name = "ep%d_%s_R%d_win%d.mp4" % (self.ep_counter, self.current_time, \
+                                                              self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)
         (original_width, original_heigth) = self.imgs[0].size
         # PIL image >>> np.array
@@ -526,6 +522,7 @@ class SFEnv(gym.Env):
         
         #Reload game
         self.__init__()
+        
         self.configure(self.config)
         
         #Get first observation
@@ -683,14 +680,19 @@ class SFEnv(gym.Env):
                 feature_names += ['ship_speed_i', 'ship_speed_j']          
         if self.env_name == 'SF-v0':
             #Mines don't wrap even if wrapping is activated
-            prep_fs += [
-                lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
-                lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')],
+            if self.config.env.mines_activated:
+                prep_fs += [
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+                    ]
+                feature_names += ['mine_pos_i', 'mine_pos_j']
+          
+            
+            prep_fs += [         
                 lambda obs: [self.get_raw_feature(obs, 'fortress_lifes')],
                 lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')]
                 ]
-            feature_names += ['mine_pos_i', 'mine_pos_j', 'fortress_lifes',
-                              'steps_since_last_shot']
+            feature_names += ['fortress_lifes', 'steps_since_last_shot']
           
             
 
@@ -740,14 +742,9 @@ class SFEnv(gym.Env):
         
         libpath=self.config.env.library_path
 
-
-        first = self.env_name.split('-')[0].lower()
-        if self.config.env.mines:
-            second = '_mines'
-        else:
-            second = ''
-#            assert 0
-        libname =  '%s%s_frame_lib.so' % (first, second)
+        libname =  '%s_frame_lib_mines%d.so' % \
+                                (self.env_name.split('-')[0].lower(),
+                                 int(self.config.env.mines_activated))
         
         # Link the environment to the shared libraries
         lib_dir = os.path.join(libpath, libname)
@@ -794,6 +791,7 @@ class SFEnv(gym.Env):
             self.get_vulner_counter = library.get_vulner_counter
             self.get_lifes_remaining = library.get_lifes_remaining
             self.restart_variables = library.restart_variables
+            
         sixteen_bit_img_bytes = self.screen_width * self.screen_height * 2
         self.pretty_screen.restype = ctypes.POINTER(ctypes.c_ubyte * sixteen_bit_img_bytes)
         self.score.restype = ctypes.c_float    
