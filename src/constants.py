@@ -51,6 +51,7 @@ class Constants:
         return names
     
     goal_groups = {
+        # Control task
         'SFC-v0' : {
             0 : [],
             1 : get_region_names(4),
@@ -59,6 +60,7 @@ class Constants:
             4 : SF_action_spaces['SFC-v0'],
             5 : ['aim_at_square'] + SF_action_spaces['SFC-v0']
             },
+        # SF task
         'SF-v0'  : {
             0 : [],
             1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
@@ -66,6 +68,7 @@ class Constants:
             3 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
             4 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
                 },
+        # Aim task
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
             1 : []

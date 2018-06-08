@@ -183,7 +183,7 @@ class SFEnv(gym.Env):
             if self.fortress_lifes == 0 and \
                     self.steps_since_last_fortress_hit < \
                             self.config.env.min_steps_between_fortress_hits:
-                reward += self.config.env.final_double_shot_reward
+                reward = self.config.env.final_double_shot_reward 
                 # WIN!
                 self.win = True
             elif self.steps_since_last_fortress_hit > \
@@ -422,7 +422,11 @@ class SFEnv(gym.Env):
         # PIL image >>> np.array
         self.imgs = [np.array(img) for img in self.imgs]
         #Adds a white frame at the end (useful if .gif is produced)
-        blank = self.imgs[-1].copy() * 0 + 255
+        last_frame = self.imgs[-1].copy()
+        if self.win:
+            # Debug and see reward
+            self.imgs.append(last_frame)
+        blank = last_frame * 0 + 255
         self.imgs.append(blank)
         #Make video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')

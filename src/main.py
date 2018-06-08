@@ -73,6 +73,11 @@ def execute_experiment(args):
         pass#args['display_prob'] = 1
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
+    if args['env_name'] == 'SF-v0':
+        if args['mines_activated']:
+            args['goal_group'] = 3
+        else:
+            args['goal_group'] = 4
     if 'architecture' in args and args['architecture'] is not None:
         args['architecture'] = args['architecture'].split('-')
         

@@ -118,7 +118,9 @@ class DQNAgent(Agent):
 
     def q_learning_mini_batch(self):        
         (s_t, action, reward, s_t_plus_1, terminal), idx_list, p_list, \
-                                        sum_p, count = self.memory.sample()                                          
+                                        sum_p, count = self.memory.sample() 
+        
+        #assert all(reward < 9), str(reward)
         target_q_t = self.generate_target_q_t(prefix       = '',
                                               reward       = reward,
                                               s_t_plus_1   = s_t_plus_1,
