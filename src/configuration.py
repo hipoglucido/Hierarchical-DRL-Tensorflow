@@ -1,8 +1,10 @@
 import os
-import math
 import pprint
 import utils
-
+"""
+Class for hyperparameters and other configuration aspects.
+[IMPORTANT] Parameters set through command line will overwrite whatever is here
+"""
 
     
 class Configuration:
@@ -31,12 +33,7 @@ class Configuration:
         return dictionary
     
     def to_str(self): return pprint.pformat(self.to_dict())
-    
-#    def print(self):
-#        msg =  "\n" + self.to_str()
-#        #logging.info(msg)   
-#        print(msg)
-        
+     
     @property
     def model_name(self):
         chain = []
@@ -418,7 +415,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.min_steps_between_shots = 5
         self.ship_lifes = 100
         self.fortress_lifes = 5
-        self.max_loops = 2000
+        self.max_loops = 1000
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 10
