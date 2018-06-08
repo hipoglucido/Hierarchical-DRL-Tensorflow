@@ -38,8 +38,12 @@ class Metrics:
                                  'total_episodes', 'debug_states_rfreq_sum',
                                  'debug_no_ep_error', 'progress']
         if self.config.env.env_name == 'SF-v0':
-            
-            self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits']
+            self.special_SF_tags = ['steps_to_destroy', 'steps_to_win']
+            self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits',
+                                        'wrap_penalizations',
+                                        'shot_too_fast_penalizations']
+            for tag in self.special_SF_tags:
+                self.scalar_global_tags.append('avg_' + tag)
                                            
         if self.is_hdqn:
             #hDQN
@@ -76,7 +80,8 @@ class Metrics:
         else:
             #DQN
             self.ag_histogram_tags = ['actions', 'ep_rewards']
-        
+        if self.is_SF:
+           self.histogram_global_tags += self.special_SF_tags             
         
         
         self.goal_tags = []
@@ -320,7 +325,7 @@ class Metrics:
             summary[tag] = getattr(self, tag)
           
         return summary
-    
+   
     def compute_test(self, prefix, update_count = None, mc_steps = None):
         assert prefix in ['c', 'mc', '']
         prefix = prefix + '_' if prefix != '' else prefix
@@ -364,6 +369,15 @@ class Metrics:
         except ZeroDivisionError:
             steps_per_episode = self.error_value
         setattr(self, prefix + 'steps_per_episode', steps_per_episode)
+        
+        if self.is_SF:
+            for tag in self.special_SF_tags:
+                values = getattr(self, tag)
+                try:
+                    avg = sum(values) / len(values)
+                except ZeroDivisionError:
+                    avg = -100
+                setattr(self, 'avg_%s' % tag, avg)
         
     def add_act(self, action, state = None):
         if self.is_hdqn:

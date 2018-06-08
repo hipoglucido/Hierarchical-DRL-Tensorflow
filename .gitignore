@@ -2,8 +2,10 @@
 src/__pycache__/
 Others/logs/
 src/saved_logs/
-Others//checkpoints/
+Others/checkpoints/
 *.out
+*.meta
+*.index
 *.mp4
 Environments/SpaceFortress/gym_space_fortress/__pycache__/
 Environments/SpaceFortress/gym_space_fortress/monitoring/__pycache__/
@@ -15,7 +17,6 @@ __pycache__/
 *.py[cod]
 *.gif
 # C extensions
-*.so
 *.o
 # Distribution / packaging
 bin/

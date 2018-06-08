@@ -8,7 +8,6 @@ import datetime
 import numpy as np
 import cv2
 import os
-import csv
 from pathlib import Path
 import sys
 import math
@@ -139,6 +138,9 @@ class SFEnv(gym.Env):
         self.penalize_wrapping = False
         self.win = False
         
+        #Just for metrics
+        self.shot_too_fast = False
+        
         
     
         
@@ -167,6 +169,9 @@ class SFEnv(gym.Env):
                                 self.config.env.min_steps_between_shots and \
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
+            self.shot_too_fast = True
+        else:
+            self.shot_too_fast = False
             
         if self.is_shot(action):
             self.steps_since_last_shot = 0
@@ -247,35 +252,19 @@ class SFEnv(gym.Env):
         action_repeat / frameskip that is being used by the agent.
         """
         
-#        reward = 0.0
-#        done = False
-        
         #Call the C++ function
         self.perform_action(action)       
-#        print('***', self.fortress_lifes)
-#        reward_delta = self.score() - self.config.env.time_penalty
-#        print("\ndid_I_hit_fortress", self.did_I_hit_fortress())
-#        print("\nwas_I_too_fast", self.was_I_too_fast())
         reward = self.get_custom_reward(action)
-#        if self.env_name == 'SF-v0':
-#            info['fortress_hits'] = 0
-#            if action == CT.key_to_action[self.env_name]['Key.space'] and \
-#                            self.steps_since_last_shot <  \
-#                                            self.config.min_steps_between_shots:
-#                reward_delta  -= 1
-#        print("/ndid_I_hit_mine", self.did_I_hit_mine())
-        
-#        print("did_mine_hit_me", self.did_mine_hit_me())
-#        print("did_fortress_hit_me\n", self.did_fortress_hit_me())
-#        
-#        if self.penalize_wrapping:
-#            reward_delta -= 1
-#       
-#        
+
         done = self.is_terminal()
-        info = {'fortress_hit' : self.did_I_hit_fortress(),
-                'mine_hit'     : self.did_I_hit_mine(),
-                'win'           : int(self.win)}
+        destroyed = int(self.fortress_lifes == 0)
+        info = {'fortress_hit'               : self.did_I_hit_fortress(),
+                'mine_hit'                   : self.did_I_hit_mine(),
+                'win'                        : int(self.win),
+                'destroyed'                  : destroyed,
+                'steps'                      : self.step_counter, 
+                'wrap_penalization'          : int(self.penalize_wrapping),
+                'shot_too_fast_penalization' : int(self.shot_too_fast)}
         
         
         self.restart_variables()

@@ -13,8 +13,8 @@ class Key_MDPEnv(MDP):
                         2 : (self.apply_down,  'down'),
                         3 : (self.apply_left,  'left')}
         self.big_reward = 1
-        self.small_reward = 0.1
-        self.negative_reward = -1
+        self.small_reward = 0
+        self.negative_reward = -0.1
         
     def reset(self):
         if not self.random_reset:
@@ -30,8 +30,6 @@ class Key_MDPEnv(MDP):
                 if not any([pos(i, j) for pos in invalid]):
                     valid = True
                     self.current_state = state
-                
-                
         self.has_key = False
         observation = self.current_state.flatten()
         return observation
