@@ -11,6 +11,22 @@ def run_cmd(cmd):
 class Experiment():
     def __init__(self, name, paralel):
         args_list = []
+        if name == 'exp1':
+            # toy_problem
+            hyperparameter_space = {
+                    'agent_types'             : ['dqn', 'hdqn'],
+                    'random_seeds'           : list(range(10))
+                    }
+            base_args = {
+                    'agent_type'            : 'dqn',
+                    'env_name'              : 'key_mdp-v0',
+                    'scale'                 : 100,    
+                    'mode'                  : 'train',
+                    'display_prob'          : 0.001,
+                    'use_gpu'               : 0,
+                    'dueling'               : 0,
+                    'double_q'              : 0
+            }  
         if name == 'exp5':
             # pmemory effect on hdqn
             hyperparameter_space = {

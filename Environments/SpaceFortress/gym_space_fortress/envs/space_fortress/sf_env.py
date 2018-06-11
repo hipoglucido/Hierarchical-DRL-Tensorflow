@@ -520,6 +520,7 @@ class SFEnv(gym.Env):
         
         #Get first observation
         observation = self.get_observation()
+        ship_pos_i = self.get
         return observation # For some reason should show the observation
 
 

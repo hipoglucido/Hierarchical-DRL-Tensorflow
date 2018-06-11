@@ -65,10 +65,10 @@ class Key_MDPEnv(MDP):
     def is_bottom_left(self, i, j):
         return i == self.factor - 1 and j == 0
     
-    def has_ended(self):
-        i, j = self.get_coords(self.current_state)
-        return any([self.is_upper_left(i, j), self.is_upper_right(i, j),
-                    self.is_bottom_left(i, j), self.is_bottom_right(i, j)])
+#    def has_ended(self):
+#        i, j = self.get_coords(self.current_state)
+#        return any([self.is_upper_left(i, j), self.is_upper_right(i, j),
+#                    self.is_bottom_left(i, j), self.is_bottom_right(i, j)])
         
     def get_template(self, n):
         template = np.zeros(self.shape, dtype = np.int32)
@@ -118,7 +118,7 @@ class Key_MDPEnv(MDP):
         new_i, new_j = self.move(action)
         info = {}
         if self.is_upper_right(new_i, new_j) or self.is_bottom_left(new_i, new_j):
-            reward, terminal = self.negative_reward, True
+            reward, terminal = self.negative_reward, False#True
         elif self.is_upper_left(new_i, new_j) and self.has_key:
             reward, terminal = self.big_reward, True
         elif self.is_upper_left(new_i, new_j) and not self.has_key:
