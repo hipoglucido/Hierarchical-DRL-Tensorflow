@@ -111,7 +111,7 @@ class Panel:
         color = (150, 25, 25)
         j = int(self.width * .7)
         draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
-        draw.text((j, 3), "%d ship" % info['ship'],
+        draw.text((j, 3), "%s debug" % info['ship'],
                                           color, font = self.font1)
         draw.text((j, 20), "%d fortress" % info['fortress'],
                                           color, font = self.font1)
@@ -141,6 +141,7 @@ class SFEnv(gym.Env):
         #Just for metrics
         self.shot_too_fast = False
         
+        self.delete = ''
         
     
         
@@ -272,7 +273,8 @@ class SFEnv(gym.Env):
         self.ep_reward += reward
         observation = self.get_observation()
         
-        
+        #info['steps'] = 
+        self.delete =str(self.get_prep_feature(observation, 'fortress_lifes'))
      
         return observation, reward, done, info
     
@@ -381,7 +383,7 @@ class SFEnv(gym.Env):
         env_img = Image.fromarray(img)      
         info = {'steps'     : self.step_counter,
                 'fortress'  : self.fortress_lifes,
-                'ship'      : self.ship_lifes}
+                'ship'      : self.delete}#self.ship_lifes}
         panel_img = self.panel.get_image(info)
         width = self.screen_width + self.panel.width
         height = self.screen_height
