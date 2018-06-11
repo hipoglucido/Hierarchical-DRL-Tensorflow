@@ -412,15 +412,15 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.record = False
         self.stats = False
         self.mines_activated = 1
-        self.min_steps_between_shots = 5
+       
         self.ship_lifes = 100
         self.fortress_lifes = 10
         self.max_loops = 1000
         self.time_penalty = 0.00
         
-        self.final_double_shot_reward = 10
+        self.final_double_shot_reward = 20
         self.fast_shooting_penalty = 1
-        self.min_steps_between_shots = 2
+        self.min_steps_between_shots = 5
         self.min_steps_between_fortress_hits = 3
         self.update(new_attrs)
         

@@ -156,13 +156,13 @@ class SFEnv(gym.Env):
 
     def after_episode(self):
         self.ep_counter += 1
-        if len(self.imgs) > 0 and self.step_counter < self.config.env.max_loops: 
+        if len(self.imgs) > 0 and \
+            (self.step_counter <= self.config.env.max_loops + 1 or \
+                                     self.config.ag.mode == 'play'):
             self.generate_video()
             
     def get_custom_reward(self, action):
-        
-        reward = 0
-        
+        reward = 0        
         # Penalize shooting fast
         if self.is_shot(action) and \
                     self.steps_since_last_shot < \
@@ -360,6 +360,7 @@ class SFEnv(gym.Env):
         current episode that will be written to disk (and not visualized in a 
         window)
         """
+        
         if not self.window_active and self.config.ag.agent_type == 'human' or \
                                                 self.config.gl.watch:
             #Opens a window if is needed
@@ -403,7 +404,7 @@ class SFEnv(gym.Env):
         Takes the list of images of the current episode and makes a video out
         of them
         """
-      
+        
         video_name = "ep%d_%s_R%d_win%d.mp4" % (self.ep_counter, self.current_time, \
                                                               self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)
@@ -520,7 +521,7 @@ class SFEnv(gym.Env):
         
         #Get first observation
         observation = self.get_observation()
-        ship_pos_i = self.get
+#        ship_pos_i = self.get
         return observation # For some reason should show the observation
 
 

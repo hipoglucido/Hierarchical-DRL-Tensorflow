@@ -105,7 +105,7 @@ class DQNAgent(Agent):
         else:
             ep = 1
         self.m.update_epsilon(value = ep)
-        if random.random() < ep:
+        if random.random() < ep and not self.is_playing():
             action = random.randrange(self.environment.action_size)
         else:
             action = self.q_action.eval({self.s_t: [[old_obs]]})[0]
