@@ -166,10 +166,10 @@ class AgentSettings(GenericSettings):
     def __init__(self, scale = 1):
         self.scale = scale
         self.mode = 'train'
-        self.pmemory = False
+        self.pmemory = 0
         self.max_step = self.scale * 5000
-        self.double_q = False
-        self.dueling = False
+        self.double_q = 1
+        self.dueling = 1
         self.fresh_start = 0
     
     def scale_attrs(self, attr_list):
@@ -407,14 +407,14 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')
         self.libsuffix = ""
-        self.render_delay = 42
+        self.render_delay = 30
 
         self.record = False
         self.stats = False
         self.mines_activated = 1
        
         self.ship_lifes = 100
-        self.fortress_lifes = 5
+        self.fortress_lifes = 10
         self.max_loops = 15000
         self.time_penalty = 0.00
         

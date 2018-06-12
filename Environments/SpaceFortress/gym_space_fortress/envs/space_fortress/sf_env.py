@@ -166,10 +166,9 @@ class SFEnv(gym.Env):
 
     def after_episode(self):
         self.ep_counter += 1
-        if len(self.imgs) > 0 and \
-            (self.step_counter <= self.config.env.max_loops + 1 or \
-                                     self.config.ag.mode == 'play'):
-            self.imgs = self.imgs[:self.config.env.max_loops]
+        if 0 < len(self.imgs) < 1000:# and \
+#            (self.step_counter <= self.config.env.max_loops + 1 or \
+#                                     self.config.ag.mode == 'play'):
             self.generate_video()
             
     def get_custom_reward(self, action):
@@ -196,23 +195,27 @@ class SFEnv(gym.Env):
         if self.did_I_hit_mine() and self.config.env.mines_activated:
             reward += self.config.env.hit_mine_reward
             
-            
+        # Did I hit fortress  
         if self.did_I_hit_fortress() and self.step_counter != 0:
             
-            self.fortress_lifes -= 1
-            if self.fortress_lifes == 0 and \
+            #self.fortress_lifes -= 1
+            if self.fortress_lifes == 1 and \
                     self.steps_since_last_fortress_hit < \
                             self.config.env.min_steps_between_fortress_hits:
-                reward = self.config.env.final_double_shot_reward 
+                reward = self.config.env.final_double_shot_reward
+                self.fortress_lifes -= 1
                 # WIN!
                 self.win = True
             elif self.steps_since_last_fortress_hit > \
                             self.config.env.min_steps_between_fortress_hits:
-                reward += self.config.env.hit_fortress_reward
+                
+                self.fortress_lifes -= 1
+                if self.fortress_lifes > 1:
+                    reward += self.config.env.hit_fortress_reward
                 
             else:
                 # You shoot too fast when it was not allowed
-                self.fortress_lifes += 1           
+                pass#self.fortress_lifes += 1           
             self.steps_since_last_fortress_hit = 0
         else:            
             # Didn't hit the fortress
@@ -412,8 +415,9 @@ class SFEnv(gym.Env):
         full_image.paste(env_img, (0, 0))
         full_image.paste(panel_img, (self.screen_width, 0))
         
+        if not self.config.gl.watch:
         #Appends the full image to the current episode's list of images
-        self.imgs.append(full_image)
+            self.imgs.append(full_image)
 
         if self.window_active:
             # Displays image on a window if this is opened
