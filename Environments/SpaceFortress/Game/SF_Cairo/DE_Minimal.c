@@ -979,8 +979,8 @@ void Reset_Screen()
         /*  reset variables */
 				/*  reset variables */
 	#ifdef NO_RANDOM_SPAWN
-  Ship_X_Pos=0.5*MaxX;
-  Ship_Y_Pos=0.5*MaxY;
+  Ship_X_Pos= 0.25*MaxX;
+  Ship_Y_Pos= 0.5*MaxY;
   Ship_Headings=0;
   #else
   Ship_X_Pos=randrange(20,MaxX-20);

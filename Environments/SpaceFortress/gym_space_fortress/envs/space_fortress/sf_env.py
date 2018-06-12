@@ -33,9 +33,12 @@ class Panel:
     This class only serves for visualization purposes. It appends an image
     to each frame with information about goals, action, rewards etc.
     """
-    def __init__(self, height, font_path):
+    def __init__(self, height, font_path, agent_type):
         self.length = 17
+        self.agent_type = agent_type
         self.history_keys = ['goals', 'actions', 'rewards']
+#        if self.agent_type == 'hdqn':
+#            self.history_keys.append('goals')
         self.reset()
         
         self.height = height
@@ -70,7 +73,6 @@ class Panel:
         #Draw goals
         j = int(self.width * .04)
         for n, item in enumerate(self.history['goals']):
-            #print(n, item)
             coords = (j, self.history_limit_i + self.span * n)
             if n == self.length - 1:
                 color = self.current_color
@@ -80,11 +82,17 @@ class Panel:
                 if n == 0:
                     item = 'Goals:'
             draw.text(coords, item, color, font = self.font1)
+       
+        if self.agent_type == 'hdqn':
+            j_rewards = int(self.width * .6)
+            j_actions = int(self.width * .7)
+        else:
+            j_rewards = int(self.width * .3)
+            j_actions = int(self.width * .6)
+            
         #Draw rewards
-        j = int(self.width * .6)
         for n, item in enumerate(self.history['rewards']):
-            #print(n, item)
-            coords = (j, self.history_limit_i + self.span * n)
+            coords = (j_rewards, self.history_limit_i + self.span * n)
             if n == self.length - 1:
                 color = self.current_color
                 item = '> ' + item
@@ -95,10 +103,9 @@ class Panel:
             draw.text(coords, item, color, font = self.font1)
         
         #Draw actions
-        j = int(self.width * .7)
         for n, item in enumerate(self.history['actions']):
             #print(n, item)
-            coords = (j, self.history_limit_i + self.span * n)
+            coords = (j_actions, self.history_limit_i + self.span * n)
             if n == self.length - 1:
                 color = self.current_color
                 item = '> ' + item
@@ -109,9 +116,10 @@ class Panel:
             draw.text(coords, item, color, font = self.font1)
       
         color = (150, 25, 25)
-        j = int(self.width * .7)
+        j = int(self.width * .4)
         draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
-        draw.text((j, 3), "%s debug" % info['ship'],
+        
+        draw.text((j, 3), "d1 %.2f, d2 %.2f" % (info['debug1'], info['debug2']),
                                           color, font = self.font1)
         draw.text((j, 20), "%d fortress" % info['fortress'],
                                           color, font = self.font1)
@@ -141,7 +149,8 @@ class SFEnv(gym.Env):
         #Just for metrics
         self.shot_too_fast = False
         
-        self.delete = ''
+        # For debugging
+        self.current_observation = None
         
     
         
@@ -160,6 +169,7 @@ class SFEnv(gym.Env):
         if len(self.imgs) > 0 and \
             (self.step_counter <= self.config.env.max_loops + 1 or \
                                      self.config.ag.mode == 'play'):
+            self.imgs = self.imgs[:self.config.env.max_loops]
             self.generate_video()
             
     def get_custom_reward(self, action):
@@ -170,6 +180,9 @@ class SFEnv(gym.Env):
                                 self.config.env.min_steps_between_shots and \
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
+            
+            #self.fortress_lifes = self.config.env.fortress_lifes
+            
             self.shot_too_fast = True
         else:
             self.shot_too_fast = False
@@ -179,8 +192,9 @@ class SFEnv(gym.Env):
         else:
             self.steps_since_last_shot += 1
 
+        # Did I hit mine
         if self.did_I_hit_mine() and self.config.env.mines_activated:
-            reward += 1
+            reward += self.config.env.hit_mine_reward
             
             
         if self.did_I_hit_fortress() and self.step_counter != 0:
@@ -194,7 +208,7 @@ class SFEnv(gym.Env):
                 self.win = True
             elif self.steps_since_last_fortress_hit > \
                             self.config.env.min_steps_between_fortress_hits:
-                reward += 1
+                reward += self.config.env.hit_fortress_reward
                 
             else:
                 # You shoot too fast when it was not allowed
@@ -207,16 +221,16 @@ class SFEnv(gym.Env):
                         self.config.env.min_steps_between_fortress_hits and \
                                         self.fortress_lifes == 1:
                 # fortress_lifes 1 -> 2
-                pass#self.fortress_lifes = 2
+                self.fortress_lifes = 2
             
     
             
         # Bad
         if self.did_mine_hit_me() and self.config.env.mines_activated:
-            reward -= 1
-            self.ship_lifes -= 1
+            reward -= self.config.env.hit_by_mine_penalty
+            self.ship_lifes -= self.config.env.hit_by_mine_penalty
         if self.did_fortress_hit_me():
-            reward -= 1
+            reward -= self.config.env.hit_by_fortress_penalty
             self.ship_lifes -= 1
         
         # Time penalty
@@ -224,7 +238,7 @@ class SFEnv(gym.Env):
         
         # Penalize wrapping
         if self.penalize_wrapping:
-            reward -= 1
+            reward -= self.config.env.wrapping_penalty
         return reward
     
         
@@ -274,7 +288,7 @@ class SFEnv(gym.Env):
         observation = self.get_observation()
         
         #info['steps'] = 
-        self.delete =str(self.get_prep_feature(observation, 'fortress_lifes'))
+        
      
         return observation, reward, done, info
     
@@ -381,9 +395,16 @@ class SFEnv(gym.Env):
 
         #Adds the panel to right of the image
         env_img = Image.fromarray(img)      
+        
+
         info = {'steps'     : self.step_counter,
                 'fortress'  : self.fortress_lifes,
-                'ship'      : self.delete}#self.ship_lifes}
+                'debug1'       : self.get_prep_feature(self.current_observation, 
+                                                            'fortress_lifes'),
+                'debug2'      : self.get_prep_feature(self.current_observation, 
+                                                            'steps_since_last_shot')                          
+                                                    }
+        
         panel_img = self.panel.get_image(info)
         width = self.screen_width + self.panel.width
         height = self.screen_height
@@ -484,6 +505,9 @@ class SFEnv(gym.Env):
         #Make sure that the resulting vector is properly scaled
         assert (preprocessed_obs >= 0).all() and (preprocessed_obs <= 1).all(),\
                     str([raw_obs, scaled_obs, preprocessed_obs])
+                    
+        # For debugging
+        self.current_observation = preprocessed_obs
         return preprocessed_obs
     
     def reset(self):
@@ -809,10 +833,8 @@ class SFEnv(gym.Env):
             os.makedirs(self.episode_dir)
         
         #print("Using features", ', '.join(self.feature_names))
-        
-       
         font_path = os.path.join(self.config.gl.others_dir, 'Consolas.ttf')
-        self.panel = Panel(self.screen_height, font_path)
+        self.panel = Panel(self.screen_height, font_path, self.config.ag)
         
         self.fortress_lifes = self.config.env.fortress_lifes
         self.ship_lifes = self.config.env.ship_lifes

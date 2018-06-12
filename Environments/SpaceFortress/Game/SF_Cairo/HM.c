@@ -428,13 +428,13 @@ void Handle_Mine()
 		}
   case DEAD   : {
 		// Uncomment to spawn mines (and maybe some other stuff)
-		  // if(Mine_Dead_Counter++ >= Mine_Wait_Loops)
-		  //   {
-		  //     Generate_Mine();
-		  //     Mine_Flag=ALIVE;
-		  //     Mine_Alive_Counter=0;
-		  //   }
-		  //  break;
+		  if(Mine_Dead_Counter++ >= Mine_Wait_Loops)
+		    {
+		      Generate_Mine();
+		      Mine_Flag=ALIVE;
+		      Mine_Alive_Counter=0;
+		    }
+		   break;
 		}
   case ALIVE  : {
 		  Move_Mine();

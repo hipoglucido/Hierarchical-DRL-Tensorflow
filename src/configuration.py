@@ -215,7 +215,7 @@ class DQNSettings(AgentSettings):
         self.architecture = [64, 64]
         self.architecture_duel = [32, 32]
         
-        self.test_step = 7000#int(self.max_step / 10)
+        self.test_step = 10000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
         
         self.activation_fn = 'relu'
@@ -407,19 +407,27 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')
         self.libsuffix = ""
-        self.render_delay = 1
+        self.render_delay = 42
 
         self.record = False
         self.stats = False
         self.mines_activated = 1
        
         self.ship_lifes = 100
-        self.fortress_lifes = 10
-        self.max_loops = 1000
+        self.fortress_lifes = 5
+        self.max_loops = 5000
         self.time_penalty = 0.00
         
-        self.final_double_shot_reward = 10
-        self.fast_shooting_penalty = 1
+        self.final_double_shot_reward = 1
+        self.hit_fortress_reward = .1
+        self.hit_mine_reward = .1
+        
+        self.fast_shooting_penalty = .1
+        self.wrapping_penalty = .1
+        self.hit_by_fortress_penalty = .1
+        self.hit_by_mine_penalty = .1
+        
+        
         self.min_steps_between_shots = 5
         self.min_steps_between_fortress_hits = 3
         self.update(new_attrs)
