@@ -291,7 +291,7 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 7000#min(5 * self.scale, 500)
+        self.test_step = 10000#min(5 * self.scale, 500)
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
@@ -407,7 +407,7 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')
         self.libsuffix = ""
-        self.render_delay = 30
+        self.render_delay = 10
 
         self.record = False
         self.stats = False

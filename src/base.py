@@ -10,7 +10,7 @@ from utils import pp
 import utils
 from constants import Constants as CT
 
-
+import cv2
 
 class Agent(object):
     """
@@ -23,7 +23,7 @@ class Agent(object):
         self._saver = None
         self.config = config
         self.output = ''
-    
+     
     def display_environment(self, observation):
         """
         Only for monitoring purposes
@@ -136,7 +136,13 @@ class Agent(object):
             elif prefix == '':
                 self.epsilon.start_decaying(self.step)             
         return is_ready
-    
+        
+    def write_watch_file(self):
+        filename = 'watch%d' % int(self.config.gl.watch)
+        filepath = os.path.join(self.logs_dir, filename)
+        with open(filepath, 'w') as fp:
+            fp.write(self.config.to_str())   
+            
     def new_episode(self):
         """
         Creates a new episode
@@ -146,7 +152,21 @@ class Agent(object):
         """
         screen, _, _, _ = self.environment.new_game()
         # Decide if this episode will be displayed
-        self.display_episode = random.random() < self.gl.display_prob        
+        self.display_episode = random.random() < self.gl.display_prob
+        filename = 'watch1'
+        filepath = os.path.join(self.logs_dir, filename)
+        try:
+            with open(filepath, 'r'):
+                pass
+            value = 1
+            self.display_episode = 1
+        except:
+            value = 0
+            try:
+                cv2.destroyAllWindows()
+            except:
+                pass
+        self.config.gl.update({'watch' : value})
         return screen      
     
     def add_output(self, txt):
@@ -657,12 +677,16 @@ class Agent(object):
                                 self.config.model_name))
         except FileNotFoundError:
             pass
-        
+    
+
+            
     def write_configuration(self):
         filename = self.config.model_name + "_" + "cnf.txt"
         filepath = os.path.join(self.logs_dir, filename)
         with open(filepath, 'w') as fp:
             fp.write(self.config.to_str())
+        self.write_watch_file()
+        
     def write_output(self):
         filename = self.config.model_name + "_" + "episodes.txt"
         filepath = os.path.join(self.logs_dir, filename)

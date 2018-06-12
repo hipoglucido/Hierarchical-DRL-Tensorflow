@@ -83,12 +83,12 @@ class Panel:
                     item = 'Goals:'
             draw.text(coords, item, color, font = self.font1)
        
-        if self.agent_type == 'hdqn':
-            j_rewards = int(self.width * .6)
-            j_actions = int(self.width * .7)
-        else:
+        if self.agent_type == 'dqn':
             j_rewards = int(self.width * .3)
             j_actions = int(self.width * .6)
+        else:
+            j_rewards = int(self.width * .52)
+            j_actions = int(self.width * .7)
             
         #Draw rewards
         for n, item in enumerate(self.history['rewards']):

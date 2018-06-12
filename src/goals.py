@@ -154,6 +154,8 @@ class SFGoal(Goal):
         if self.name == 'shoot_at_mine':
             if info['mine_hit']:
                 achieved = True
+            elif pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:
+                achieved = True
         elif self.name == 'shoot_at_fortress':
             if info['fortress_hit']:
                 achieved = True
