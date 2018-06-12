@@ -415,7 +415,7 @@ class SpaceFortressSettings(EnvironmentSettings):
        
         self.ship_lifes = 100
         self.fortress_lifes = 5
-        self.max_loops = 5000
+        self.max_loops = 15000
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 1
