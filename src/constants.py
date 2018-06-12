@@ -65,8 +65,10 @@ class Constants:
             0 : [],
             1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
             2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
-            3 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
-            4 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
+            3 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
+                 'shoot_at_fortress']  + SF_action_spaces['SF-v0'],
+            4 : ['aim_at_fortress', 'aim_at_mine']  + SF_action_spaces['SF-v0'],
+            5 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
                 },
         # Aim task
         'AIM-v0' : {

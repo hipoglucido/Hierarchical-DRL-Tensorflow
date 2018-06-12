@@ -57,23 +57,12 @@ class HumanAgent():
                     self.current_key = 'wait'
                 
                 action = self.key_to_action[self.current_key]
-                """
-                ship_x_pos_x,
-                ship_x_pos_y,                
-                ship_y_pos_x,
-                ship_y_pos_y,                
-                ship_headings_x,
-                ship_headings_y,
-                square_x_pos_x,
-                square_x_pos_y,
-                square_y_pos_x,
-                square_y_pos_y
-                """
-                info = {'goal_name'       : 'aim_at_fortress',
+
+                info_input = {'goal_name'       : 'aim_at_fortress',
                         'display_episode' : self.display_episode}
-                observation, reward, done, _ = self.environment.act(
+                observation, reward, done, info = self.environment.act(
                                                     action = action,
-                                                    info   = info)
+                                                    info   = info_input)
                 msg = ''
                 for feature, feature_name in zip(observation, \
                                             self.environment.gym.feature_names):
@@ -84,7 +73,7 @@ class HumanAgent():
                             % (k, reward, done)
                 print(msg)
                 for i, goal in self.goals.items():
-                    achieved = goal.is_achieved(observation, action)
+                    achieved = goal.is_achieved(observation, action, info)
                     print("Goal %s achieved -> %s" % (goal.name, str(achieved)))
                 if done == 1:
                     if self.display_episode:

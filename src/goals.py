@@ -17,14 +17,7 @@ class Goal(metaclass = ABCMeta):
         
         self._epsilon = Epsilon()
         
-#    def setup_epsilon(self, config, start_step):
-#        
-#        self._epsilon = Epsilon(start_value = 1.,
-#                                  end_value   = .05,
-#                                  start_t     = start_step,
-#                                  end_t       = config.max_step,
-#                                  learn_start = 1000)
-#        
+   
     @property
     def epsilon(self):
 
@@ -152,12 +145,19 @@ class SFGoal(Goal):
  
         return result
     
-    def is_achieved(self, screen, action):
+    def is_achieved(self, screen, action, info):
         
         pfs = self.get_prep_features(screen)
         
         achieved = False
-        if 'aim_at' in self.name:
+        
+        if self.name == 'shoot_at_mine':
+            if info['mine_hit']:
+                achieved = True
+        elif self.name == 'shoot_at_fortress':
+            if info['fortress_hit']:
+                achieved = True
+        elif 'aim_at' in self.name:
             if self.environment.is_no_direction:
                     #Aiming at square doesn't make sense if rotation is deactivated
                     assert 0

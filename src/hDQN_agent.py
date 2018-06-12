@@ -262,7 +262,7 @@ class HDQNAgent(base.Agent):
             
             
         
-            goal_achieved = self.current_goal.is_achieved(new_obs, action)
+            goal_achieved = self.current_goal.is_achieved(new_obs, action, info)
             int_reward = 1. if goal_achieved else 0.
             int_reward -= self.c_ag.intrinsic_time_penalty
             self.c_observe(old_obs, action, int_reward, new_obs, terminal or goal_achieved)
