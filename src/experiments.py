@@ -31,17 +31,18 @@ class Experiment():
             # pmemory effect on hdqn
             hyperparameter_space = {
                     'pmemorys'               : [0, 1],
-                    'random_seeds'           : list(range(20))
+                    'random_seeds'           : list(range(5))
                     }
             base_args = {
                     'agent_type'            : 'dqn',
-                    'env_name'              : 'SF-v0',
-                    'scale'                 : 1000,                   
-                    'display_prob'          : 0.05,
+                    'scale'                 : 5000,  
+                    'env_name'              : 'SF-v0',                 
+                    'display_prob'          : 0.,
                     'use_gpu'               : 0,
+                    'mines_activated'       : 1,
                     'mode'                  : 'train',
-                    'dueling'               : 0,
-                    'double_q'              : 0,
+                    'dueling'               : 1,
+                    'double_q'              : 1,
                     'action_repeat'         : 4
             }  
         elif name == 'exp6':
