@@ -414,7 +414,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.mines_activated = 1
        
         self.ship_lifes = 100
-        self.fortress_lifes = 10
+        self.fortress_lifes = 11
         self.max_loops = 15000
         self.time_penalty = 0.00
         

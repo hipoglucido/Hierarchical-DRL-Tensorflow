@@ -116,12 +116,21 @@ class Panel:
             draw.text(coords, item, color, font = self.font1)
       
         color = (150, 25, 25)
-        j = int(self.width * .4)
+        j = int(self.width * .3)
         draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
         
-        draw.text((j, 3), "d1 %.2f, d2 %.2f" % (info['debug1'], info['debug2']),
+        draw.text((j, 3), "R%.2f, %.2f, %.2f, %.2f" % (info['ep_reward'],
+                                          info['mine_present'],
+                                          info['debug1'],
+                                          info['debug2']),
                                           color, font = self.font1)
-        draw.text((j, 20), "%d fortress" % info['fortress'],
+        fl = info['fortress'] - 1              
+        if fl < 2:
+            s = '[vulnerable]'
+            fl = 1
+        else:
+            s = ''
+        draw.text((j, 20), "%d fortress lifes %s  " % (fl, s),
                                           color, font = self.font1)
         return panel
             
@@ -180,7 +189,7 @@ class SFEnv(gym.Env):
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
             
-            #self.fortress_lifes = self.config.env.fortress_lifes
+            self.fortress_lifes = self.config.env.fortress_lifes
             
             self.shot_too_fast = True
         else:
@@ -196,7 +205,8 @@ class SFEnv(gym.Env):
             reward += self.config.env.hit_mine_reward
             
         # Did I hit fortress  
-        if self.did_I_hit_fortress() and self.step_counter != 0:
+        if self.did_I_hit_fortress() and self.step_counter != 0 and \
+                                not self.mine_present:
             
             #self.fortress_lifes -= 1
             if self.fortress_lifes == 1 and \
@@ -402,6 +412,8 @@ class SFEnv(gym.Env):
 
         info = {'steps'     : self.step_counter,
                 'fortress'  : self.fortress_lifes,
+                'mine_present' : self.mine_present,
+                'ep_reward' : self.ep_reward,
                 'debug1'       : self.get_prep_feature(self.current_observation, 
                                                             'fortress_lifes'),
                 'debug2'      : self.get_prep_feature(self.current_observation, 
@@ -432,8 +444,8 @@ class SFEnv(gym.Env):
         of them
         """
         
-        video_name = "ep%d_%s_R%d_win%d.mp4" % (self.ep_counter, self.current_time, \
-                                                              self.ep_reward, int(self.win))
+        video_name = "ep%s_R%.2f_win%d.mp4" % (self.current_time, \
+                                             self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)
         (original_width, original_heigth) = self.imgs[0].size
         # PIL image >>> np.array
@@ -452,7 +464,17 @@ class SFEnv(gym.Env):
         for img in self.imgs:
             video.write(img)
         video.release()
-    
+    def check_mine_present(self, obs):
+        """
+        Checks if there is a mine present
+        """
+        i = self.get_raw_feature(obs, 'mine_pos_i')
+        j = self.get_raw_feature(obs, 'mine_pos_j')
+        if i == 0 and j == 0:
+            self.mine_present = False
+        else:
+            self.mine_present = True
+        
     def check_wrapping(self, obs):
         """
         Checks if the spaceship is wrapping. If yes, that should be penalized
@@ -502,7 +524,7 @@ class SFEnv(gym.Env):
         #Check if spaceship is wrapping and penalize
         if self.is_wrapper:
             self.check_wrapping(scaled_obs)
-        
+        self.check_mine_present(scaled_obs)
         #Preprocessing
         preprocessed_obs = self.preprocess_observation(scaled_obs)
         

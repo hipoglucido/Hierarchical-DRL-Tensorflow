@@ -340,7 +340,8 @@ class Metrics:
         else:
             test_step = config.test_step
         total_reward = getattr(self, prefix + 'total_reward')
-        setattr(self, prefix + 'avg_reward', total_reward / test_step)
+        if test_step > 0:
+            setattr(self, prefix + 'avg_reward', total_reward / test_step)
         total_loss = getattr(self, prefix + 'total_loss')
         if update_count > 0:
             setattr(self, prefix + 'avg_loss', total_loss / update_count)

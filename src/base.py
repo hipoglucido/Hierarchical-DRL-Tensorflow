@@ -141,6 +141,10 @@ class Agent(object):
         filename = 'watch%d' % int(self.config.gl.watch)
         filepath = os.path.join(self.logs_dir, filename)
         with open(filepath, 'w') as fp:
+            fp.write(self.config.to_str())  
+        filename = 'record0'
+        filepath = os.path.join(self.logs_dir, filename)
+        with open(filepath, 'w') as fp:
             fp.write(self.config.to_str())   
             
     def new_episode(self):
@@ -152,7 +156,6 @@ class Agent(object):
         """
         screen, _, _, _ = self.environment.new_game()
         # Decide if this episode will be displayed
-        self.display_episode = random.random() < self.gl.display_prob
         filename = 'watch1'
         filepath = os.path.join(self.logs_dir, filename)
         try:
@@ -167,6 +170,17 @@ class Agent(object):
             except:
                 pass
         self.config.gl.update({'watch' : value})
+        filename = 'record1'
+        filepath = os.path.join(self.logs_dir, filename)
+        try:
+            with open(filepath, 'r'):
+                pass
+            value = 1            
+        except:
+            value = 0          
+        self.config.gl.update({'display_prob' : value})
+        
+        self.display_episode = random.random() < self.gl.display_prob
         return screen      
     
     def add_output(self, txt):
