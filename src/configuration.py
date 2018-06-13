@@ -413,7 +413,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.stats = False
         self.mines_activated = 1
        
-        self.ship_lifes = 100
+        self.ship_lifes = 3
         self.fortress_lifes = 11
         self.max_loops = 15000
         self.time_penalty = 0.00
@@ -429,7 +429,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         
         
         self.min_steps_between_shots = 5
-        self.min_steps_between_fortress_hits = 3
+        self.min_steps_between_fortress_hits = 5
         self.update(new_attrs)
         
 

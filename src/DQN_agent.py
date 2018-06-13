@@ -51,7 +51,8 @@ class DQNAgent(Agent):
        
             # 2. act            
             info = {'is_SF'           : self.m.is_SF,
-                    'display_episode' : self.display_episode}
+                    'display_episode' : self.display_episode,
+                    'watch'           : self.gl.watch}
             new_obs, reward, terminal, info = self.environment.act(action, info)
             self.process_info(info)
            

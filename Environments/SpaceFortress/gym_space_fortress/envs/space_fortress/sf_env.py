@@ -117,7 +117,10 @@ class Panel:
       
         color = (150, 25, 25)
         j = int(self.width * .3)
-        draw.text((10, 10),"#%d" % info['steps'], color, font = self.font2)
+        seconds_per_step = 50 / 1000 
+        draw.text((10, 5),"%.2fs" % (info['steps'] * seconds_per_step),
+                                                  color, font = self.font2)
+        draw.text((10, 25),"%d steps" % info['steps'], color, font = self.font1)
         
         draw.text((j, 3), "R%.2f, %.2f, %.2f, %.2f" % (info['ep_reward'],
                                           info['mine_present'],
@@ -130,7 +133,7 @@ class Panel:
             fl = 1
         else:
             s = ''
-        draw.text((j, 20), "%d fortress lifes %s  " % (fl, s),
+        draw.text((j, 20), "ship %d fort %d %s  " % (info['ship'], fl, s),
                                           color, font = self.font1)
         return panel
             
@@ -181,7 +184,7 @@ class SFEnv(gym.Env):
             self.generate_video()
             
     def get_custom_reward(self, action):
-        reward = 0        
+        reward = 0  
         # Penalize shooting fast
         if self.is_shot(action) and \
                     self.steps_since_last_shot < \
@@ -189,8 +192,7 @@ class SFEnv(gym.Env):
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
             
-            self.fortress_lifes = self.config.env.fortress_lifes
-            
+            #self.fortress_lifes = self.config.env.fortress_lifes            
             self.shot_too_fast = True
         else:
             self.shot_too_fast = False
@@ -241,7 +243,7 @@ class SFEnv(gym.Env):
         # Bad
         if self.did_mine_hit_me() and self.config.env.mines_activated:
             reward -= self.config.env.hit_by_mine_penalty
-            self.ship_lifes -= self.config.env.hit_by_mine_penalty
+            self.ship_lifes -= 1
         if self.did_fortress_hit_me():
             reward -= self.config.env.hit_by_fortress_penalty
             self.ship_lifes -= 1
@@ -270,7 +272,11 @@ class SFEnv(gym.Env):
         elif self.fortress_lifes == 0:
             is_terminal = True
         elif self.step_counter >= self.config.env.max_loops:
-            is_terminal = True        
+            is_terminal = True  
+        elif self.ship_lifes == 0:
+            is_terminal = True
+        elif self.shot_too_fast:
+            is_terminal = True
         return is_terminal
     
     def step(self, action):
@@ -293,16 +299,11 @@ class SFEnv(gym.Env):
                 'steps'                      : self.step_counter, 
                 'wrap_penalization'          : int(self.penalize_wrapping),
                 'shot_too_fast_penalization' : int(self.shot_too_fast)}
-        
-        
+                
         self.restart_variables()
         self.step_counter += 1
         self.ep_reward += reward
-        observation = self.get_observation()
-        
-        #info['steps'] = 
-        
-     
+        observation = self.get_observation() 
         return observation, reward, done, info
     
     def scale_observation(self, raw_obs):
@@ -410,13 +411,14 @@ class SFEnv(gym.Env):
         env_img = Image.fromarray(img)      
         
 
-        info = {'steps'     : self.step_counter,
-                'fortress'  : self.fortress_lifes,
+        info = {'steps'        : self.step_counter,
+                'ship'         : self.ship_lifes,
+                'fortress'     : self.fortress_lifes,
                 'mine_present' : self.mine_present,
-                'ep_reward' : self.ep_reward,
+                'ep_reward'    : self.ep_reward,
                 'debug1'       : self.get_prep_feature(self.current_observation, 
                                                             'fortress_lifes'),
-                'debug2'      : self.get_prep_feature(self.current_observation, 
+                'debug2'       : self.get_prep_feature(self.current_observation, 
                                                             'steps_since_last_shot')                          
                                                     }
         

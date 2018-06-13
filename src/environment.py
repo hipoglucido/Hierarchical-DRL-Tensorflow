@@ -133,8 +133,8 @@ class Environment():
                                    item = action_name)
                 self.gym.panel.add(key  = 'rewards',
                                    item = self.reward)
-            if i != repeat - 1 and info['display_episode'] and \
-                                 self.env_name in CT.SF_envs:
+            if i != repeat - 1 and (info['display_episode'] or info['watch']) \
+                               and self.env_name in CT.SF_envs:
                 # In SpaceFortress we render the skipped frames as well
                 self.gym.render()
             #
