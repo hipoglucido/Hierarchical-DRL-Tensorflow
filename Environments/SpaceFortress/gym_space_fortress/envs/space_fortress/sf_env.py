@@ -194,7 +194,7 @@ class SFEnv(gym.Env):
                     self.fortress_lifes > 2:
             reward -= self.config.env.fast_shooting_penalty
             
-            #self.fortress_lifes = self.config.env.fortress_lifes            
+            self.fortress_lifes = self.config.env.fortress_lifes            
             self.shot_too_fast = True
         else:
             self.shot_too_fast = False
@@ -280,7 +280,7 @@ class SFEnv(gym.Env):
         elif self.ship_lifes == 0:
             is_terminal = True
         elif self.shot_too_fast:
-            is_terminal = True
+            pass#is_terminal = True
         return is_terminal
     
     def step(self, action):
