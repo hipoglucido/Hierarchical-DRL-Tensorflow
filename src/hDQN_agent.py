@@ -252,7 +252,8 @@ class HDQNAgent(base.Agent):
             action = self.predict_next_action(old_obs)
             info = {'goal_name'       : self.current_goal.name,
                     'is_SF'           : self.m.is_SF,
-                    'display_episode' : self.display_episode}
+                    'display_episode' : self.display_episode,
+                    'watch'           : self.gl.watch}
             
             new_obs, ext_reward, terminal, info = self.environment.act(
                                         action = action,

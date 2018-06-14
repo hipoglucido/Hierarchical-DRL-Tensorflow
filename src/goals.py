@@ -151,7 +151,12 @@ class SFGoal(Goal):
         
         achieved = False
         
-        if self.name == 'shoot_at_mine':
+        if self.name == 'double_shoot':
+            its_a_shot = action == CT.SF_action_spaces[self.environment.env_name].index('Key.space')            
+            if its_a_shot and \
+               0 <= info['steps_since_last_shot'] < info['min_steps_between_shots']:
+                achieved = True
+        elif self.name == 'shoot_at_mine':
             if info['mine_hit']:
                 achieved = True
             elif pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:

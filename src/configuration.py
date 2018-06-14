@@ -99,7 +99,7 @@ class GenericSettings():
     
 class GlobalSettings(GenericSettings):
     def __init__(self, new_attrs = {}):        
-        self.display_prob = .01
+        self.display_prob = .0
         self.log_level = 'INFO'
         self.new_instance = True
         self.date = utils.get_timestamp()
@@ -415,7 +415,7 @@ class SpaceFortressSettings(EnvironmentSettings):
        
         self.ship_lifes = 3
         self.fortress_lifes = 11
-        self.max_loops = 15000
+        self.max_loops = 2000 #Useful for stopping when the game crashes
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 1
@@ -430,6 +430,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         
         self.min_steps_between_shots = 5
         self.min_steps_between_fortress_hits = 5
+        self.max_steps_after_mine_appear = 40 # 2 seconds
         self.update(new_attrs)
         
 

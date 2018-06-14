@@ -122,18 +122,19 @@ class Panel:
                                                   color, font = self.font2)
         draw.text((10, 25),"%d steps" % info['steps'], color, font = self.font1)
         
-        draw.text((j, 3), "R%.2f, %.2f, %.2f, %.2f" % (info['ep_reward'],
+        draw.text((j, 3), "%.2f, %d, %.2f" % (
                                           info['mine_present'],
                                           info['debug1'],
                                           info['debug2']),
                                           color, font = self.font1)
-        fl = info['fortress'] - 1              
-        if fl < 2:
-            s = '[vulnerable]'
-            fl = 1
+        fortress_lifes = info['fortress'] - 1              
+        if fortress_lifes < 2:
+            msg = '[vulnerable]'
+            fortress_lifes = 1
         else:
-            s = ''
-        draw.text((j, 20), "ship %d fort %d %s  " % (info['ship'], fl, s),
+            msg = ''
+        draw.text((j, 20), "Ship %d Fort %d %s  Total R%.2f" % (info['ship'],
+                  fortress_lifes, msg, info['ep_reward']),
                                           color, font = self.font1)
         return panel
             
@@ -150,6 +151,7 @@ class SFEnv(gym.Env):
         self.step_counter = 0
         self.ep_counter = 0
         self.ep_reward = 0
+        self.steps_since_mine_appeared = 0
         self.steps_since_last_shot = 1e10
         self.steps_since_last_fortress_hit = 1e10
         self.goal_has_changed = False
@@ -208,7 +210,9 @@ class SFEnv(gym.Env):
             
         # Did I hit fortress  
         if self.did_I_hit_fortress() and self.step_counter != 0 and \
-                                not self.mine_present:
+                   (not self.mine_present or \
+                   self.steps_since_mine_appeared < \
+                           self.config.env.max_steps_after_mine_appear):
             
             #self.fortress_lifes -= 1
             if self.fortress_lifes == 1 and \
@@ -287,7 +291,9 @@ class SFEnv(gym.Env):
         """
         
         #Call the C++ function
-        self.perform_action(action)       
+        self.perform_action(action)   
+        
+        aux = int(self.steps_since_last_shot) # Needed for the double_shoot goal
         reward = self.get_custom_reward(action)
 
         done = self.is_terminal()
@@ -298,7 +304,10 @@ class SFEnv(gym.Env):
                 'destroyed'                  : destroyed,
                 'steps'                      : self.step_counter, 
                 'wrap_penalization'          : int(self.penalize_wrapping),
-                'shot_too_fast_penalization' : int(self.shot_too_fast)}
+                'shot_too_fast_penalization' : int(self.shot_too_fast),
+                'steps_since_last_shot'      : aux,
+                'min_steps_between_shots'    : int(self.config.env.min_steps_between_shots)
+        }
                 
         self.restart_variables()
         self.step_counter += 1
@@ -307,6 +316,7 @@ class SFEnv(gym.Env):
         return observation, reward, done, info
     
     def scale_observation(self, raw_obs):
+        #print(raw_obs, len(raw_obs))
         if self.env_name == 'SFC-v0':            
             #Normalize
             raw_obs[0] /= self.screen_height    # Ship_Y_Pos
@@ -334,8 +344,12 @@ class SFEnv(gym.Env):
             raw_obs[8]  /= 100                        # Missile_Stock
             raw_obs[9]  /= self.screen_height         # Mine_Y_Pos
             raw_obs[10] /= self.screen_width          # Mine_X_Pos
-            raw_obs[11] /= self.config.env.fortress_lifes
-            raw_obs[12] = np.tanh(raw_obs[12] * .1)#1 / (1 + np.exp(-raw_obs[12]))
+            #raw_obs[11] /= self.config.env.fortress_lifes
+            #print(raw_obs[11])
+            raw_obs[12] /= self.config.env.fortress_lifes
+            raw_obs[13] = np.tanh(raw_obs[13] * .1)
+            raw_obs[14] = np.tanh(raw_obs[14] * .01)
+#            raw_obs[13] = np.tanh(raw_obs[13] * .1)#1 / (1 + np.exp(-raw_obs[12]))
  
 #            feature_names += ['mine_pos_i', 'mine_pos_j', 'fortress_lifes',
 #                              'steps_since_last_shot']
@@ -349,14 +363,59 @@ class SFEnv(gym.Env):
                 raw_obs[9], raw_obs[10] = 0., 0.
             else:
                 self.last_mine_coords = (raw_obs[9], raw_obs[10])
-            
+       
         raw_obs = np.clip(raw_obs, 0, 1)
+       
         """
             for i, obs in enumerate(raw_obs):
                 if not 0 <= obs <= 1 and i not in [5, 6, 8]:
                     print(i, obs)
         """    
-        return raw_obs    
+        return raw_obs  
+    def define_raw_feature_mappings(self):
+        """
+        Define dictionary that will be used to get the index of each feature
+        in the array of numbers (environment state) that is read from the C++
+        """
+        if self.env_name == 'SFC-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_pos_i'   : 0,
+                    'ship_pos_j'   : 1,
+                    'ship_headings': 2,
+                    'square_pos_i' : 3,
+                    'square_pos_j' : 4,
+                    #'square_steps' : 5,
+                    'ship_speed_i' : 6,
+                    'ship_speed_j' : 7
+                    }
+            
+            
+        elif self.env_name == 'AIM-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_headings': 0,
+                    'mine_pos_i'   : 1,
+                    'mine_pos_j'   : 2
+                    }
+           
+            
+        elif self.env_name == 'SF-v0':
+            self.raw_features_name_to_ix = {
+                    'ship_pos_i'            : 0,
+                    'ship_pos_j'            : 1,
+                    'ship_speed_i'          : 2,
+                    'ship_speed_j'          : 3,
+                    'ship_headings'         : 4,
+                    'missile_pos_i'         : 5,
+                    'missile_pos_j'         : 6,
+                    'fort_headings'         : 7,
+                    'missile_stock'         : 8,
+                    'mine_pos_i'            : 9,
+                    'mine_pos_j'            : 10,
+                    'fortress_lifes'        : 12,
+                    'steps_since_last_shot' : 13,
+                    'steps_since_mine_appeared' : 14
+                    }
+              
     
             
     def preprocess_observation(self, obs):
@@ -417,8 +476,7 @@ class SFEnv(gym.Env):
                 'fortress'     : self.fortress_lifes,
                 'mine_present' : self.mine_present,
                 'ep_reward'    : self.ep_reward,
-                'debug1'       : self.get_prep_feature(self.current_observation, 
-                                                            'fortress_lifes'),
+                'debug1'       : self.steps_since_mine_appeared,
                 'debug2'       : self.get_prep_feature(self.current_observation, 
                                                             'steps_since_last_shot')                          
                                                     }
@@ -475,8 +533,14 @@ class SFEnv(gym.Env):
         j = self.get_raw_feature(obs, 'mine_pos_j')
         if i == 0 and j == 0:
             self.mine_present = False
+            self.steps_since_mine_appeared = 1e10
         else:
+            if not self.mine_present:
+                self.steps_since_mine_appeared = 0
+            else:
+                self.steps_since_mine_appeared += 1
             self.mine_present = True
+            
         
     def check_wrapping(self, obs):
         """
@@ -497,15 +561,16 @@ class SFEnv(gym.Env):
         else:
             self.penalize_wrapping = False
             self.currently_wrapping = False
-    def generate_extra_features(self, observation):
-        pass
-        
+   
     def get_raw_observation(self):  
         # From C++ game
         game_obs = np.ctypeslib.as_array(self.get_symbols().contents)
         
         # Extra features
-        extra_obs = np.array([self.fortress_lifes, self.steps_since_last_shot], dtype = np.float)
+        extra_obs = np.array([self.fortress_lifes,
+                              self.steps_since_last_shot,
+                              self.steps_since_mine_appeared],
+                              dtype = np.float)
         
         # Concat
         raw_observation = np.hstack([game_obs, extra_obs])
@@ -608,49 +673,6 @@ class SFEnv(gym.Env):
     def get_raw_feature(self, observation, feature_name):
         return observation[self.raw_features_name_to_ix[feature_name]]
     
-    def define_raw_feature_mappings(self):
-        """
-        Define dictionary that will be used to get the index of each feature
-        in the array of numbers (environment state) that is read from the C++
-        """
-        if self.env_name == 'SFC-v0':
-            self.raw_features_name_to_ix = {
-                    'ship_pos_i'   : 0,
-                    'ship_pos_j'   : 1,
-                    'ship_headings': 2,
-                    'square_pos_i' : 3,
-                    'square_pos_j' : 4,
-                    #'square_steps' : 5,
-                    'ship_speed_i' : 6,
-                    'ship_speed_j' : 7
-                    }
-            
-            
-        elif self.env_name == 'AIM-v0':
-            self.raw_features_name_to_ix = {
-                    'ship_headings': 0,
-                    'mine_pos_i'   : 1,
-                    'mine_pos_j'   : 2
-                    }
-           
-            
-        elif self.env_name == 'SF-v0':
-            self.raw_features_name_to_ix = {
-                    'ship_pos_i'            : 0,
-                    'ship_pos_j'            : 1,
-                    'ship_speed_i'          : 2,
-                    'ship_speed_j'          : 3,
-                    'ship_headings'         : 4,
-                    'missile_pos_i'         : 5,
-                    'missile_pos_j'         : 6,
-                    'fort_headings'         : 7,
-                    'missile_stock'         : 8,
-                    'mine_pos_i'            : 9,
-                    'mine_pos_j'            : 10,
-                    'fortress_lifes'        : 11,
-                    'steps_since_last_shot' : 12
-                    }
-            
     def define_features(self):
         """
         Define the type of features that the agent will receive.
@@ -717,11 +739,11 @@ class SFEnv(gym.Env):
                     feature_names += [fn + '_sin', fn + '_cos']
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'missile_pos_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')],
-                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
+                    lambda obs: [self.get_raw_feature(obs, 'missile_pos_j')]
+#                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
                 ]
-                feature_names += ['missile_pos_i', 'missile_pos_j',
-                                  'missile_stock']
+                feature_names += ['missile_pos_i', 'missile_pos_j']#,
+#                                  'missile_stock']
         if self.is_frictionless and self.env_name != 'AIM-v0':
                 # FRICTIONLESS
                 prep_fs += [
@@ -741,9 +763,12 @@ class SFEnv(gym.Env):
             
             prep_fs += [         
                 lambda obs: [self.get_raw_feature(obs, 'fortress_lifes')],
-                lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')]
+                lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')],
+                lambda obs: [self.get_raw_feature(obs, 'steps_since_mine_appeared')]
+                             
                 ]
-            feature_names += ['fortress_lifes', 'steps_since_last_shot']
+            feature_names += ['fortress_lifes', 'steps_since_last_shot',
+                              'steps_since_mine_appeared']
           
             
 
