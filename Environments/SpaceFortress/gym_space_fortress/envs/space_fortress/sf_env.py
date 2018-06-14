@@ -383,6 +383,7 @@ class SFEnv(gym.Env):
                                                 .replace("/", ":")
     
     def render(self):
+        
         """
         Renders the current state of the game, only for our visualisation
         purposes it is not important for the learning algorithm. Visualization
@@ -554,6 +555,7 @@ class SFEnv(gym.Env):
         self.panel.reset()
         
         self.step_counter = 0
+        self.stop_drawing()
         self.reset_sf()
         
         self.imgs = []

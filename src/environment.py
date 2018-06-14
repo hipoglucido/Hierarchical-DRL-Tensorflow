@@ -51,6 +51,7 @@ class Environment():
         if self.env_name in CT.SF_envs:
             self.gym.after_episode()
         
+        #self.gym = self.load_gym() 
         self._screen = self.gym.reset()
         
         return self.screen, 0., 0., self.terminal
