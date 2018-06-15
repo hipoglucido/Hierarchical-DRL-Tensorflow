@@ -16,7 +16,10 @@ try:
 except Exception as e:
     print("Human agent not imported: %s" % (str(e)))
     
-
+"""
+Parameters defined here (command line) will overwrite those defined in
+configuration.py
+"""
 parser = argparse.ArgumentParser()
 
 

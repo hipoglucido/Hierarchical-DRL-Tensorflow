@@ -1,28 +1,13 @@
 import gym
-from gym.utils import seeding
-from gym import spaces
-import ctypes
-from time import sleep
-from sys import platform
-import datetime
 import numpy as np
 import cv2
 import os
-from pathlib import Path
+import ctypes
+import datetime
 import sys
 import math
-
-from enum import Enum
-import time
 import logging
 from constants import Constants as CT
-import imageio
-import shutil
-import glob
-
-import cv2
-import numpy as np
-from matplotlib import pyplot as plt
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -37,8 +22,6 @@ class Panel:
         self.length = 17
         self.agent_type = agent_type
         self.history_keys = ['goals', 'actions', 'rewards']
-#        if self.agent_type == 'hdqn':
-#            self.history_keys.append('goals')
         self.reset()
         
         self.height = height
@@ -180,9 +163,7 @@ class SFEnv(gym.Env):
 
     def after_episode(self):
         self.ep_counter += 1
-        if 0 < len(self.imgs) < 1000:# and \
-#            (self.step_counter <= self.config.env.max_loops + 1 or \
-#                                     self.config.ag.mode == 'play'):
+        if 0 < len(self.imgs) < 1000:
             self.generate_video()
             
     def get_custom_reward(self, action):
