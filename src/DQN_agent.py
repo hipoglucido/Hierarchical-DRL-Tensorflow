@@ -6,7 +6,6 @@ from metrics import Metrics
 
 from base import Agent
 from epsilon import Epsilon
-from history import History
 from replay_memory import PriorityExperienceReplay, OldReplayMemory#, ReplayMemory
 import utils
 
@@ -21,8 +20,6 @@ class DQNAgent(Agent):
         self.gl = self.config.gl
         self.environment = environment
         self.ag.update({"q_output_length" : self.environment.action_size}, add = True)
-        self.history = History(length_ = self.ag.history_length,
-                               size    = self.environment.state_size)
         memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory        
         self.memory = memory_type(config      = self.ag,
                                    screen_size = self.environment.state_size)       

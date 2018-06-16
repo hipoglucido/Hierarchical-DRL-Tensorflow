@@ -5,7 +5,6 @@ import tensorflow as tf
 
 
 import base
-from history import History
 from replay_memory import PriorityExperienceReplay, OldReplayMemory#, ReplayMemory
 import utils
 from goals import MDPGoal, generate_SF_goals
@@ -32,11 +31,6 @@ class HDQNAgent(base.Agent):
         self.c_ag.update({"q_output_length" : self.environment.action_size}, add = True)
         
       
-        self.mc_history = History(length_ = self.mc_ag.history_length,
-                                  size    = self.environment.state_size)
-        
-        self.c_history = History(length_ = self.c_ag.history_length,
-                                 size    = self.environment.state_size)
         memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
         self.mc_memory = memory_type(config       = self.mc_ag,
                                       screen_size  = self.environment.state_size)

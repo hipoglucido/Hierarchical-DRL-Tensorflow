@@ -406,11 +406,10 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.library_path = os.path.join('..','Environments','SpaceFortress',
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')
-        self.libsuffix = ""
+     
         self.render_delay = 10
 
-        self.record = False
-        self.stats = False
+   
         self.mines_activated = 1
        
         self.ship_lifes = 3
@@ -419,13 +418,13 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 1
-        self.hit_fortress_reward = .1
-        self.hit_mine_reward = .1
+        self.hit_fortress_reward = .01
+        self.hit_mine_reward = .01
         
-        self.fast_shooting_penalty = .1
-        self.wrapping_penalty = .1
-        self.hit_by_fortress_penalty = .1
-        self.hit_by_mine_penalty = .1
+        self.fast_shooting_penalty = .01
+        self.wrapping_penalty = .01
+        self.hit_by_fortress_penalty = .01
+        self.hit_by_mine_penalty = .01
         
         
         self.min_steps_between_shots = 5

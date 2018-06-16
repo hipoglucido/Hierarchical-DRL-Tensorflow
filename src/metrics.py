@@ -40,7 +40,7 @@ class Metrics:
         if self.config.env.env_name == 'SF-v0':
             self.special_SF_tags = ['steps_to_destroy', 'steps_to_win']
             self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits',
-                                        'wrap_penalizations',
+                                        'wrap_penalizations', 'win_rate',
                                         'shot_too_fast_penalizations']
             for tag in self.special_SF_tags:
                 self.scalar_global_tags.append('avg_' + tag)
@@ -379,6 +379,8 @@ class Metrics:
                 except ZeroDivisionError:
                     avg = -100
                 setattr(self, 'avg_%s' % tag, avg)
+            win_rate = self.wins / total_episodes
+            setattr(self, 'win_rate', win_rate)
         
     def add_act(self, action, state = None):
         if self.is_hdqn:

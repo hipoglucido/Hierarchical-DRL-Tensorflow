@@ -80,7 +80,7 @@ def execute_experiment(args):
         if args['mines_activated']:
             args['goal_group'] = 3
         else:
-            args['goal_group'] = 3
+            args['goal_group'] = 4
     if 'architecture' in args and args['architecture'] is not None:
         args['architecture'] = args['architecture'].split('-')
         

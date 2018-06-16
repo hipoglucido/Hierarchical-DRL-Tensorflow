@@ -107,8 +107,8 @@ class Panel:
         
         draw.text((j, 3), "%.2f, %d, %.2f" % (
                                           info['mine_present'],
-                                          info['debug1'],
-                                          info['debug2']),
+                                          info['debug2'],
+                                          info['debug3']),
                                           color, font = self.font1)
         fortress_lifes = info['fortress'] - 1              
         if fortress_lifes < 2:
@@ -451,7 +451,7 @@ class SFEnv(gym.Env):
         #Adds the panel to right of the image
         env_img = Image.fromarray(img)      
         
-
+        # This information will be send to the panel (only for display purpose)
         info = {'steps'        : self.step_counter,
                 'ship'         : self.ship_lifes,
                 'fortress'     : self.fortress_lifes,
@@ -460,6 +460,9 @@ class SFEnv(gym.Env):
                 'debug1'       : self.steps_since_mine_appeared,
                 'debug2'       : self.get_prep_feature(self.current_observation, 
                                                             'steps_since_last_shot')                          
+                                                    ,
+                'debug3'       : self.get_prep_feature(self.current_observation, 
+                                                            'fortress_lifes')                          
                                                     }
         
         panel_img = self.panel.get_image(info)
@@ -653,7 +656,7 @@ class SFEnv(gym.Env):
         
     def get_raw_feature(self, observation, feature_name):
         return observation[self.raw_features_name_to_ix[feature_name]]
-    
+   
     def define_features(self):
         """
         Define the type of features that the agent will receive.
@@ -737,19 +740,18 @@ class SFEnv(gym.Env):
             if self.config.env.mines_activated:
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'steps_since_mine_appeared')]
                     ]
-                feature_names += ['mine_pos_i', 'mine_pos_j']
+                feature_names += ['mine_pos_i', 'mine_pos_j',
+                              'steps_since_mine_appeared']
           
             
             prep_fs += [         
                 lambda obs: [self.get_raw_feature(obs, 'fortress_lifes')],
-                lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')],
-                lambda obs: [self.get_raw_feature(obs, 'steps_since_mine_appeared')]
-                             
+                lambda obs: [self.get_raw_feature(obs, 'steps_since_last_shot')]                             
                 ]
-            feature_names += ['fortress_lifes', 'steps_since_last_shot',
-                              'steps_since_mine_appeared']
+            feature_names += ['fortress_lifes', 'steps_since_last_shot']
           
             
 

@@ -72,7 +72,6 @@ class Agent(object):
             parameters = w[name].eval()
             target_w_assign_op[name].eval(
                             {target_w_input[name]: parameters})
-            
     def is_testing_time(self, prefix):
         """
         Testing time means start writting logs to TB
