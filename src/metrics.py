@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import numpy as np
 import time
 import re
@@ -10,8 +11,9 @@ class Metrics:
     Class for recording learning metrics. Meant to be written to tensorboard
     periodically
     """
-    def __init__(self, config, goals = {}):
+    def __init__(self, config, model_log_dir, goals = {}):
         self.config = config
+        self.model_log_dir = model_log_dir
         self.is_hdqn = isinstance(self.config.ag, hDQNSettings) 
         self.is_pmemory = config.ag.pmemory
         self.is_SF = self.config.env.env_name in CT.SF_envs
@@ -42,6 +44,7 @@ class Metrics:
             self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits',
                                         'wrap_penalizations', 'win_rate',
                                         'shot_too_fast_penalizations']
+            self.destroy_ats = []
             for tag in self.special_SF_tags:
                 self.scalar_global_tags.append('avg_' + tag)
                                            
@@ -381,6 +384,11 @@ class Metrics:
                 setattr(self, 'avg_%s' % tag, avg)
             win_rate = self.wins / total_episodes
             setattr(self, 'win_rate', win_rate)
+            filepath = os.path.join(self.model_log_dir, 'destroy_steps.txt')
+            with open(filepath, 'w') as fp:
+                content = '\n'.join([str(s) for s in self.destroy_ats])
+                fp.write(content)
+                
         
     def add_act(self, action, state = None):
         if self.is_hdqn:

@@ -52,6 +52,9 @@ class Agent(object):
                 self.m.steps_to_win.append(info['steps'])
             if info['destroyed']:
                 self.m.steps_to_destroy.append(info['steps'])
+                self.m.destroy_ats.append(info['step_counter'])
+           
+            
             
     def play(self):        
         self.train()

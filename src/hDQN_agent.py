@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 from functools import reduce
@@ -36,9 +37,10 @@ class HDQNAgent(base.Agent):
                                       screen_size  = self.environment.state_size)
         self.c_memory = memory_type(config        = self.c_ag,
                                       screen_size  = self.environment.state_size + \
-                                                          self.ag.goal_size)           
-        self.m = Metrics(self.config, self.goals)
-            
+                                                          self.ag.goal_size)   
+        
+        self.m = Metrics(self.config, self.logs_dir, self.goals)
+    
         #self.config.print()
         self.build_hdqn()
         self.write_configuration()

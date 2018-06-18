@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 from functools import reduce
@@ -23,7 +24,9 @@ class DQNAgent(Agent):
         memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory        
         self.memory = memory_type(config      = self.ag,
                                    screen_size = self.environment.state_size)       
-        self.m = Metrics(self.config)       
+        
+       
+        self.m = Metrics(self.config, self.logs_dir)       
         self.build_dqn()
         self.write_configuration()
         

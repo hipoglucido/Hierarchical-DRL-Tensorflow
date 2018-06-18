@@ -169,16 +169,16 @@ class SFEnv(gym.Env):
     def get_custom_reward(self, action):
         reward = 0  
         # Penalize shooting fast
-        if self.is_shot(action) and \
-                    self.steps_since_last_shot < \
-                                self.config.env.min_steps_between_shots and \
-                    self.fortress_lifes > 2:
-            reward -= self.config.env.fast_shooting_penalty
-            
-            self.fortress_lifes = self.config.env.fortress_lifes            
-            self.shot_too_fast = True
-        else:
-            self.shot_too_fast = False
+#        if self.is_shot(action) and \
+#                    self.steps_since_last_shot < \
+#                                self.config.env.min_steps_between_shots and \
+#                    self.fortress_lifes > 2:
+#            reward -= self.config.env.fast_shooting_penalty
+#            
+#            self.fortress_lifes = self.config.env.fortress_lifes            
+#            self.shot_too_fast = True
+#        else:
+#            self.shot_too_fast = False
             
         if self.is_shot(action):
             self.steps_since_last_shot = 0
@@ -188,9 +188,16 @@ class SFEnv(gym.Env):
         # Did I hit mine
         if self.did_I_hit_mine() and self.config.env.mines_activated:
             reward += self.config.env.hit_mine_reward
-            
+        self.shot_too_fast = False
+        
         # Did I hit fortress  
         if self.did_I_hit_fortress() and self.step_counter != 0 and \
+            self.fortress_lifes > 1 and self.steps_since_last_fortress_hit <= \
+                            self.config.env.min_steps_between_fortress_hits:
+            self.shot_too_fast = True
+            reward -= self.config.env.fast_shooting_penalty
+            self.fortress_lifes = self.config.env.fortress_lifes
+        elif self.did_I_hit_fortress() and self.step_counter != 0 and \
                    (not self.mine_present or \
                    self.steps_since_mine_appeared < \
                            self.config.env.max_steps_after_mine_appear):
@@ -327,7 +334,7 @@ class SFEnv(gym.Env):
             raw_obs[10] /= self.screen_width          # Mine_X_Pos
             #raw_obs[11] /= self.config.env.fortress_lifes
             #print(raw_obs[11])
-            raw_obs[12] /= self.config.env.fortress_lifes
+            raw_obs[12] = (raw_obs[12] + 1) / (self.config.env.fortress_lifes + 1)
             raw_obs[13] = np.tanh(raw_obs[13] * .1)
             raw_obs[14] = np.tanh(raw_obs[14] * .01)
 #            raw_obs[13] = np.tanh(raw_obs[13] * .1)#1 / (1 + np.exp(-raw_obs[12]))
@@ -340,10 +347,14 @@ class SFEnv(gym.Env):
                 raw_obs[5], raw_obs[6] = 0., 0.
             else:
                 self.last_shell_coords = (raw_obs[5], raw_obs[6])
-            if self.last_mine_coords == (raw_obs[9], raw_obs[10]):
+            if self.last_mine_coords == (raw_obs[9], raw_obs[10]) or \
+                not self.config.env.mines_activated:
                 raw_obs[9], raw_obs[10] = 0., 0.
             else:
                 self.last_mine_coords = (raw_obs[9], raw_obs[10])
+                
+            
+                
        
         raw_obs = np.clip(raw_obs, 0, 1)
        
@@ -696,8 +707,7 @@ class SFEnv(gym.Env):
 #                    lambda obs: [self.get_raw_feature(obs, 'missile_stock')]
                 ]
                 feature_names += ['ship_pos_i', 'ship_pos_j',
-                                  'missile_pos_i', 'missile_pos_j']#,
-                                  #'missile_stock']
+                                  'missile_pos_i', 'missile_pos_j']
             
         else:
             # WRAPPER
@@ -737,7 +747,7 @@ class SFEnv(gym.Env):
                 feature_names += ['ship_speed_i', 'ship_speed_j']          
         if self.env_name == 'SF-v0':
             #Mines don't wrap even if wrapping is activated
-            if self.config.env.mines_activated:
+            if self.config.env.mines_activated or 1:
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
                     lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')],

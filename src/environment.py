@@ -22,6 +22,8 @@ class Environment():
         self._screen = None
         self.reward = 0
         self.terminal = True
+       
+        self.step_counter = 0 #TODO handle training resuming
         
         #Update configuration
         cnf.env.update({"state_size" : self.state_size,
@@ -58,7 +60,11 @@ class Environment():
 
 
     def _step(self, action):
+        self.step_counter += 1
         self._screen, self.reward, self.terminal, self.info = self.gym.step(action)
+        
+        self.info['step_counter'] = self.step_counter
+        
 
     def _random_step(self):
         action = self.gym.action_space.sample()
