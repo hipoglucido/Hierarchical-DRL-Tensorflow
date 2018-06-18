@@ -339,7 +339,7 @@ class HDQNAgent(base.Agent):
         with tf.variable_scope('mc_prediction'):
             
             self.mc_s_t = tf.placeholder("float",
-                        [None, self.mc_history.length, self.environment.state_size],
+                        [None, 1, self.environment.state_size],
                         name='mc_s_t')
 #            print(self.mc_s_t)
             shape = self.mc_s_t.get_shape().as_list()
@@ -384,7 +384,7 @@ class HDQNAgent(base.Agent):
             #input_size = self.environment.state_size + self.ag.goal_size
             
             self.c_s_t = tf.placeholder("float",
-                                [None, self.c_history.length,
+                                [None, 1,
                                                  self.environment.state_size],
                                 name = 'c_s_t')
             shape = self.c_s_t.get_shape().as_list()

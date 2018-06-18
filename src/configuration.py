@@ -71,9 +71,6 @@ class GenericSettings():
                     we keep the instance value"""
                     continue
                 else:
-                    #old_value = getattr(self, key) if hasattr(self, key) else '_'
-                    #logging.debug("Updated %s: %s -> %s", key, str(old_value),
-                    #                                      str(value))
                     setattr(self, key, value)
                     
         elif isinstance(new_attrs, GenericSettings):
@@ -87,9 +84,7 @@ class GenericSettings():
     def print(self):
         msg =  "\n" + self.to_str()
         print(msg)
-#        logging.info(msg)
-            
-    
+   
     def to_disk(self, filepath):
         #TODO test this method
         content = self.to_str()
