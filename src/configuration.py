@@ -336,11 +336,8 @@ class MetaControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-#        self.test_step = min(5 * self.scale, 500)
-#        self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
-#        self.ignore = ['ignore']
         self.prefix = 'mc'
         self.memory_minimum = 1000
         
@@ -383,9 +380,7 @@ class Stochastic_MDPSettings(EnvironmentSettings):
         self.right_failure_prob = 0.5
         self.update(new_attrs)
 
-           
-        
-          
+         
 class Trap_MDPSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
@@ -393,12 +388,10 @@ class Trap_MDPSettings(EnvironmentSettings):
         self.initial_state = 1
         self.terminal_states = [0, 5]
         self.total_actions = 2
-        self.update(new_attrs)
-     
+        self.update(new_attrs)     
         self.trap_states = [3, 4]
         
-   
-    
+       
 class SpaceFortressSettings(EnvironmentSettings):
     def __init__(self, new_attrs):
         super().__init__()
@@ -418,13 +411,13 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 1
-        self.hit_fortress_reward = .01
-        self.hit_mine_reward = .01
+        self.hit_fortress_reward = .1
+        self.hit_mine_reward = .1
         
-        self.fast_shooting_penalty = .01
-        self.wrapping_penalty = .01
-        self.hit_by_fortress_penalty = .01
-        self.hit_by_mine_penalty = .01
+        self.fast_shooting_penalty = 1
+        self.wrapping_penalty = 1
+        self.hit_by_fortress_penalty = .1
+        self.hit_by_mine_penalty = .1
         
         
         self.min_steps_between_shots = 5
