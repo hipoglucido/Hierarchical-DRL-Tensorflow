@@ -117,6 +117,30 @@ class Experiment():
                     'dueling'               :  1,
                     'double_q'              :  1,
                     'pmemory'               :  0  
+            }  
+        elif name == 'exp10':
+            architectures = [[100],
+                             [25, 25],
+                             [256, 256]]
+            
+            
+            #misc
+            hyperparameter_space = {
+                    'architectures'         : architectures,
+                    'duelings'              : [0, 1],
+                    'double_qs'             : [0, 1],
+                    'pmemorys'              : [0, 1]
+                    
+                    }
+            base_args = {
+                    'env_name'              : 'SF-v0',
+                    'agent_type'            : 'dqn',
+                    'scale'                 :  10000,
+                    'display_prob'          :  0,
+                    'use_gpu'               :  0,
+                    'mode'                  :  'train',
+                    'mines_activated'       :  0,
+                    'goal_group'            :  3
             }
          
         print("Experiment %s:\n%s" % (name, pprint.pformat(hyperparameter_space)))
