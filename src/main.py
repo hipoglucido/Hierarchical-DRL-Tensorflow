@@ -45,6 +45,7 @@ env_args.add_argument("--factor", default = None, type = int)
 env_args.add_argument("--render_delay", default = None, type = int)
 env_args.add_argument("--action_repeat", default = None, type = int)
 env_args.add_argument("--mines_activated", default = None, type = utils.str2bool)
+env_args.add_argument("--ez", default = None, type = utils.str2bool)
 
 
 # AGENT PARAMETERS
@@ -62,6 +63,7 @@ ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
 ag_args.add_argument("--ep_start", default = None, type = float)
+
 
 def execute_experiment(args):
     #### HARD RULES
@@ -121,6 +123,7 @@ def execute_experiment(args):
     elif args['env_name'] == 'SF-v0':
         #Space Fortress
         env_st = configuration.SpaceFortressSettings(new_attrs = args)
+        env_st.set_reward_function()
         
     elif args['env_name'] == 'stochastic_mdp-v0':
         #MDP

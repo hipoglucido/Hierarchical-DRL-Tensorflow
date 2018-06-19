@@ -411,24 +411,30 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.mines_activated = 1
        
         self.ship_lifes = 3
-        self.fortress_lifes = 11
+        self.fortress_lifes = 6
         self.max_loops = 2000 #Useful for stopping when the game crashes
         self.time_penalty = 0.00
         
         self.final_double_shot_reward = 1
-        self.hit_fortress_reward = .01
-        self.hit_mine_reward = .01
         
-        self.fast_shooting_penalty = .01
-        self.wrapping_penalty = .01
-        self.hit_by_fortress_penalty = .01
-        self.hit_by_mine_penalty = .01
+        self.ez = 1
+        
+        
         
         
         self.min_steps_between_shots = 5
         self.min_steps_between_fortress_hits = 5
         self.max_steps_after_mine_appear = 40 # 2 seconds
         self.update(new_attrs)
+    def set_reward_function(self):
+        reward = 1 if self.ez else .01
+        self.hit_fortress_reward = reward
+        self.hit_mine_reward = reward
+        
+        self.fast_shooting_penalty = 1
+        self.wrapping_penalty = 1
+        self.hit_by_fortress_penalty = 1
+        self.hit_by_mine_penalty = 1
         
 
 

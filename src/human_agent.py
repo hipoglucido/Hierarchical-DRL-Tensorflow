@@ -75,7 +75,7 @@ class HumanAgent():
                 for i, goal in self.goals.items():
                     achieved = goal.is_achieved(observation, action, info)
                     print("Goal %s achieved -> %s" % (goal.name, str(achieved)))
-                print('DESTROYED AT',info)#['destroyed_at'])
+                
                 if done == 1:
                     if self.display_episode:
                         self.environment.gym.render()

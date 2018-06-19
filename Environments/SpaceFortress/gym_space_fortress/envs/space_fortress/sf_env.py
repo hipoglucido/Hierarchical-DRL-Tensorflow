@@ -113,7 +113,7 @@ class Panel:
         fortress_lifes = info['fortress'] - 1              
         if fortress_lifes < 2:
             msg = '[vulnerable]'
-            fortress_lifes = 1
+            #fortress_lifes = 1
         else:
             msg = ''
         draw.text((j, 20), "Ship %d Fort %d %s  Total R%.2f" % (info['ship'],
@@ -167,15 +167,16 @@ class SFEnv(gym.Env):
             self.generate_video()
             
     def get_custom_reward(self, action):
-        reward = 0  
+        reward = 0
+        cnf = self.config.env
         # Penalize shooting fast
 #        if self.is_shot(action) and \
 #                    self.steps_since_last_shot < \
-#                                self.config.env.min_steps_between_shots and \
+#                                cnf.min_steps_between_shots and \
 #                    self.fortress_lifes > 2:
-#            reward -= self.config.env.fast_shooting_penalty
+#            reward -= cnf.fast_shooting_penalty
 #            
-#            self.fortress_lifes = self.config.env.fortress_lifes            
+#            self.fortress_lifes = cnf.fortress_lifes            
 #            self.shot_too_fast = True
 #        else:
 #            self.shot_too_fast = False
@@ -186,66 +187,73 @@ class SFEnv(gym.Env):
             self.steps_since_last_shot += 1
 
         # Did I hit mine
-        if self.did_I_hit_mine() and self.config.env.mines_activated:
-            reward += self.config.env.hit_mine_reward
+        if self.did_I_hit_mine() and cnf.mines_activated:
+            reward += cnf.hit_mine_reward
         self.shot_too_fast = False
         
-        # Did I hit fortress  
-        if self.did_I_hit_fortress() and self.step_counter != 0 and \
-            self.fortress_lifes > 1 and self.steps_since_last_fortress_hit <= \
-                            self.config.env.min_steps_between_fortress_hits:
+        # Did I hit fortress?
+        if not self.did_I_hit_fortress() or self.step_counter == 0:
+            # Didn't hit the fortress
+            self.steps_since_last_fortress_hit += 1
+            if self.steps_since_last_fortress_hit > \
+                        cnf.min_steps_between_fortress_hits and \
+                                        self.fortress_lifes == 1 and \
+                                    not cnf.ez:
+                # fortress_lifes 1 -> 2
+                self.fortress_lifes = 2
+        elif not self.did_I_hit_fortress():
+            # Didn't hit the fortress
+            pass
+        # From here on it is asssumed that the fortress was hit
+        elif self.fortress_lifes > 1 and self.steps_since_last_fortress_hit <= \
+                            cnf.min_steps_between_fortress_hits:
+            # Double shoot not allowed
             self.shot_too_fast = True
-            reward -= self.config.env.fast_shooting_penalty
-            self.fortress_lifes = self.config.env.fortress_lifes
-        elif self.did_I_hit_fortress() and self.step_counter != 0 and \
-                   (not self.mine_present or \
+            reward -= cnf.fast_shooting_penalty
+            if not cnf.ez:
+                # Restart fortress lifes if in hard mode
+                self.fortress_lifes = cnf.fortress_lifes
+        elif cnf.ez or (not self.mine_present or \
                    self.steps_since_mine_appeared < \
-                           self.config.env.max_steps_after_mine_appear):
-            
-            #self.fortress_lifes -= 1
+                           cnf.max_steps_after_mine_appear):
+            # Playing in EZ mode or mine restrictions don't apply
             if self.fortress_lifes == 1 and \
                     self.steps_since_last_fortress_hit < \
-                            self.config.env.min_steps_between_fortress_hits:
-                reward = self.config.env.final_double_shot_reward
+                            cnf.min_steps_between_fortress_hits:
+                reward = cnf.final_double_shot_reward
                 self.fortress_lifes -= 1
                 # WIN!
                 self.win = True
             elif self.steps_since_last_fortress_hit > \
-                            self.config.env.min_steps_between_fortress_hits:
+                            cnf.min_steps_between_fortress_hits:
                 
                 self.fortress_lifes -= 1
-                if self.fortress_lifes > 1:
-                    reward += self.config.env.hit_fortress_reward
+                if self.fortress_lifes > 1 or cnf.ez:
+                    reward += cnf.hit_fortress_reward
                 
             else:
                 # You shoot too fast when it was not allowed
                 pass#self.fortress_lifes += 1           
             self.steps_since_last_fortress_hit = 0
         else:            
-            # Didn't hit the fortress
-            self.steps_since_last_fortress_hit += 1
-            if self.steps_since_last_fortress_hit > \
-                        self.config.env.min_steps_between_fortress_hits and \
-                                        self.fortress_lifes == 1:
-                # fortress_lifes 1 -> 2
-                self.fortress_lifes = 2
+            pass
             
     
             
         # Bad
-        if self.did_mine_hit_me() and self.config.env.mines_activated:
-            reward -= self.config.env.hit_by_mine_penalty
+        if self.did_mine_hit_me() and cnf.mines_activated:
+            reward -= cnf.hit_by_mine_penalty
             self.ship_lifes -= 1
         if self.did_fortress_hit_me():
-            reward -= self.config.env.hit_by_fortress_penalty
+            reward -= cnf.hit_by_fortress_penalty
             self.ship_lifes -= 1
         
         # Time penalty
-        reward -= self.config.env.time_penalty
+        reward -= cnf.time_penalty
         
         # Penalize wrapping
         if self.penalize_wrapping:
-            reward -= self.config.env.wrapping_penalty
+            reward -= cnf.wrapping_penalty
         return reward
     
         
