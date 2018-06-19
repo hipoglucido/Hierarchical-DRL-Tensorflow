@@ -132,6 +132,7 @@ class GlobalSettings(GenericSettings):
                  'gl.date',
                  'ag.goal_group',
                  'env.env_name',
+                 'env.ez',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
@@ -411,7 +412,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.mines_activated = 1
        
         self.ship_lifes = 3
-        self.fortress_lifes = 6
+        self.fortress_lifes = 11
         self.max_loops = 2000 #Useful for stopping when the game crashes
         self.time_penalty = 0.00
         

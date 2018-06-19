@@ -27,8 +27,42 @@ class Experiment():
                     'dueling'               : 0,
                     'double_q'              : 0
             }  
-        if name == 'exp5':
-            # pmemory effect on hdqn
+        elif name == 'exp2':
+            # DOUBLE_Q
+            hyperparameter_space = {
+                    'double_qs'               : [0, 1],
+                    'random_seeds'           : list(range(5))
+                    }
+            base_args = {
+                    'agent_type'            : 'dqn',
+                    'scale'                 : 5000,  
+                    'env_name'              : 'SF-v0', 
+                    'ez'                    : 1,
+                    'use_gpu'               : 0,
+                    'pmemory'               : 0,
+                    'mines_activated'       : 1,
+                    'dueling'               : 0,
+                    'action_repeat'         : 4
+            }  
+        elif name == 'exp3':
+            # DUELING
+            hyperparameter_space = {
+                    'duelings'               : [0, 1],
+                    'random_seeds'           : list(range(5))
+                    }
+            base_args = {
+                    'agent_type'            : 'dqn',
+                    'scale'                 : 5000,  
+                    'env_name'              : 'SF-v0',
+                    'ez'                    : 1,  
+                    'use_gpu'               : 0,
+                    'pmemory'               : 0,
+                    'mines_activated'       : 1,
+                    'double_q'              : 0,
+                    'action_repeat'         : 4
+            }  
+        elif name == 'exp4':
+            # PRIORITIZED EXPERIENCE REPLAY
             hyperparameter_space = {
                     'pmemorys'               : [0, 1],
                     'random_seeds'           : list(range(5))
@@ -36,13 +70,12 @@ class Experiment():
             base_args = {
                     'agent_type'            : 'dqn',
                     'scale'                 : 5000,  
-                    'env_name'              : 'SF-v0',                 
-                    'display_prob'          : 0.,
+                    'env_name'              : 'SF-v0',
+                    'ez'                    : 1,  
                     'use_gpu'               : 0,
+                    'dueling'               : 0,
                     'mines_activated'       : 1,
-                    'mode'                  : 'train',
-                    'dueling'               : 1,
-                    'double_q'              : 1,
+                    'double_q'              : 0,
                     'action_repeat'         : 4
             }  
         elif name == 'exp6':
@@ -157,7 +190,7 @@ class Experiment():
     def get_hyperparameters_iterator(self, hyperparameters_space, base_dict):
         lists = []
         for k, hyperparameters in hyperparameters_space.items():
-            assert k[-1] == 's'
+            assert k[-1] == 's', '"%s" must end with "s"' % k
             param_name = k[:-1]
             list_ = [(param_name, v) for v in hyperparameters]
             
