@@ -400,16 +400,17 @@ class Metrics:
                 fort_destruction = destroy_at - aux
                 
                 row = {'steps'            : destroy_at,
-                       'trial'            : trial,
-                       'fort_destruction' : fort_destruction,
-                       'ep'               : ep_at_destroy
+                       #'trial'            : trial,
+                       #'fort_destruction' : fort_destruction,
+                       'ep'               : round(ep_at_destroy, 1)
                        }
-                cols = ['steps', 'trial', 'fort_destruction', 'ep']
+                print(row)
                 aux = destroy_at
                 data.append(row)
             df = pd.DataFrame(data)
             filepath = os.path.join(self.model_log_dir, 'custom_log.csv')
-            df.to_csv(filepath, sep = ';', index = False, columns = cols)
+            #cols = ['steps', 'trial', 'fort_destruction', 'ep']
+            df.to_csv(filepath, sep = ';', index = False)#, columns = cols)
 
                 
     def add_fortress_destroy(self, info):

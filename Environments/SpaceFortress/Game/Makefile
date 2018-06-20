@@ -15,7 +15,7 @@ PARAM+=-D NO_RANDOM_SPAWN #** Disable random spawn location and random ship orie
 
 define build
 	$(CC) -march=native `pkg-config --cflags cairo` -Wall -g -fPIC -c $(1)/myvars.c $(1)/DE_Minimal.c $(1)/HM.c $(1)/TCOL.c $(1)/RS.c -Wno-dangling-else -Wno-switch -O3 $(PARAM);
-	$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib_mines0.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);
+	$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib_mines1.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);
 	#$(CC) -march=native `pkg-config --cflags cairo --libs cairo` -shared -o $(2)_frame_lib.so myvars.o HM.o RS.o TCOL.o DE_Minimal.o -O3 $(PARAM);\
 	
 	@# check if we have to build the binary

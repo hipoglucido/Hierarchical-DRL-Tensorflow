@@ -16,14 +16,16 @@ class Experiment():
         self._args_list = []
     
         if name == 'extensions_exp':
-            base_args = {'scale'        : 5000,
-                        'agent_type'   : 'dqn',
-                        'mode'         : 'train',
-                        'env_name'     : 'SF-v0',
-                        'ez'           : 1,
-                        'double_q'     : 0,
-                        'dueling'      : 0,
-                        'pmemory'      : 0}
+            base_args = {'scale'          : 5000,
+                        'agent_type'      : 'dqn',
+                        'mode'            : 'train',
+                        'env_name'        : 'SF-v0',
+                        'use_gpu'         : 0,
+                        'ez'              : 1,
+                        'mines_activated' : 1,
+                        'double_q'        : 0,
+                        'dueling'         : 0,
+                        'pmemory'         : 0}
             hyperparameter_space = {'random_seeds' : list(range(5))}
             # VANILLA
             vanilla_base_args = base_args.copy()

@@ -60,7 +60,7 @@ class Agent(object):
             self.m.wins += info['win']
             if info['win']:
                 self.m.steps_to_win.append(info['steps'])
-            if info['destroyed'] or random.random() > .8:
+            if info['destroyed']:
                 self.m.add_fortress_destroy(info)
            
             
