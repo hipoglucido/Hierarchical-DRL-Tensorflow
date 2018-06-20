@@ -104,6 +104,7 @@ def execute_experiment(args):
         raise ValueError("Wrong agent %s" % args['agent_type'])
      
 #    print(args)
+    #args['experiment_name'] = 'das'
     ag_st.update(args)
     cnf.set_agent_settings(ag_st)
     

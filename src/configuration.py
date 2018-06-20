@@ -172,6 +172,7 @@ class AgentSettings(GenericSettings):
         self.double_q = 1
         self.dueling = 1
         self.fresh_start = 0
+        self.experiment_name = ''
     
     def scale_attrs(self, attr_list):
         for attr in attr_list:

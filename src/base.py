@@ -24,6 +24,7 @@ class Agent(object):
         self._saver = None
         self.config = config
         self.output = ''
+        
      
     def display_environment(self, observation):
         """
@@ -735,7 +736,9 @@ class Agent(object):
 
     @property
     def logs_dir(self):
+        
         return os.path.join(self.config.gl.logs_dir,
+                            self.config.ag.experiment_name,
                             self.config.model_name)
 
    

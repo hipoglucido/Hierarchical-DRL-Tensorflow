@@ -404,7 +404,7 @@ class Metrics:
                        #'fort_destruction' : fort_destruction,
                        'ep'               : round(ep_at_destroy, 1)
                        }
-                print(row)
+                
                 aux = destroy_at
                 data.append(row)
             df = pd.DataFrame(data)
