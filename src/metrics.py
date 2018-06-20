@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import numpy as np
+import pandas as pd
 import time
 import re
 from configuration import hDQNSettings, DQNSettings
@@ -45,6 +46,7 @@ class Metrics:
                                         'wrap_penalizations', 'win_rate',
                                         'shot_too_fast_penalizations']
             self.destroy_ats = []
+            self.ep_at_destroys = []
             for tag in self.special_SF_tags:
                 self.scalar_global_tags.append('avg_' + tag)
                                            
@@ -384,11 +386,39 @@ class Metrics:
                 setattr(self, 'avg_%s' % tag, avg)
             win_rate = self.wins / total_episodes
             setattr(self, 'win_rate', win_rate)
-            filepath = os.path.join(self.model_log_dir, 'destroy_steps.txt')
-            with open(filepath, 'w') as fp:
-                content = '\n'.join([str(s) for s in self.destroy_ats])
-                fp.write(content)
+            
+            """
+            Custom log generated for machine vs human comparison
+            Currently is kept in memory and written to disk periodically
+            If the file gets very big it may produce some problems
+            """
+            data = []
+            aux = 0
+            for i, (destroy_at, ep_at_destroy) \
+                    in enumerate(zip(self.destroy_ats, self.ep_at_destroys)):
+                trial = i + 1
+                fort_destruction = destroy_at - aux
                 
+                row = {'steps'            : destroy_at,
+                       'trial'            : trial,
+                       'fort_destruction' : fort_destruction,
+                       'ep'               : ep_at_destroy
+                       }
+                cols = ['steps', 'trial', 'fort_destruction', 'ep']
+                aux = destroy_at
+                data.append(row)
+            df = pd.DataFrame(data)
+            filepath = os.path.join(self.model_log_dir, 'custom_log.csv')
+            df.to_csv(filepath, sep = ';', index = False, columns = cols)
+
+                
+    def add_fortress_destroy(self, info):
+        # Steps needed to destroy the fortress (inside episode)
+        self.steps_to_destroy.append(info['steps'])
+        # Absolute step in which fortress is destroyed
+        self.destroy_ats.append(info['step_counter'])
+        ep = self.mc_epsilon if self.is_hdqn else self.epsilon 
+        self.ep_at_destroys.append(ep)
         
     def add_act(self, action, state = None):
         if self.is_hdqn:

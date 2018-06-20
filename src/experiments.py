@@ -9,9 +9,46 @@ def run_cmd(cmd):
     output, error = process.communicate()
     return output
 class Experiment():
+        
     def __init__(self, name, paralel):
-        args_list = []
-        if name == 'exp1':
+        self.paralel = paralel
+        self.name = name
+        self._args_list = []
+    
+        if name == 'extensions_exp':
+            base_args = {'scale'        : 5000,
+                        'agent_type'   : 'dqn',
+                        'mode'         : 'train',
+                        'env_name'     : 'SF-v0',
+                        'ez'           : 1,
+                        'double_q'     : 0,
+                        'dueling'      : 0,
+                        'pmemory'      : 0}
+            hyperparameter_space = {'random_seeds' : list(range(5))}
+            # VANILLA
+            vanilla_base_args = base_args.copy()
+            self.add_params_to_arg_list(vanilla_base_args, hyperparameter_space)
+            # DOUBLE Q
+            double_q_base_args = base_args.copy()
+            double_q_base_args['double_q'] = 1
+            self.add_params_to_arg_list(double_q_base_args, hyperparameter_space)
+            # DUELING
+            dueling_base_args = base_args.copy()
+            dueling_base_args['dueling'] = 1
+            self.add_params_to_arg_list(dueling_base_args, hyperparameter_space)
+            # PRIORITIZE REPLAY MEMORY
+            pmemory_base_args = base_args.copy()
+            pmemory_base_args['pmemory'] = 1
+            self.add_params_to_arg_list(pmemory_base_args, hyperparameter_space)
+            # RAINBOW
+            rainbow_base_args = base_args.copy()
+            rainbow_base_args['double_q'] = 1
+            rainbow_base_args['dueling'] = 1
+            rainbow_base_args['pmemory'] = 1
+            self.add_params_to_arg_list(rainbow_base_args, hyperparameter_space)
+            
+            
+        elif name == 'exp1':
             # toy_problem
             hyperparameter_space = {
                     'agent_types'             : ['dqn', 'hdqn'],
@@ -30,7 +67,7 @@ class Experiment():
         elif name == 'exp2':
             # DOUBLE_Q
             hyperparameter_space = {
-                    'double_qs'               : [0, 1],
+                    'double_qs'               : [1],
                     'random_seeds'           : list(range(5))
                     }
             base_args = {
@@ -47,7 +84,7 @@ class Experiment():
         elif name == 'exp3':
             # DUELING
             hyperparameter_space = {
-                    'duelings'               : [0, 1],
+                    'duelings'               : [1],
                     'random_seeds'           : list(range(5))
                     }
             base_args = {
@@ -64,7 +101,7 @@ class Experiment():
         elif name == 'exp4':
             # PRIORITIZED EXPERIENCE REPLAY
             hyperparameter_space = {
-                    'pmemorys'               : [0, 1],
+                    'pmemorys'               : [1],
                     'random_seeds'           : list(range(5))
                     }
             base_args = {
@@ -78,7 +115,40 @@ class Experiment():
                     'double_q'              : 0,
                     'action_repeat'         : 4
             }  
+        elif name == 'exp5':
+            # VANILLA
+            hyperparameter_space = {
+                    'random_seeds'           : list(range(5))
+                    }
+            base_args = {
+                    'agent_type'            : 'dqn',
+                    'scale'                 : 5000,  
+                    'env_name'              : 'SF-v0',
+                    'ez'                    : 1,  
+                    'use_gpu'               : 0,
+                    'dueling'               : 0,
+                    'mines_activated'       : 1,
+                    'double_q'              : 0,
+                    'action_repeat'         : 4
+            }    
         elif name == 'exp6':
+            # RAINBOW
+            hyperparameter_space = {
+                    'random_seeds'           : list(range(5))
+                    }
+            base_args = {
+                    'agent_type'            : 'dqn',
+                    'scale'                 : 5000,  
+                    'env_name'              : 'SF-v0',
+                    'ez'                    : 1,  
+                    'use_gpu'               : 0,
+                    'dueling'               : 1,
+                    ''
+                    'mines_activated'       : 1,
+                    'double_q'              : 0,
+                    'action_repeat'         : 4
+            }  
+        elif name == 'exp16':
             #hdqn vs dqn in SF
             hyperparameter_space = {
                     'agent_types'             : ['dqn', 'hdqn'],
@@ -175,17 +245,17 @@ class Experiment():
                     'mines_activated'       :  0,
                     'goal_group'            :  3
             }
-         
-        print("Experiment %s:\n%s" % (name, pprint.pformat(hyperparameter_space)))
-        base_args['paralel'] = paralel
+        
+    def add_params_to_arg_list(self, base_args, hyperparameter_space):
+        print("Experiment %s:\n%s" % (self.name, pprint.pformat(hyperparameter_space)))
+        base_args['paralel'] = self.paralel
         for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                       base_args):
             
             if 'architecture' in args:
                 args['architecture'] = '-'.join([str(l) for l in args['architecture']])
-            args_list.append(args)
+            self._args_list.append(args)
        
-        self._args_list = args_list
         
     def get_hyperparameters_iterator(self, hyperparameters_space, base_dict):
         lists = []

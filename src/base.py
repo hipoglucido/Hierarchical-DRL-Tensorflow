@@ -6,9 +6,10 @@ import random
 from tqdm import tqdm
 from functools import reduce
 
-from utils import pp
+
 import utils
 from constants import Constants as CT
+import time
 
 import cv2
 
@@ -39,7 +40,16 @@ class Agent(object):
             out = self.environment.gym.one_hot_inverse(observation)
         msg = '\nS:\n%s' % str(out)
         self.add_output(msg)
-        
+    def start_train_timer(self):
+        self.t0 = time.time()
+    def stop_train_timer(self):
+        t1 = time.time()
+        seconds = t1 - self.t0        
+        filename = 'total_training_seconds.txt'
+        filepath = os.path.join(self.logs_dir, filename)
+        with open(filepath, 'w') as fp:
+            fp.write(str(seconds))  
+       
     def process_info(self, info):
         if self.environment.env_name == 'SF-v0':       
             
@@ -50,9 +60,8 @@ class Agent(object):
             self.m.wins += info['win']
             if info['win']:
                 self.m.steps_to_win.append(info['steps'])
-            if info['destroyed']:
-                self.m.steps_to_destroy.append(info['steps'])
-                self.m.destroy_ats.append(info['step_counter'])
+            if info['destroyed'] or random.random() > .8:
+                self.m.add_fortress_destroy(info)
            
             
             

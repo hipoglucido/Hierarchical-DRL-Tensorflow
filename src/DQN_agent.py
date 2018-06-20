@@ -31,6 +31,7 @@ class DQNAgent(Agent):
         self.write_configuration()
         
     def train(self):
+        self.start_train_timer()
         self.flag_start_training = False
         self.start_step = self.step_op.eval()
         if self.ag.fresh_start:
@@ -54,7 +55,7 @@ class DQNAgent(Agent):
                     'display_episode' : self.display_episode,
                     'watch'           : self.gl.watch}
             new_obs, reward, terminal, info = self.environment.act(action, info)
-            self.process_info(info)
+            self.process_info(info = info)
            
             if self.m.is_SF:
                 self.m.add_act(action)
@@ -97,7 +98,7 @@ class DQNAgent(Agent):
             self.write_output()
             
             self.m.restart()
-            
+        self.stop_train_timer()
    
     def predict_next_action(self, old_obs):
         
@@ -165,7 +166,7 @@ class DQNAgent(Agent):
             self.s_t = tf.placeholder("float",
                                     [None, self.ag.history_length,
                                      self.environment.state_size], name='s_t')
-            print(self.s_t)
+            
             shape = self.s_t.get_shape().as_list()
             self.s_t_flat = tf.reshape(self.s_t, [-1, reduce(
                                             lambda x, y: x * y, shape[1:])])
