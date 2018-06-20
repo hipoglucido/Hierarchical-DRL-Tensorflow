@@ -228,8 +228,11 @@ class SFEnv(gym.Env):
                             cnf.min_steps_between_fortress_hits:
                 
                 self.fortress_lifes -= 1
+                if self.fortress_lifes == 0 and cnf.ez:
+                    self.win = True
                 if self.fortress_lifes > 1 or cnf.ez:
                     reward += cnf.hit_fortress_reward
+                
                 
             else:
                 # You shoot too fast when it was not allowed

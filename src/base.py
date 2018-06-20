@@ -189,7 +189,12 @@ class Agent(object):
                 pass
             value = 1            
         except:
-            value = 0          
+            value = 0      
+        record_last_n_steps = 10000
+        try:
+            value = int(self.total_steps - self.step < record_last_n_steps)
+        except:
+            value = 0
         self.config.gl.update({'display_prob' : value})
         
         self.display_episode = random.random() < self.gl.display_prob

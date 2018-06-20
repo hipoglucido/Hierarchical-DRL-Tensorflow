@@ -49,7 +49,13 @@ class Constants:
         total_regions = factor ** 2
         names = ['region_%d_%d' % (i, total_regions) for i in range(total_regions)]
         return names
-    
+    move_actions = ['Key.up', 'Key.right', 'Key.left', 'wait']
+    """
+    Only low level resembles DQN?
+    Can it pick the best goals if goal set is very big?
+    Is aiming important?
+    Will he use Key.space as goal if it has shoot goals?
+    """
     goal_groups = {
         # Control task
         'SFC-v0' : {
@@ -60,16 +66,28 @@ class Constants:
             4 : SF_action_spaces['SFC-v0'],
             5 : ['aim_at_square'] + SF_action_spaces['SFC-v0']
             },
+
         # SF task
+        #get_region_names(5)
+        # 'Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'
         'SF-v0'  : {
+            # Empty
             0 : [],
-            1 : ['aim_at_fortress']  + SF_action_spaces['SF-v0'] + get_region_names(4),
-            2 : ['aim_at_fortress']  + ['Key.space'] + get_region_names(4),
+            # Only low level actions
+            1 : SF_action_spaces['SF-v0'],
+            # Only high level
+            2 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
+                 'shoot_at_fortress'] + get_region_names(5),
+            # Everything but no Key.space
             3 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
-                 'shoot_at_fortress', 'double_shoot']  + SF_action_spaces['SF-v0'],
-            4 : ['aim_at_fortress',
-                 'shoot_at_fortress', 'double_shoot']  + SF_action_spaces['SF-v0'],
-            5 : ['aim_at_fortress']  + SF_action_spaces['SF-v0']
+                 'shoot_at_fortress'] + move_actions,
+            # Without aiming    
+            4 : ['shoot_at_mine', 'shoot_at_fortress'] + move_actions,
+            # Is Key.space used?
+            5 : ['shoot_at_mine', 'shoot_at_fortress'] + SF_action_spaces['SF-v0'],
+            
+            6 : ['aim_at_fortress', 'aim_at_mine'] + SF_action_spaces['SF-v0'],
+
                 },
         # Aim task
         'AIM-v0' : {

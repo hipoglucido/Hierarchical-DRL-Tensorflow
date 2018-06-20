@@ -77,11 +77,11 @@ def execute_experiment(args):
    
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
-    if args['env_name'] == 'SF-v0':
-        if args['mines_activated']:
-            args['goal_group'] = 3
-        else:
-            args['goal_group'] = 4
+#    if args['env_name'] == 'SF-v0' and args['experiment_name']:
+#        if args['mines_activated']:
+#            args['goal_group'] = 3
+#        else:
+#            args['goal_group'] = 4
     if 'architecture' in args and args['architecture'] is not None:
         args['architecture'] = args['architecture'].split('-')
         
@@ -104,7 +104,7 @@ def execute_experiment(args):
         raise ValueError("Wrong agent %s" % args['agent_type'])
      
 #    print(args)
-    #args['experiment_name'] = 'das'
+    #print(args['experiment_name'], args['goal_group'])
     ag_st.update(args)
     cnf.set_agent_settings(ag_st)
     

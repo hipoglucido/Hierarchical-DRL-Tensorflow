@@ -80,6 +80,22 @@ class Experiment():
                                     'architectures'  : architectures}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
+        elif name == 'goals_exp':
+            base_args = {'scale'          : 15000,
+                        'agent_type'      : 'hdqn',
+                        'mode'            : 'train',
+                        'env_name'        : 'SF-v0',
+                        'use_gpu'         : 0,
+                        'ez'              : 1,
+                        'mines_activated' : 1,
+                        'double_q'        : 0,
+                        'dueling'         : 0,
+                        'pmemory'         : 0}
+     
+            hyperparameter_space = {'random_seeds'   : list(range(1)),
+                                    'goal_groups'    : [1,2,3,4,5,6]}
+            self.add_params_to_arg_list(base_args, hyperparameter_space)
+            
         elif name == 'toy_problem':
             # toy_problem
             hyperparameter_space = {
@@ -108,6 +124,7 @@ class Experiment():
                 args['architecture'] = '-'.join([str(l) for l in args['architecture']])
             t = utils.get_timestamp()
             args['experiment_name'] = "%s_%s" % (t, self.name)
+            
             self._args_list.append(args)
        
         
