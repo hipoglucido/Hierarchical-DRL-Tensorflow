@@ -1,6 +1,7 @@
 #Python
 src/__pycache__/
 Others/logs/
+*.sh
 src/saved_logs/
 Others/checkpoints/
 *.out
