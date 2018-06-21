@@ -45,7 +45,9 @@ class Panel:
     def add(self, key, item):
         if not isinstance(item, str) and item % 1 == 0:
             item = int(item)
-        item = str(item).replace('Key.', '')
+            
+        item = str(item).replace('Key.', '').replace('G_','')
+        item = item.replace('space','thrust')
         self.history[key][:-1] = self.history[key][1:]
         self.history[key][-1] = item
     
@@ -64,6 +66,7 @@ class Panel:
                 color = self.old_color
                 if n == 0:
                     item = 'Goals:'
+            
             draw.text(coords, item, color, font = self.font1)
        
         if self.agent_type == 'dqn':
@@ -105,19 +108,20 @@ class Panel:
                                                   color, font = self.font2)
         draw.text((10, 25),"%d steps" % info['steps'], color, font = self.font1)
         
-        draw.text((j, 3), "%.2f, %d, %.2f" % (
-                                          info['mine_present'],
-                                          info['debug2'],
-                                          info['debug3']),
-                                          color, font = self.font1)
+#        draw.text((j, 3), "%.2f, %d, %.2f" % (
+#                                          info['mine_present'],
+#                                          info['debug2'],
+#                                          info['debug3']),
+#                                          color, font = self.font1)
+        draw.text((j, 3), "Total R%.2f" % info['ep_reward'], color, font = self.font1)
         fortress_lifes = info['fortress'] - 1              
         if fortress_lifes < 2:
             msg = '[vulnerable]'
             #fortress_lifes = 1
         else:
             msg = ''
-        draw.text((j, 20), "Ship %d Fort %d %s  Total R%.2f" % (info['ship'],
-                  fortress_lifes, msg, info['ep_reward']),
+        draw.text((j, 20), "Ship %d Fort %d %s" % (info['ship'],
+                  fortress_lifes, msg),
                                           color, font = self.font1)
         return panel
             
@@ -759,14 +763,18 @@ class SFEnv(gym.Env):
         if self.env_name == 'SF-v0':
             #Mines don't wrap even if wrapping is activated
             if self.config.env.mines_activated or 1:
+                # Include even if not activated for potential transfer learning
                 prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'mine_pos_i')],
-                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')],
+                    lambda obs: [self.get_raw_feature(obs, 'mine_pos_j')]]
+
+                feature_names += ['mine_pos_i', 'mine_pos_j']
+                if not self.config.env.ez:
+                    # Not relevant in ez mode
+                    prep_fs += [
                     lambda obs: [self.get_raw_feature(obs, 'steps_since_mine_appeared')]
-                    ]
-                feature_names += ['mine_pos_i', 'mine_pos_j',
-                              'steps_since_mine_appeared']
-          
+                        ]
+                    feature_names += ['steps_since_mine_appeared']
             
             prep_fs += [         
                 lambda obs: [self.get_raw_feature(obs, 'fortress_lifes')],

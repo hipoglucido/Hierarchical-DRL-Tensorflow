@@ -3,7 +3,6 @@
 import math
 
 class Constants:
-    
 
     key_to_sf = {
         'Key.up'     : 65362,
@@ -20,7 +19,7 @@ class Constants:
         'SF-v0'    : ['Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'],
         'SFS-v0'   : [],
         'AIM-v0'   : ['Key.right', 'Key.left', 'wait', 'Key.space']
-            }
+    }
     SF_envs = list(SF_action_spaces.keys())
     key_to_action = {}
     action_to_sf = {}
@@ -37,8 +36,8 @@ class Constants:
         'SFS-v0'   : 0,
         'AIM-v0'   : 3
             }
-#    print(key_to_action)
-#    print(action_to_sf)
+    #    print(key_to_action)
+    #    print(action_to_sf)
     
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     GYM_envs = ['CartPole-v0']
@@ -66,7 +65,7 @@ class Constants:
             4 : SF_action_spaces['SFC-v0'],
             5 : ['aim_at_square'] + SF_action_spaces['SFC-v0']
             },
-
+    
         # SF task
         #get_region_names(5)
         # 'Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'
@@ -87,18 +86,24 @@ class Constants:
             5 : ['shoot_at_mine', 'shoot_at_fortress'] + SF_action_spaces['SF-v0'],
             
             6 : ['aim_at_fortress', 'aim_at_mine'] + SF_action_spaces['SF-v0'],
-
+    
                 },
         # Aim task
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],
             1 : []
                 },
-        }  
+        }
+    
+    temp = {}
+    for env_name, goals_dict in goal_groups.items():
+        temp[env_name] = {}
+        for key, goals in goals_dict.items():
+            temp[env_name][key] = ['G_' + g for g in goals]
+    goal_groups = temp
     
     c = 2 * math.pi
     c34 = 3 / 4 * c
     c12 = 1 / 2 * c
     c14 = 1 / 4 * c
     
-    #oneqpi = math.pi * 1 / 4

@@ -151,17 +151,17 @@ class SFGoal(Goal):
         
         achieved = False
         
-        if self.name == 'double_shoot':
+        if self.name == 'G_double_shoot':
             its_a_shot = action == CT.SF_action_spaces[self.environment.env_name].index('Key.space')            
             if its_a_shot and \
                0 <= info['steps_since_last_shot'] < info['min_steps_between_shots']:
                 achieved = True
-        elif self.name == 'shoot_at_mine':
+        elif self.name == 'G_shoot_at_mine':
             if info['mine_hit']:
                 achieved = True
             elif pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:
                 achieved = True
-        elif self.name == 'shoot_at_fortress':
+        elif self.name == 'G_shoot_at_fortress':
             if info['fortress_hit']:
                 achieved = True
         elif 'aim_at' in self.name:
@@ -270,7 +270,7 @@ class SFGoal(Goal):
             else:
                 assert 0
         elif 'region' in self.name:
-            _, region_id, total_regions = self.name.split("_")
+            _, _, region_id, total_regions = self.name.split("_")
             if self.environment.is_wrapper:
                 new_pfs = {}
                 coordinate_fns = ['ship_pos_i', 'ship_pos_j']
@@ -294,38 +294,6 @@ class SFGoal(Goal):
         elif self.name in CT.SF_action_spaces[self.environment.env_name]:
             goal_action = CT.SF_action_spaces[self.environment.env_name].index(self.name)
             achieved = action == goal_action
-            
-        elif ' escape_from_fortress':
-            if self.environment.is_wrapper:
-                # Rotation activated and WRAPPING
-                new_pfs = {}
-                coordinate_fns = ['ship_pos_i', 'ship_pos_j']
-                for fn in coordinate_fns:
-                    new_pfs[fn] = utils.revert_cyclic_feature(
-                            X_sin         = pfs[fn + '_sin'],
-                            X_cos         = pfs[fn + '_cos'],
-                            is_scaled     = True,
-                            scale_after   = True)
-                
-                achieved = self.is_aiming_at(
-                                  A_i     = .5,
-                                  A_j     = .5,
-                                  A_sin   = pfs['ship_headings_sin'],
-                                  A_cos   = pfs['ship_headings_cos'],
-                                  B_i     = new_pfs['ship_pos_i'],
-                                  B_j     = new_pfs['ship_pos_j'],
-                                  epsilon = .3)
-                
-            else:
-                # Rotation activated and NO WRAPPING
-                achieved = self.is_aiming_at(
-                                  A_i     = .5,
-                                  A_j     = .5,
-                                  A_sin   = pfs['ship_headings_sin'],
-                                  A_cos   = pfs['ship_headings_cos'],
-                                  B_i     = pfs['ship_pos_i'],
-                                  B_j     = pfs['ship_pos_j'],
-                                  epsilon = .3)   
         return achieved
             
 
