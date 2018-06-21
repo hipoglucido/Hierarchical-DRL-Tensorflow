@@ -192,29 +192,29 @@ def execute_experiment(args):
 ##############################################
 ##                   MAIN
 ##############################################
-
-# Parse arguments
-args = vars(parser.parse_args())
-
-
-if 'exp' in args['mode']:
-    # Experiment mode. We will run more than one experiment (Experiments.py)
-    exp_name = args['mode']    
-    experiment = Experiment(exp_name, args['paralel'])
-    args_list = experiment.get_args_list()
-else:
-    # Not in experiment mode means that we are only running one experiment
-    args_list = [args]
-
-if args['paralel'] == 0:
-    # Execute experiments sequentially
-    for args_ in args_list:
-        execute_experiment(args_)
-else:
-    # Execute experiments in parallel
-    from multiprocessing import Pool    
-    n_processes = args['paralel']    
-    with Pool(n_processes) as pool:
-        pool.starmap(execute_experiment, zip(args_list))
+if __name__ == "__main__":
+    # Parse arguments
+    args = vars(parser.parse_args())
     
     
+    if 'exp' in args['mode']:
+        # Experiment mode. We will run more than one experiment (Experiments.py)
+        exp_name = args['mode']    
+        experiment = Experiment(exp_name, args['paralel'])
+        args_list = experiment.get_args_list()
+    else:
+        # Not in experiment mode means that we are only running one experiment
+        args_list = [args]
+    
+    if args['paralel'] == 0:
+        # Execute experiments sequentially
+        for args_ in args_list:
+            execute_experiment(args_)
+    else:
+        # Execute experiments in parallel
+        from multiprocessing import Pool    
+        n_processes = args['paralel']    
+        with Pool(n_processes) as pool:
+            pool.starmap(execute_experiment, zip(args_list))
+    print("Done :D")
+        
