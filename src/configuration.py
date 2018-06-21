@@ -214,8 +214,8 @@ class DQNSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 10000
         
-        self.architecture = [64, 64]
-        self.architecture_duel = [32, 32]
+        self.architecture = [512, 512]
+        self.architecture_duel = [128, 128]
         
         self.test_step = 10000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -234,8 +234,8 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-        self.architecture = [64, 64]
-        self.architecture_duel = [32, 32]
+        self.architecture = [512, 512]
+        self.architecture_duel = [128, 128]
         self.memory_size = int(5e4)
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
@@ -349,7 +349,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False 
-        self.action_repeat = 4    
+        self.action_repeat = 5    
         self.right_failure_prob = 0.
         
 class EZ_MDPSettings(EnvironmentSettings):

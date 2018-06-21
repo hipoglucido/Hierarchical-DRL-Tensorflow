@@ -113,14 +113,14 @@ class Panel:
 #                                          info['debug2'],
 #                                          info['debug3']),
 #                                          color, font = self.font1)
-        draw.text((j, 3), "Total R%.2f" % info['ep_reward'], color, font = self.font1)
+        draw.text((j, 3), "Total reward: %.2f" % info['ep_reward'], color, font = self.font1)
         fortress_lifes = info['fortress'] - 1              
         if fortress_lifes < 2:
-            msg = '[vulnerable]'
+            msg = '[V]'
             #fortress_lifes = 1
         else:
             msg = ''
-        draw.text((j, 20), "Ship %d Fort %d %s" % (info['ship'],
+        draw.text((j, 20), "Lifes: ship %d fort %d %s" % (info['ship'],
                   fortress_lifes, msg),
                                           color, font = self.font1)
         return panel

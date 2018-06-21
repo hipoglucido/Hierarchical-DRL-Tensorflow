@@ -155,7 +155,6 @@ def execute_experiment(args):
         raise ValueError("--gpu_fraction should be defined")
     
     if not gl_st.use_gpu:
-        print(99999999)
         os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
    
     frac = utils.calc_gpu_fraction(gl_st.gpu_fraction)

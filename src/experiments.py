@@ -71,11 +71,12 @@ class Experiment():
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0}
-            architectures = [[8],
+            architectures = [[16],
                             [64, 64],
                             [64, 64, 64, 64],
                             [512],
-                            [512, 512]]
+                            [512, 512],
+                            [512, 512, 512, 512]]
             hyperparameter_space = {'random_seeds'   : list(range(5)),
                                     'architectures'  : architectures}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
