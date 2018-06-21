@@ -894,6 +894,7 @@ class SFEnv(gym.Env):
 
         self.init_game()
         self.episode_dir = os.path.join(self.config.gl.logs_dir,
+                                        self.config.ag.experiment_name,
                                         self.config.model_name, 
                                         'episodes')
         if not self.config.ag == 'human' and not os.path.exists(self.episode_dir):
