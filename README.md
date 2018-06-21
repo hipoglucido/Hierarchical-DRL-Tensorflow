@@ -8,3 +8,6 @@ Reference code:
  - https://github.com/devsisters/DQN-tensorflow
  - https://github.com/DerkBarten/SpaceFortress
  - https://github.com/cmusjtuliuyuan/RainBow
+
+The project is not finished because I still have a lot to ry, . Here 
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/PKxXXtKZdQ/0.jpg)](http://www.youtube.com/watch?v=PKxXXtKZdQ)
