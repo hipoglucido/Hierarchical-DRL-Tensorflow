@@ -190,11 +190,13 @@ class Agent(object):
             value = 1            
         except:
             value = 0      
+        # Record the end of training
         record_last_n_steps = 10000
-        try:
-            value = int(self.total_steps - self.step < record_last_n_steps)
-        except:
-            value = 0
+        if value == 0:
+            try:
+                value = int(self.total_steps - self.step < record_last_n_steps)
+            except:
+                value = 0
         self.config.gl.update({'display_prob' : value})
         
         self.display_episode = random.random() < self.gl.display_prob
