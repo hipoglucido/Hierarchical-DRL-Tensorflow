@@ -104,7 +104,7 @@ class GlobalSettings(GenericSettings):
         self.new_instance = True
         self.date = utils.get_timestamp()
         self.paralel = 0
-        self.use_gpu = True
+        self.use_gpu = 0
         self.gpu_fraction = '1/1'
         self.random_seed = 7
         self.watch = 0
@@ -133,6 +133,7 @@ class GlobalSettings(GenericSettings):
                  'ag.goal_group',
                  'env.env_name',
                  'env.ez',
+                 'env.mines_activated',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
