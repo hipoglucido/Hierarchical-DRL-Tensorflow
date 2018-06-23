@@ -86,7 +86,7 @@ class Experiment():
             
         elif name == 'goals_exp':
             # 24 cores
-            base_args = {'scale'          : 15000,
+            base_args = {'scale'          : 10000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -98,7 +98,7 @@ class Experiment():
                         'pmemory'         : 0}
      
             hyperparameter_space = {'random_seeds'   : list(range(4)),
-                                    'goal_groups'    : [1,2,3,4,5,6]}
+                                    'goal_groups'    : [1, 2, 3, 4, 5, 6]}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
         elif name == 'toy_problem':

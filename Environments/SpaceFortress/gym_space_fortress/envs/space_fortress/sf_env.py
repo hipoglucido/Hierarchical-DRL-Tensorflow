@@ -545,11 +545,11 @@ class SFEnv(gym.Env):
             self.mine_present = False
             self.steps_since_mine_appeared = 1e10
         else:
+            self.mine_present = True
             if not self.mine_present:
                 self.steps_since_mine_appeared = 0
             else:
                 self.steps_since_mine_appeared += 1
-            self.mine_present = True
             
         
     def check_wrapping(self, obs):
