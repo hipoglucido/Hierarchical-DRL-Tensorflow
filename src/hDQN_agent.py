@@ -153,7 +153,7 @@ class HDQNAgent(base.Agent):
         }
         
         if self.ag.pmemory:
-            beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end
+            beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end        
             self.m.mc_beta = beta
             loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
             feed_dict[self.mc_loss_weight] = loss_weight
@@ -196,7 +196,10 @@ class HDQNAgent(base.Agent):
             self.c_learning_rate_step: self.c_step,
         }
         if self.ag.pmemory:
-            beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end
+            if self.is_ready_to_learn(prefix = 'mc'):
+                beta = (1 - self.mc_epsilon.steps_value(self.c_step)) + self.mc_epsilon.end
+            else:
+                beta = self.mc_epsilon.end
             self.m.c_beta = beta
             loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
             feed_dict[self.c_loss_weight] = loss_weight

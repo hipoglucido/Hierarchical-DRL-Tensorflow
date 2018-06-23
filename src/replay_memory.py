@@ -203,7 +203,7 @@ class PriorityExperienceReplay:
     def add(self, old_state, action, reward, new_state, is_terminal):
 #        for o_s, a, r, n_s, i_t in zip(old_state, action, reward, new_state, is_terminal):
             # 0.5 is the maximum error
-        error = abs(reward)#.5
+        error = 2
         #print(reward, type(error))
         p = self._getPriority(error)
         self.tree.add(p, data=(old_state.copy(), action, reward, new_state.copy(), is_terminal)) 

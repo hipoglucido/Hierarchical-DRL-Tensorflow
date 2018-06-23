@@ -144,6 +144,7 @@ class DQNAgent(Agent):
         _, q_t, td_error, loss = self.sess.run([self.optim, self.q,
                                                              self.td_error,
                                              self.loss], feed_dict)
+
         if self.ag.pmemory:
             self.memory.update(idx_list, td_error)
         self.m.total_loss += loss

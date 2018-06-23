@@ -104,7 +104,7 @@ class GlobalSettings(GenericSettings):
         self.new_instance = True
         self.date = utils.get_timestamp()
         self.paralel = 0
-        self.use_gpu = True
+        self.use_gpu = 0
         self.gpu_fraction = '1/1'
         self.random_seed = 7
         self.watch = 0
@@ -133,6 +133,7 @@ class GlobalSettings(GenericSettings):
                  'ag.goal_group',
                  'env.env_name',
                  'env.ez',
+                 'env.mines_activated',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
@@ -169,8 +170,8 @@ class AgentSettings(GenericSettings):
         self.mode = 'train'
         self.pmemory = 0
         self.max_step = self.scale * 5000
-        self.double_q = 1
-        self.dueling = 1
+        self.double_q = 0
+        self.dueling = 0
         self.fresh_start = 0
         self.experiment_name = ''
     
@@ -429,7 +430,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.max_steps_after_mine_appear = 40 # 2 seconds
         self.update(new_attrs)
     def set_reward_function(self):
-        reward = 1 if self.ez else .01
+        reward = 1 if self.ez else 1
         self.hit_fortress_reward = reward
         self.hit_mine_reward = reward
         
