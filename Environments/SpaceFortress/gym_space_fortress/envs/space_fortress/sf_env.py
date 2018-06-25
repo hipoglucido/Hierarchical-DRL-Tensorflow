@@ -234,8 +234,8 @@ class SFEnv(gym.Env):
                 self.fortress_lifes -= 1
                 if self.fortress_lifes == 0 and cnf.ez:
                     self.win = True
-                #if self.fortress_lifes > 1 or cnf.ez:
-                reward += cnf.hit_fortress_reward
+                if self.fortress_lifes > 1 or cnf.ez:
+                    reward += cnf.hit_fortress_reward
                 
                 
             else:
