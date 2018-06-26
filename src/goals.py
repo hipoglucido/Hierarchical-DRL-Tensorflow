@@ -291,8 +291,8 @@ class SFGoal(Goal):
                                         A_j      = pfs['ship_pos_j'],
                                         region = int(region_id),
                                         n      = int(total_regions))
-        elif self.name in CT.SF_action_spaces[self.environment.env_name]:
-            goal_action = CT.SF_action_spaces[self.environment.env_name].index(self.name)
+        elif self.name[2:] in CT.SF_action_spaces[self.environment.env_name]:
+            goal_action = CT.SF_action_spaces[self.environment.env_name].index(self.name[2:])
             achieved = action == goal_action
         return achieved
             
