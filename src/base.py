@@ -191,7 +191,7 @@ class Agent(object):
         except:
             value = 0      
         # Record the end of training
-        record_last_n_steps = 10000
+        record_last_n_steps = 30000
         if value == 0:
             try:
                 value = int(self.total_steps - self.step < record_last_n_steps)

@@ -350,7 +350,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False 
-        self.action_repeat = 5    
+        self.action_repeat = 6    
         self.right_failure_prob = 0.
         
 class EZ_MDPSettings(EnvironmentSettings):
