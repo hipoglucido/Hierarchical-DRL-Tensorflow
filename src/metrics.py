@@ -402,7 +402,7 @@ class Metrics:
                 row = {'steps'            : destroy_at,
                        #'trial'            : trial,
                        #'fort_destruction' : fort_destruction,
-                       'ep'               : round(ep_at_destroy, 1)
+                       'ep'               : round(ep_at_destroy, 2)
                        }
                 
                 aux = destroy_at
