@@ -167,7 +167,7 @@ class SFEnv(gym.Env):
 
     def after_episode(self):
         self.ep_counter += 1
-        if 0 < len(self.imgs) < 1000:
+        if 0 < len(self.imgs):# < 1000:
             self.generate_video()
             
     def get_custom_reward(self, action):
