@@ -184,8 +184,8 @@ class DQNAgent(Agent):
                                                       self.environment.action_size,
                                                       name='q')
             
-            self.q_action = tf.argmax(self.q, axis=1)
-        self.create_target(self.ag)
+            self.q_action = tf.argmax(self.q, axis = 1)
+        self.create_target(config = self.ag, prefix = '')
         
         # optimizer
         self.build_optimizer(prefix = '')

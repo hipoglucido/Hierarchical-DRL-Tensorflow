@@ -588,23 +588,23 @@ class Agent(object):
             #print(layer, 'added', layer_name)
         return last_layer, histograms
 
-    def create_target(self, config):
+    def create_target(self, config, prefix):
         """
         Create a target fro either DQN, MC or C networks
         (needs to be cleaned up a bit)
         """
         #print("Creating target...")
 
-        prefix = config.prefix + '_' if config.prefix != '' else config.prefix
-
-        aux1 = prefix + 'target'                         # mc_target
+        #prefix = config.prefix + '_' if config.prefix != '' else config.prefix
+        extended_prefix = self.extend_prefix(prefix)
+        aux1 = extended_prefix + 'target'                         # mc_target
         aux2 = aux1 + '_s_t'                             # mc_target_s_t
         aux3 = aux1 + '_w'                               # mc_target_w
         aux4 = aux1 + '_q'                               # mc_target_q
-        aux5 = 'w' if prefix == '' else prefix + 'w'     # mc_w
+        aux5 = 'w' if extended_prefix == '' else extended_prefix + 'w'     # mc_w
         aux6 = aux4 + '_idx'                             # mc_target_q_idx        
         aux7 = aux4 + '_with_idx'                        # mc_target_q_with_idx
-        aux8 = prefix + 'outputs_idx'                    # mc_outputs_idx
+        aux8 = extended_prefix + 'outputs_idx'                    # mc_outputs_idx
         target_w = {}
         
         
@@ -617,7 +617,7 @@ class Agent(object):
             target_s_t_flat = \
                 tf.reshape(target_s_t,
                           [-1, reduce(lambda x, y: x * y, shape[1:])])
-            if config.prefix == 'c':
+            if prefix == 'c':
                 self.c_target_g_t = tf.placeholder("float",
                                    [None, self.ag.goal_size],
                                    name = 'c_target_g_t')
@@ -658,7 +658,7 @@ class Agent(object):
                 setattr(self, aux7, target_q_with_idx)
     
         #self.show_attrs()
-        with tf.variable_scope(prefix + 'pred_to_target'):
+        with tf.variable_scope(extended_prefix + 'pred_to_target'):
             target_w_input = {}
             target_w_assign_op = {}
             w = getattr(self, aux5)

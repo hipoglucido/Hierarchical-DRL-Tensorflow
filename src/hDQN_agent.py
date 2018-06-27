@@ -374,7 +374,7 @@ class HDQNAgent(base.Agent):
             self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')
 
         # target network
-        self.create_target(config = self.mc_ag)
+        self.create_target(config = self.mc_ag, prefix = 'mc')
 
         #Meta Controller optimizer
         self.build_optimizer(prefix = 'mc')
@@ -427,7 +427,7 @@ class HDQNAgent(base.Agent):
             self.c_q_summary = tf.summary.merge(q_summary, 'c_q_summary')
 
         # target network
-        self.create_target(self.c_ag)
+        self.create_target(self.c_ag, prefix = 'c')
         
         
         #Controller optimizer
