@@ -78,8 +78,8 @@ class Constants:
             2 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
                  'shoot_at_fortress'] + get_region_names(5),
             # Everything but no Key.space
-            3 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
-                 'shoot_at_fortress'] + move_actions,
+            3 : ['aim_at_fortress',# 'aim_at_mine', 'shoot_at_mine',
+                 'single_shoot', 'double_shoot'] + move_actions,
             # Without aiming    
             4 : ['shoot_at_mine', 'shoot_at_fortress'] + move_actions,
             # Is Key.space used?

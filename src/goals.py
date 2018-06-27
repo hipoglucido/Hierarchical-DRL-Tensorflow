@@ -151,7 +151,10 @@ class SFGoal(Goal):
         
         achieved = False
         
-        if self.name == 'G_double_shoot':
+        if self.name == 'G_single_shoot':
+            if info['min_steps_between_shots'] == info['steps_since_last_shot']:
+                achieved = True
+        elif self.name == 'G_double_shoot':
             its_a_shot = action == CT.SF_action_spaces[self.environment.env_name].index('Key.space')            
             if its_a_shot and \
                0 <= info['steps_since_last_shot'] < info['min_steps_between_shots']:
