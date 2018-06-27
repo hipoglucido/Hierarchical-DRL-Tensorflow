@@ -100,8 +100,6 @@ class GenericSettings():
 class GlobalSettings(GenericSettings):
     def __init__(self, new_attrs = {}):        
         self.display_prob = .0
-        self.log_level = 'INFO'
-        self.new_instance = True
         self.date = utils.get_timestamp()
         self.paralel = 0
         self.use_gpu = 0
@@ -123,9 +121,7 @@ class GlobalSettings(GenericSettings):
                                                'gym_space_fortress', 'envs',
                                                'space_fortress'),
             os.path.join(self.root_dir,  'Environments','SpaceFortress')]
-        #TODO clean path loadings
-        self.ignore = ['display','new_instance','env_dirs','root_dir', 'ignore',
-                       'use_gpu', 'gpu_fraction', 'is_train', 'prefix']
+
         self.attrs_in_dir = [
 #                 'env.factor',
 #                 'ag.mode',
@@ -209,14 +205,14 @@ class DQNSettings(AgentSettings):
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .5
+        self.ep_end_t_perc = .7
         
         self.history_length = 1
         self.train_frequency = 4
         self.learn_start = 10000
         
         self.architecture = [512, 512]
-        self.architecture_duel = [128, 128]
+        self.architecture_duel = [128]
         
         self.test_step = 10000#int(self.max_step / 10)
         self.save_step = self.test_step * 10
@@ -236,7 +232,7 @@ class hDQNSettings(AgentSettings):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
         self.architecture = [512, 512]
-        self.architecture_duel = [128, 128]
+        self.architecture_duel = [128]
         self.memory_size = int(5e4)
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
@@ -278,8 +274,7 @@ class ControllerSettings(AgentSettings):
                time penalty is activated                                                                          
         """
         
-        self.memory_size = int(1e6)
-#        self.max_step = 500 * self.scale        
+        self.memory_size = int(1e6)   
         self.batch_size = 32
         self.random_start = 30
         
@@ -294,17 +289,16 @@ class ControllerSettings(AgentSettings):
         self.architecture = None
         self.architecture_duel = None
         
-        self.test_step = 10000#min(5 * self.scale, 500)
+        self.test_step = 10000
         self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
-        self.ignore = ['ignore']
-        self.prefix = 'c'
         
         self.train_frequency = 4
         #Visualize weights initialization in the histogram
-        self.learn_start = 10000#min(5. * self.scale, self.test_step)
-        self.learnt_threshold = 0.8
+        self.learn_start = 10000
+        # C needs to reach `learnt_threshold` of its goals so that MC starts learning
+        self.learnt_threshold = 0.95
     
         self.memory_minimum = 10000
     
@@ -331,7 +325,7 @@ class MetaControllerSettings(AgentSettings):
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .5
+        self.ep_end_t_perc = .7
         
         self.train_frequency = 4
         self.learn_start = 1000
@@ -415,10 +409,10 @@ class SpaceFortressSettings(EnvironmentSettings):
        
         self.ship_lifes = 3
         self.fortress_lifes = 11
-        self.max_loops = 2000 #Useful for stopping when the game crashes
-        self.time_penalty = 0.01
+        self.max_loops = 3000 #Useful for stopping when the game crashes
+        self.time_penalty = 0.00
         
-        self.final_double_shot_reward = 1
+        self.final_double_shot_reward = 5
         
         self.ez = 1
         
@@ -432,9 +426,9 @@ class SpaceFortressSettings(EnvironmentSettings):
     def set_reward_function(self):
         reward = 1 if self.ez else 1
         self.hit_fortress_reward = reward
-        self.hit_mine_reward = reward
+        self.hit_mine_reward = 0#reward
         
-        self.fast_shooting_penalty = 1
+        self.fast_shooting_penalty = 5
         self.wrapping_penalty = 1
         self.hit_by_fortress_penalty = 1
         self.hit_by_mine_penalty = 1
