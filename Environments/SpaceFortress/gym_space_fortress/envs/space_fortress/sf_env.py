@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import os
 import ctypes
-import datetime
+import time
 import sys
 import math
 import logging
@@ -37,6 +37,8 @@ class Panel:
                                              size = 15)
         self.font2 = ImageFont.truetype(font = font_path,
                                              size = 25)
+        self.font3 = ImageFont.truetype(font = font_path,
+                                             size = 30)
     def reset(self):
         self.history = {}
         for k in self.history_keys:
@@ -445,8 +447,8 @@ class SFEnv(gym.Env):
     
     @property
     def current_time(self):
-        return str(datetime.datetime.now().time().isoformat())\
-                                                .replace("/", ":")
+        return time.strftime("%dd%Hh%Mm%Ss", time.gmtime())
+
     
     def render(self):
         
@@ -515,8 +517,8 @@ class SFEnv(gym.Env):
         of them
         """
         
-        video_name = "ep%s_R%.2f_win%d.mp4" % (self.current_time, \
-                                             self.ep_reward, int(self.win))
+        video_name = "%s_%d_R%.2f__win%d.mp4" % \
+            (self.current_time, self.step_counter, self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)
         (original_width, original_heigth) = self.imgs[0].size
         # PIL image >>> np.array
