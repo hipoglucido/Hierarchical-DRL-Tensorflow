@@ -47,15 +47,18 @@ class Panel:
     def add(self, key, item):
         if not isinstance(item, str) and item % 1 == 0:
             item = int(item)
-            
-        item = str(item).replace('Key.', '').replace('G_','')
-        item = item.replace('space','thrust')
+        item = str(item)
+        replacements = [('Key.', ''), ('G_',''), ('space','shoot'),
+                        ('up', 'thrust')]
+        for old, new in replacements:
+            item = item.replace(old, new)
         self.history[key][:-1] = self.history[key][1:]
         self.history[key][-1] = item
     
         
     def get_image(self, info):
         panel = Image.new("RGB", (self.width, self.height), "white")
+        color_aux = (150, 25, 25)
         draw = ImageDraw.Draw(panel)
         #Draw goals
         j = int(self.width * .04)
@@ -67,18 +70,21 @@ class Panel:
             else:
                 color = self.old_color
                 if n == 0:
-                    item = 'Goals:'
+                    item = 'GOALS'
+                    color = color_aux
             
             draw.text(coords, item, color, font = self.font1)
-       
+        #Draw rewards
         if self.agent_type == 'dqn':
             j_rewards = int(self.width * .3)
             j_actions = int(self.width * .6)
         else:
             j_rewards = int(self.width * .52)
             j_actions = int(self.width * .7)
-            
-        #Draw rewards
+        j_line = int(j_rewards * .9)
+        draw.line((j_line, self.history_limit_i, j_line, self.height),
+                  fill = self.old_color) 
+        
         for n, item in enumerate(self.history['rewards']):
             coords = (j_rewards, self.history_limit_i + self.span * n)
             if n == self.length - 1:
@@ -87,7 +93,8 @@ class Panel:
             else:
                 color = self.old_color
                 if n == 0:
-                    item = 'R:'
+                    item = 'R'
+                    color = color_aux
             draw.text(coords, item, color, font = self.font1)
         
         #Draw actions
@@ -100,22 +107,23 @@ class Panel:
             else:
                 color = self.old_color
                 if n == 0:
-                    item = 'Actions:'
+                    item = 'ACTIONS'
+                    color = color_aux
             draw.text(coords, item, color, font = self.font1)
       
-        color = (150, 25, 25)
+        
         j = int(self.width * .3)
         seconds_per_step = 50 / 1000 
         draw.text((10, 5),"%.2fs" % (info['steps'] * seconds_per_step),
-                                                  color, font = self.font2)
-        draw.text((10, 25),"%d steps" % info['steps'], color, font = self.font1)
+                                                  color_aux, font = self.font2)
+        draw.text((10, 25),"%d steps" % info['steps'], color_aux, font = self.font1)
         
 #        draw.text((j, 3), "%.2f, %d, %.2f" % (
 #                                          info['mine_present'],
 #                                          info['debug2'],
 #                                          info['debug3']),
-#                                          color, font = self.font1)
-        draw.text((j, 3), "Total reward: %.2f" % info['ep_reward'], color, font = self.font1)
+#                                          color_aux, font = self.font1)
+        draw.text((j, 3), "Total reward: %.2f" % info['ep_reward'], color_aux, font = self.font1)
         fortress_lifes = info['fortress'] - 1              
         if fortress_lifes < 2:
             msg = '[V]'
@@ -124,7 +132,7 @@ class Panel:
             msg = ''
         draw.text((j, 20), "Lifes: ship %d fort %d %s" % (info['ship'],
                   fortress_lifes, msg),
-                                          color, font = self.font1)
+                                          color_aux, font = self.font1)
         return panel
             
         
