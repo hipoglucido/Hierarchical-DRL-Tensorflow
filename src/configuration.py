@@ -409,10 +409,10 @@ class SpaceFortressSettings(EnvironmentSettings):
        
         self.ship_lifes = 3
         self.fortress_lifes = 11
-        self.max_loops = 5000 #Useful for stopping when the game crashes
+        self.max_loops = 3000 #Useful for stopping when the game crashes
         self.time_penalty = 0.00
         
-        self.final_double_shot_reward = 5
+        self.final_double_shot_reward = 1
         
         self.ez = 1
         
@@ -428,7 +428,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.hit_fortress_reward = reward
         self.hit_mine_reward = 0#reward
         
-        self.fast_shooting_penalty = 5
+        self.fast_shooting_penalty = 1
         self.wrapping_penalty = 1
         self.hit_by_fortress_penalty = 1
         self.hit_by_mine_penalty = 1
