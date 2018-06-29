@@ -265,12 +265,15 @@ class SFEnv(gym.Env):
             reward -= cnf.hit_by_fortress_penalty
             self.ship_lifes -= 1
         
-        # Time penalty
-        reward -= cnf.time_penalty
         
         # Penalize wrapping
         if self.penalize_wrapping:
             reward -= cnf.wrapping_penalty
+        
+        if reward == 0:
+            # Time penalty
+            reward -= cnf.time_penalty
+      
         return reward
     
         
@@ -525,19 +528,15 @@ class SFEnv(gym.Env):
         of them
         """
         
-        video_name = "%s_%d_R%.2f__win%d.mp4" % \
-            (self.current_time, self.step_counter, self.ep_reward, int(self.win))
+        video_name = "%dsteps_%s_R%.2f_win%d.mp4" % \
+            (self.step_counter, self.current_time, self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)
         (original_width, original_heigth) = self.imgs[0].size
         # PIL image >>> np.array
         self.imgs = [np.array(img) for img in self.imgs]
         #Adds a white frame at the end (useful if .gif is produced)
         last_frame = self.imgs[-1].copy()
-        if self.win:
-            # Debug and see reward
-            self.imgs.append(last_frame)
-        blank = last_frame * 0 + 255
-        self.imgs.append(blank)
+        self.imgs = self.imgs + 10 * [last_frame]
         #Make video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         video = cv2.VideoWriter(video_path, fourcc, 20.0, (original_width, original_heigth))
