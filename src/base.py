@@ -194,8 +194,12 @@ class Agent(object):
         record_last_n_steps = 30000
         if value == 0:
             try:
+                # DQN
                 value = int(self.total_steps - self.step < record_last_n_steps)
             except:
+                # hDQN
+                value = int(self.total_steps - self.c_step < record_last_n_steps)
+            finally:
                 value = 0
         self.config.gl.update({'display_prob' : value})
         
