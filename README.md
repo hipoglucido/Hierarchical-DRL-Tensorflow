@@ -11,3 +11,10 @@ Reference code:
 
 The project is not finished because I still have to run some experiments. Here is a gameplay of the agent
 https://www.youtube.com/watch?v=-PKxXXtKZdQ
+
+This projects makes an extensive use of tensorboard to visualize various learning metrics
+![alt text](Others/tensorboard_scalars.png "Tensorboard scalars")
+
+One graph of the Hierarchical Reinforcement Learning agent:
+![alt text](Others/tensorboard_graph.png "Tensorboard graph")
+
