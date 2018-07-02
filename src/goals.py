@@ -150,7 +150,13 @@ class SFGoal(Goal):
         pfs = self.get_prep_features(screen)
         
         achieved = False
-        
+        if self.name == 'G_hit_fortress_twice':
+            if info['fortress_hit'] and \
+                    info['steps_since_last_fortress_hit_aux'] < info['min_steps_between_shots']:
+                achieved = True
+        if self.name == 'G_hit_fortress_once':
+            if info['min_steps_between_shots'] == info['steps_since_last_fortress_hit']:
+                achieved = True
         if self.name == 'G_single_shoot':
             if info['min_steps_between_shots'] == info['steps_since_last_shot']:
                 achieved = True
@@ -159,7 +165,7 @@ class SFGoal(Goal):
             if its_a_shot and \
                0 <= info['steps_since_last_shot'] < info['min_steps_between_shots']:
                 achieved = True
-        elif self.name == 'G_shoot_at_mine':
+        elif self.name == 'G_hit_mine':
             if info['mine_hit']:
                 achieved = True
             elif pfs['mine_pos_i'] == 0 and pfs['mine_pos_j'] == 0:

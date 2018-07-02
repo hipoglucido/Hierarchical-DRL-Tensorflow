@@ -118,15 +118,20 @@ class DQNAgent(Agent):
         self.memory.add(old_screen, action, reward, screen, terminal)
         self.learn_if_ready(prefix = '')
 
-    def q_learning_mini_batch(self):        
+    def q_learning_mini_batch(self):
+        """
+        Samples a batch of experiences from the memory and learns from them
+        """
+        #Sample
         (s_t, action, reward, s_t_plus_1, terminal), idx_list, p_list, \
                                         sum_p, count = self.memory.sample() 
         
-        #assert all(reward < 9), str(reward)
+        #Generate target
         target_q_t = self.generate_target_q_t(prefix       = '',
                                               reward       = reward,
                                               s_t_plus_1   = s_t_plus_1,
                                               terminal     = terminal)
+        #Prepare data
         feed_dict = {
             self.target_q_t: target_q_t,
             self.action: action,
@@ -140,7 +145,8 @@ class DQNAgent(Agent):
             self.m.beta = beta
             loss_weight = (np.array(p_list)*count/sum_p)**(-beta)
             feed_dict[self.loss_weight] = loss_weight
-
+        
+        #Update parameters
         _, q_t, td_error, loss = self.sess.run([self.optim, self.q,
                                                              self.td_error,
                                              self.loss], feed_dict)

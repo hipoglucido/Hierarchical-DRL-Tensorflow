@@ -70,24 +70,19 @@ class Constants:
         #get_region_names(5)
         # 'Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'
         'SF-v0'  : {
-            # Empty
             0 : [],
-            # Only low level actions
+            # Low level of abstraction
             1 : SF_action_spaces['SF-v0'],
-            # Only high level
-            2 : ['aim_at_fortress', 'aim_at_mine', 'shoot_at_mine',
-                 'shoot_at_fortress'] + get_region_names(5),
-            # Everything but no Key.space
-            3 : ['aim_at_fortress', 'shoot_at_mine', #'aim_at_mine',
-                 'single_shoot', 'double_shoot'] + move_actions,
-            # Without aiming    
-            4 : ['shoot_at_mine', 'shoot_at_fortress'] + move_actions,
-            # Is Key.space used?
-            5 : ['shoot_at_mine', 'shoot_at_fortress'] + SF_action_spaces['SF-v0'],
-            
-            6 : ['aim_at_fortress', 'aim_at_mine'] + SF_action_spaces['SF-v0'],
-    
-                },
+            # Medium level of abstraction
+            2 : ['aim_at_fortress', 'aim_at_mine'] + SF_action_spaces['SF-v0'],
+            # High level of abstraction
+            3 : ['hit_mine', 'hit_fortress_once',
+                 'hit_fortress_twice'] + move_actions,
+            # Mixed
+            4 : ['hit_mine', 'hit_fortress_once',
+                 'aim_at_fortress', 'aim_at_mine',
+                 'hit_fortress_twice'] + SF_action_spaces['SF-v0']
+        },
         # Aim task
         'AIM-v0' : {
             0 : ['aim_at_mine'] + SF_action_spaces['AIM-v0'],

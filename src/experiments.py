@@ -20,7 +20,7 @@ class Experiment():
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
-                        'ez'              : 1,
+                        'ez'              : 0,
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
@@ -63,18 +63,19 @@ class Experiment():
                                     'action_repeats' : list(range(1, 8))}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'architectures_exp':
-            # 24 cores
+            # 28 cores
             base_args = {'scale'          : 5000,
                         'agent_type'      : 'dqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
-                        'ez'              : 1,
+                        'ez'              : 0,
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0}
             architectures = [[16],
+                            [64],
                             [64, 64],
                             [64, 64, 64, 64],
                             [512],
@@ -85,20 +86,20 @@ class Experiment():
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
         elif name == 'goals_exp':
-            # 24 cores
-            base_args = {'scale'          : 10000,
+            # 12 cores
+            base_args = {'scale'          : 5000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
-                        'ez'              : 1,
+                        'ez'              : 0,
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0}
      
-            hyperparameter_space = {'random_seeds'   : list(range(4)),
-                                    'goal_groups'    : [1, 2, 3, 4, 5, 6]}
+            hyperparameter_space = {'random_seeds'   : list(range(3)),
+                                    'goal_groups'    : [1, 2, 3, 4]}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
         elif name == 'toy_problem':
