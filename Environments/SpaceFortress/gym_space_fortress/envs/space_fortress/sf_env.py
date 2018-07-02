@@ -151,6 +151,7 @@ class SFEnv(gym.Env):
         self.steps_since_mine_appeared = 0
         self.steps_since_last_shot = 1e10
         self.steps_since_last_fortress_hit = 1e10
+        self.steps_since_last_fortress_hit_aux = 1e10
         self.goal_has_changed = False
         self.print_shit = False
         self.currently_wrapping = False
@@ -183,7 +184,7 @@ class SFEnv(gym.Env):
     def get_custom_reward(self, action):
         reward = 0
         cnf = self.config.env
-        # Penalize shooting fast
+        # Penalize shooting fast at wherever
 #        if self.is_shot(action) and \
 #                    self.steps_since_last_shot < \
 #                                cnf.min_steps_between_shots and \
@@ -205,6 +206,7 @@ class SFEnv(gym.Env):
             reward += cnf.hit_mine_reward
         self.shot_too_fast = False
         
+        self.steps_since_last_fortress_hit_aux = self.steps_since_last_fortress_hit
         # Did I hit fortress?
         if not self.did_I_hit_fortress() or self.step_counter == 0:
             # Didn't hit the fortress
@@ -252,7 +254,8 @@ class SFEnv(gym.Env):
                 # You shoot too fast when it was not allowed
                 pass#self.fortress_lifes += 1           
             self.steps_since_last_fortress_hit = 0
-        else:            
+        else: 
+            self.steps_since_last_fortress_hit = 0
             pass
             
     
@@ -322,7 +325,9 @@ class SFEnv(gym.Env):
                 'wrap_penalization'          : int(self.penalize_wrapping),
                 'shot_too_fast_penalization' : int(self.shot_too_fast),
                 'steps_since_last_shot'      : aux,
-                'min_steps_between_shots'    : int(self.config.env.min_steps_between_shots)
+                'min_steps_between_shots'    : int(self.config.env.min_steps_between_shots),
+                'steps_since_last_fortress_hit' : self.steps_since_last_fortress_hit,
+                'steps_since_last_fortress_hit_aux' : self.steps_since_last_fortress_hit_aux
         }
                 
         self.restart_variables()
