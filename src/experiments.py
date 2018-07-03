@@ -8,15 +8,15 @@ import pprint
 
 class Experiment():
         
-    def __init__(self, name, paralel):
-        self.paralel = paralel
+    def __init__(self, name, parallel):
+        self.parallel = parallel
         self.name = name
         self._args_list = []
     
         if name == 'extensions_exp':
             # 20 cores
             base_args = {'scale'          : 5000,
-                        'agent_type'      : 'dqn',
+                        'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
@@ -50,7 +50,7 @@ class Experiment():
         elif name == 'action_repeat_exp':
             # 32 cores
             base_args = {'scale'          : 5000,
-                        'agent_type'      : 'dqn',
+                        'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
@@ -65,7 +65,7 @@ class Experiment():
         elif name == 'architectures_exp':
             # 28 cores
             base_args = {'scale'          : 5000,
-                        'agent_type'      : 'dqn',
+                        'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'use_gpu'         : 0,
@@ -122,7 +122,7 @@ class Experiment():
         
     def add_params_to_arg_list(self, base_args, hyperparameter_space):
         print("Experiment %s:\n%s" % (self.name, pprint.pformat(hyperparameter_space)))
-        base_args['paralel'] = self.paralel
+        base_args['parallel'] = self.parallel
         for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                       base_args):
             

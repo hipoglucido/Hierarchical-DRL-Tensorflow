@@ -31,7 +31,7 @@ gl_args.add_argument("--random_seed", type=int, help="Random seed for repeatable
 gl_args.add_argument("--log_level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO", help="Log level.")
 gl_args.add_argument("--display_prob", default = None, type = float)
 gl_args.add_argument("--watch", default = None, type = utils.str2bool)
-gl_args.add_argument("--paralel", default = 0, type = int)
+gl_args.add_argument("--parallel", default = 0, type = int)
 gl_args.add_argument("--date", default = None, type = str)
 
 
@@ -67,7 +67,7 @@ ag_args.add_argument("--ep_start", default = None, type = float)
 
 def execute_experiment(args):
     #### HARD RULES
-    if args['paralel'] != 0:
+    if args['parallel'] != 0:
         args['use_gpu'] = 0
     if args['agent_type'] == 'human':
         args['use_gpu'] = 0
@@ -200,20 +200,20 @@ if __name__ == "__main__":
     if 'exp' in args['mode']:
         # Experiment mode. We will run more than one experiment (Experiments.py)
         exp_name = args['mode']    
-        experiment = Experiment(exp_name, args['paralel'])
+        experiment = Experiment(exp_name, args['parallel'])
         args_list = experiment.get_args_list()
     else:
         # Not in experiment mode means that we are only running one experiment
         args_list = [args]
     
-    if args['paralel'] == 0:
+    if args['parallel'] == 0:
         # Execute experiments sequentially
         for args_ in args_list:
             execute_experiment(args_)
     else:
         # Execute experiments in parallel
         from multiprocessing import Pool    
-        n_processes = args['paralel']    
+        n_processes = args['parallel']    
         with Pool(n_processes) as pool:
             pool.starmap(execute_experiment, zip(args_list))
     print("Done :D")

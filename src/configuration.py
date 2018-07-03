@@ -101,7 +101,7 @@ class GlobalSettings(GenericSettings):
     def __init__(self, new_attrs = {}):        
         self.display_prob = .0
         self.date = utils.get_timestamp()
-        self.paralel = 0
+        self.parallel = 0
         self.use_gpu = 0
         self.gpu_fraction = '1/1'
         self.random_seed = 7
@@ -181,7 +181,7 @@ class HumanSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'human'
-        self.goal_group = 1
+        self.goal_group = 3
         
 
 class DQNSettings(AgentSettings):
@@ -238,7 +238,7 @@ class hDQNSettings(AgentSettings):
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         self.discount = 0.99
-        self.goal_group = 0
+        self.goal_group = 3
         self.save_step = 4       
         
     def update(self, args):
@@ -400,38 +400,31 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.no_direction = False
         self.library_path = os.path.join('..','Environments','SpaceFortress',
                                          'gym_space_fortress','envs',
-                                         'space_fortress','shared')
-     
-        self.render_delay = 10
-
-   
-        self.mines_activated = 1
-       
+                                         'space_fortress','shared')             
+        self.ez = 0    # easy mode
+        self.mines_activated = 1  
+        self.render_delay = 10        
         self.ship_lifes = 3
         self.fortress_lifes = 11
-        self.max_loops = 3000 #Useful for stopping when the game crashes
-        self.time_penalty = 0#0.01
-        
-        self.final_double_shot_reward = 1
-        
-        self.ez = 0
-        
-        
-        
-        
+        self.max_loops = 3000 #Useful for stopping when the game crashes  
         self.min_steps_between_shots = 5
         self.min_steps_between_fortress_hits = 5
         self.max_steps_after_mine_appear = 40 # 2 seconds
         self.update(new_attrs)
+        
     def set_reward_function(self):
+        # Positive rewards
         reward = 1 if self.ez else 1
         self.hit_fortress_reward = reward
-        self.hit_mine_reward = 0#reward
+        self.hit_mine_reward = 0#reward  
+        self.final_double_shot_reward = 5       
+        self.fast_shooting_penalty = 5
         
-        self.fast_shooting_penalty = 1
+        # Negative rewards
         self.wrapping_penalty = 1
         self.hit_by_fortress_penalty = 1
         self.hit_by_mine_penalty = 1
+        self.time_penalty = 0.01        
         
 
 

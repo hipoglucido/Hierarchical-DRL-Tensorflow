@@ -168,6 +168,16 @@ class Agent(object):
         """
         screen, _, _, _ = self.environment.new_game()
         # Decide if this episode will be displayed
+        self.display_episode_decision()
+        return screen      
+    def display_episode_decision(self):
+        """
+        Method to decide whether the next episode will be displayed/recorded
+        This can be controlled by the user at running time by changing setting
+        the name of the files record0 to record1 (to record a video file) and
+        watch0 to watch1 (to visualize the learning at real time). They can be
+        set to 0 at any time as well.
+        """
         filename = 'watch1'
         filepath = os.path.join(self.logs_dir, filename)
         try:
@@ -190,19 +200,20 @@ class Agent(object):
             value = 1            
         except:
             value = 0      
-        # Record the end of training
+        # Record the end of training regardless of the file names
         record_last_n_steps = 30000
         if value == 0:
             try:
-                # DQN
-                value = int(self.total_steps - self.c_step < record_last_n_steps)
+                if self.ag.agent_type == 'hdqn':
+                    value = int(self.total_steps - self.c_step < record_last_n_steps)
+                else:
+                    #DQN
+                    value = int(self.total_steps - self.step < record_last_n_steps)
             except:
                 value = 0
-        self.config.gl.update({'display_prob' : value})
+        self.config.gl.update({'display_prob' : value})        
+        self.display_episode = random.random() < self.gl.display_prob   
         
-        self.display_episode = random.random() < self.gl.display_prob
-        return screen      
-    
     def add_output(self, txt):
         self.output += txt
         
@@ -226,7 +237,7 @@ class Agent(object):
             pass#print(self.output)
         
     def get_iterator(self, start_step, total_steps):
-        if self.gl.paralel == 0:
+        if self.gl.parallel == 0:
             #Visualize progress bar
             iterator = tqdm(iterable = range(start_step, total_steps),
                             ncols    = 70,
