@@ -105,7 +105,7 @@ class Environment():
         small_step = False
         if 'goal_name' in info.keys():
             # We force if the goal is to aim at something
-            cheat_if_goal_is = ['aim_at', 'hit']
+            cheat_if_goal_is = ['aim_at', 'hit', 'shoot']
             if any([c in info['goal_name'] for c in cheat_if_goal_is]):
                 small_step = True
         if self.env_name == 'SF-v0':

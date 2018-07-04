@@ -74,14 +74,20 @@ class Constants:
             # Low level of abstraction
             1 : SF_action_spaces['SF-v0'],
             # Medium level of abstraction
-            2 : ['aim_at_fortress', 'aim_at_mine'] + SF_action_spaces['SF-v0'],
+            2 : ['aim_at_fortress', 'aim_at_mine',
+                 'double_shoot', 'single_shoot'] + move_actions,
             # High level of abstraction
             3 : ['hit_mine', 'hit_fortress_once',
                  'hit_fortress_twice'] + move_actions,
-            # Mixed
-            4 : ['hit_mine', 'hit_fortress_once',
+            # Custom
+            4 : ['aim_at_fortress', 'aim_at_mine',
+                 'hit_fortress_once', 'hit_fortress_twice']
+                 + SF_action_spaces['SF-v0'],
+            # All
+            5 : ['hit_mine', 'hit_fortress_once', 'hit_fortress_twice',
+                 'double_shoot', 'single_shoot',
                  'aim_at_fortress', 'aim_at_mine',
-                 'hit_fortress_twice'] + SF_action_spaces['SF-v0']
+                 ] + SF_action_spaces['SF-v0'],
         },
         # Aim task
         'AIM-v0' : {

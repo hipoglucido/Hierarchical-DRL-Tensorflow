@@ -181,7 +181,7 @@ class HumanSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'human'
-        self.goal_group = 3
+        self.goal_group = 6
         
 
 class DQNSettings(AgentSettings):
@@ -238,7 +238,7 @@ class hDQNSettings(AgentSettings):
         self.c = ControllerSettings(*args, **kwargs)
         self.random_start = 30
         self.discount = 0.99
-        self.goal_group = 3
+        self.goal_group = 4
         self.save_step = 4       
         
     def update(self, args):
