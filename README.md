@@ -16,10 +16,15 @@ This project is implemented in python 3.6 using tensorflow 1.8.
 ## Examples
 
 Play as a human to see if the game is ready:
+
 `python main.py --agent_type=human --env_name=SF-v0 --render_delay=42`
+
 Train an DQN agent
+
 `python main.py --agent_type=dqn --env_name=SF-v0 --scale=5000 --double_q=1 --dueling=1 --pmemory=1 --architecture=128-128-128`
+
 Train a Hierarchical DQN agent
+
 `python main.py --agent_type=hdqn --env_name=SF-v0 --scale=5000 --double_q=1 --dueling=1 --pmemory=0 --goal_group=2`
 
 The hyperparameters available from command line are listed in `main.py` and will overwrite the default values of all the available hyperparameters, which are listed in `configuration.py`.
