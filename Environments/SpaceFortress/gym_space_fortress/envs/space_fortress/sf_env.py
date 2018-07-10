@@ -117,7 +117,7 @@ class Panel:
         draw.text((10, 5),"%.2fs" % (info['steps'] * seconds_per_step),
                                                   color_aux, font = self.font2)
         draw.text((10, 25),"%d steps" % info['steps'], color_aux, font = self.font1)
-        
+        # Draw stuff to debug state of the game
 #        draw.text((j, 3), "%.2f, %d, %.2f" % (
 #                                          info['mine_present'],
 #                                          info['debug2'],
@@ -317,17 +317,20 @@ class SFEnv(gym.Env):
 
         done = self.is_terminal()
         destroyed = int(self.fortress_lifes == 0)
-        info = {'fortress_hit'               : self.did_I_hit_fortress(),
-                'mine_hit'                   : self.did_I_hit_mine(),
-                'win'                        : int(self.win),
-                'destroyed'                  : destroyed,
-                'steps'                      : self.step_counter, 
-                'wrap_penalization'          : int(self.penalize_wrapping),
-                'shot_too_fast_penalization' : int(self.shot_too_fast),
-                'steps_since_last_shot'      : aux,
-                'min_steps_between_shots'    : int(self.config.env.min_steps_between_shots),
-                'steps_since_last_fortress_hit' : self.steps_since_last_fortress_hit,
-                'steps_since_last_fortress_hit_aux' : self.steps_since_last_fortress_hit_aux
+        # This info is sent back to the environment.py and agent to compute
+        # stuff related with metrics, achievement of goals etc.
+        info = {
+            'fortress_hit'                  : self.did_I_hit_fortress(),
+            'mine_hit'                      : self.did_I_hit_mine(),
+            'win'                           : int(self.win),
+            'destroyed'                     : destroyed,
+            'steps'                         : self.step_counter, 
+            'wrap_penalization'             : int(self.penalize_wrapping),
+            'shot_too_fast_penalization'    : int(self.shot_too_fast),
+            'steps_since_last_shot'         : aux,
+            'min_steps_between_shots'       : int(self.config.env.min_steps_between_shots),
+            'steps_since_last_fortress_hit' : self.steps_since_last_fortress_hit,
+            'steps_since_last_fortress_hit_aux' : self.steps_since_last_fortress_hit_aux
         }
                 
         self.restart_variables()
@@ -354,49 +357,38 @@ class SFEnv(gym.Env):
             raw_obs[1] /= self.screen_width     # Mine_X_Pos
             raw_obs[2] /= self.screen_height    # Mine_Y_Pos
         elif self.env_name == 'SF-v0':
+            #Features coming from the C game
             raw_obs[0]  /= self.screen_height         # Ship_Y_Pos
             raw_obs[1]  /= self.screen_width          # Ship_X_Pos
             raw_obs[2]   = (raw_obs[2] + 5.) / 10.    # Ship_Y_Speed
             raw_obs[3]   = (raw_obs[3] + 5.) / 10.    # Ship_X_Speed 
             raw_obs[4]  /= 360                        # Ship_Headings
-            raw_obs[5]  /= self.screen_height         # Missile_Y_Pos
-            raw_obs[6]  /= self.screen_width          # Missile_X_Pos
+            raw_obs[5]  /= self.screen_height         # Shell_Y_Pos
+            raw_obs[6]  /= self.screen_width          # Shell_X_Pos
             raw_obs[7]  /= 360                        # fort_Headings
             raw_obs[8]  /= 100                        # Missile_Stock
             raw_obs[9]  /= self.screen_height         # Mine_Y_Pos
             raw_obs[10] /= self.screen_width          # Mine_X_Pos
-            #raw_obs[11] /= self.config.env.fortress_lifes
-            #print(raw_obs[11])
-            raw_obs[12] = (raw_obs[12] + 1) / (self.config.env.fortress_lifes + 1)
-            raw_obs[13] = np.tanh(raw_obs[13] * .1)
-            raw_obs[14] = np.tanh(raw_obs[14] * .01)
-#            raw_obs[13] = np.tanh(raw_obs[13] * .1)#1 / (1 + np.exp(-raw_obs[12]))
- 
-#            feature_names += ['mine_pos_i', 'mine_pos_j', 'fortress_lifes',
-#                              'steps_since_last_shot']
-            
-            # If missiles are away from the screen, put them as 0, 0
+            #Features coming from this environment
+            raw_obs[12] = (raw_obs[12] + 1) / \
+                 (self.config.env.fortress_lifes + 1) # Fortress lives
+            raw_obs[13] = np.tanh(raw_obs[13] * .1)   # Steps_since_last_shot
+            raw_obs[14] = np.tanh(raw_obs[14] * .01)  # Steps since mine appeared
+
+            # If shells are away from the screen, put them as 0, 0
             if self.last_shell_coords == (raw_obs[5], raw_obs[6]):
                 raw_obs[5], raw_obs[6] = 0., 0.
             else:
                 self.last_shell_coords = (raw_obs[5], raw_obs[6])
+            # Same with mines
             if self.last_mine_coords == (raw_obs[9], raw_obs[10]) or \
                 not self.config.env.mines_activated:
                 raw_obs[9], raw_obs[10] = 0., 0.
             else:
-                self.last_mine_coords = (raw_obs[9], raw_obs[10])
-                
-            
-                
-       
+                self.last_mine_coords = (raw_obs[9], raw_obs[10])                      
         raw_obs = np.clip(raw_obs, 0, 1)
-       
-        """
-            for i, obs in enumerate(raw_obs):
-                if not 0 <= obs <= 1 and i not in [5, 6, 8]:
-                    print(i, obs)
-        """    
-        return raw_obs  
+        return raw_obs
+    
     def define_raw_feature_mappings(self):
         """
         Define dictionary that will be used to get the index of each feature
@@ -660,15 +652,18 @@ class SFEnv(gym.Env):
             self.last_mine_coords = (0., 0.)
         
         #Reload game
+        """
+        Sometimes the game crashes and nothing makes sense anymore. As for now,
+        it is hard to know why and detect how. It is fixed by restarting the
+        game
+        """
         self.__init__()
         
         self.configure(self.config)
         
         #Get first observation
         observation = self.get_observation()
-#        ship_pos_i = self.get
-        return observation # For some reason should show the observation
-
+        return observation
 
 
     def close(self):
