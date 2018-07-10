@@ -334,6 +334,7 @@ class HDQNAgent(base.Agent):
             self.write_output()
             # Restart metrics
             self.m.restart()
+        self.stop_train_timer()
             
         
         
