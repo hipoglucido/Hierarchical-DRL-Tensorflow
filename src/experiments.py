@@ -89,21 +89,31 @@ class Experiment():
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
         elif name == 'goals_exp':
-            # 16 cores
-            base_args = {'scale'          : 5000,
-                        'agent_type'      : 'hdqn',
+            # 36 cores
+            base_args_hdqn = {
+                        'scale'           : 5000,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
+                        'agent_type'      : 'hdqn',
                         'use_gpu'         : 0,
                         'ez'              : 0,
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0}
-     
-            hyperparameter_space = {'random_seeds'   : list(range(4)),
-                                    'goal_groups'    : [2, 3, 4, 5]}
-            self.add_params_to_arg_list(base_args, hyperparameter_space)
+            base_args_dqn = base_args_hdqn.copy()
+            base_args_dqn['agent_type'] = 'dqn'
+            
+            
+            hyperparameter_space_dqn = {'random_seeds'   : list(range(3)),
+                                        'action_repeats' : [1, 3, 5, 7]}
+            hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
+            hyperparameter_space_hdqn['goal_groups'] = [2, 3]
+            
+            self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
+            self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
+            
+            
             
         elif name == 'toy_problem':
             # toy_problem

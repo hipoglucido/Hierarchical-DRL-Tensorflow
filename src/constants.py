@@ -25,7 +25,8 @@ class Constants:
     action_to_sf = {}
     
     for game in SF_envs:
-        key_to_action[game] = {str(k) : i for i, k in enumerate(SF_action_spaces[game])}
+        key_to_action[game] = {str(k) : i for i, k in \
+                                         enumerate(SF_action_spaces[game])}
         action_to_sf[game] = {}
         for i, v in enumerate(SF_action_spaces[game]):
             action_to_sf[game][i] = key_to_sf[str(v)]

@@ -61,7 +61,8 @@ class Environment():
 
     def _step(self, action):
         self.step_counter += 1
-        self._screen, self.reward, self.terminal, self.info = self.gym.step(action)
+        self._screen, self.reward, self.terminal, self.info = \
+                                                    self.gym.step(action)
         
         self.info['step_counter'] = self.step_counter
         
