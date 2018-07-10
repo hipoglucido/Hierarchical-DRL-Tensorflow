@@ -28,7 +28,10 @@ Train a Hierarchical DQN agent
 `python main.py --agent_type=hdqn --env_name=SF-v0 --scale=5000 --double_q=1 --dueling=1 --pmemory=0 --goal_group=2`
 
 The hyperparameters available from command line are listed in `main.py` and will overwrite the default values of all the available hyperparameters, which are listed in `configuration.py`.
-The training will automatically generate the tensorboard logs and checkpoints of the network/s weights. It will record videos of the last steps of the game. For each run, in the logs folder the files `watch0` and `record0` are created. These can be renamed back and forth to `watch1` (to visualize the training in a window) and `record1` (to generate videos) at any point during training.
+
+The training will automatically generate the tensorboard logs and checkpoints of the network/s weights.
+
+It will record videos of the last steps of the game. For each run, in the logs folder the files `watch0` and `record0` are created. These can be renamed back and forth to `watch1` (to visualize the training in a window) and `record1` (to generate videos) at any point during training.
 
 ## Others
 
