@@ -148,7 +148,7 @@ class SFEnv(gym.Env):
         self.step_counter = 0
         self.ep_counter = 0
         self.ep_reward = 0
-        self.steps_since_mine_appeared = 0
+        self.steps_since_mine_appeared = 1e10
         self.steps_since_last_shot = 1e10
         self.steps_since_last_fortress_hit = 1e10
         self.steps_since_last_fortress_hit_aux = 1e10
@@ -548,14 +548,24 @@ class SFEnv(gym.Env):
         i = self.get_raw_feature(obs, 'mine_pos_i')
         j = self.get_raw_feature(obs, 'mine_pos_j')
         if i == 0 and j == 0:
-            self.mine_present = False
-            self.steps_since_mine_appeared = 1e10
+            # There is no mine in the screen
+            self.mine_present = False            
         else:
-            self.mine_present = True
+            # There is a mine in the screen
             if not self.mine_present:
+                # The mine has just appeared
                 self.steps_since_mine_appeared = 0
             else:
-                self.steps_since_mine_appeared += 1
+                # The mine was already present
+                pass
+            self.mine_present = True
+        
+        
+        if not self.mine_present:
+            self.steps_since_mine_appeared = 1e10
+        else:
+            self.steps_since_mine_appeared += 1
+            self.mine_present = True
             
         
     def check_wrapping(self, obs):
