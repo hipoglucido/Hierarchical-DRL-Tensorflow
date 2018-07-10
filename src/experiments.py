@@ -24,7 +24,8 @@ class Experiment():
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
-                        'pmemory'         : 0}
+                        'pmemory'         : 0,
+                        'goal_group'      : 2}
             hyperparameter_space = {'random_seeds' : list(range(5))}
             # VANILLA
             vanilla_base_args = base_args.copy()
@@ -58,7 +59,8 @@ class Experiment():
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
-                        'pmemory'         : 0}
+                        'pmemory'         : 0,
+                        'goal_group'      : 2}
             hyperparameter_space = {'random_seeds'   : list(range(4)),
                                     'action_repeats' : list(range(1, 8))}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
@@ -73,7 +75,8 @@ class Experiment():
                         'mines_activated' : 1,
                         'double_q'        : 0,
                         'dueling'         : 0,
-                        'pmemory'         : 0}
+                        'pmemory'         : 0,
+                        'goal_group'      : 2}
             architectures = [[16],
                             [64],
                             [64, 64],
