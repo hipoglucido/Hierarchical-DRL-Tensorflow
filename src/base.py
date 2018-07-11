@@ -10,13 +10,13 @@ from functools import reduce
 import utils
 from constants import Constants as CT
 import time
-
+from replay_memory import PriorityExperienceReplay, OldReplayMemory#, ReplayMemory
 import cv2
 
 class Agent(object):
     """
     This is the agent class that is extended from both DQN and hDQN
-    It contains the methods that are shared among these two types of models
+    It contains the methods that are shared among these two types of models.
     The hDQN has a controller 'c' and a meta-controller 'mc'. 'c' and 'mc' can
     be understood to some extent as a DQN that act on top of each other
     """
@@ -70,7 +70,7 @@ class Agent(object):
         self.train()
         
     def is_playing(self):
-        return self.ag.mode == 'play'
+        return self.config.ag.mode == 'play'
     
     def update_target_q_network(self, prefix):
         """
@@ -108,6 +108,11 @@ class Agent(object):
             modified prefix
         """
         return prefix + '_' if prefix != '' else prefix
+    def create_memory(self, config, size):
+        mtype = PriorityExperienceReplay if config.pmemory else OldReplayMemory        
+        memory = mtype(config = config,
+                       screen_size = size) 
+        return memory
         
     def is_ready_to_learn(self, prefix):
         """
@@ -201,10 +206,10 @@ class Agent(object):
         except:
             value = 0      
         # Record the end of training regardless of the file names
-        record_last_n_steps = 30000
+        record_last_n_steps = 3000
         if value == 0:
             try:
-                if self.ag.agent_type == 'hdqn':
+                if self.config.ag.agent_type == 'hdqn':
                     value = int(self.total_steps - self.c_step < record_last_n_steps)
                 else:
                     #DQN
@@ -257,7 +262,7 @@ class Agent(object):
             perc = round(100 * self.c_step / self.c_ag.max_step, 4)
             ep_r = self.m.mc_ep_reward
         else:
-            perc = round(100 * self.step / self.ag.max_step, 4)
+            perc = round(100 * self.step / self.config.ag.max_step, 4)
             ep_r = self.m.ep_reward
         if self.environment.env_name == 'key_mdp-v0':
             out =  observation.reshape(self.environment.gym.shape) 
@@ -347,9 +352,10 @@ class Agent(object):
         params:
             
         """
+        ag = self.get(prefix, 'ag')
 
         target_s_t = self.get(prefix, 'target_s_t')
-        if self.config.ag.double_q:
+        if ag.double_q:
             #DOUBLE Q LEARNING
             #Get object references
             q_action = self.get(prefix, 'q_action')
@@ -373,7 +379,7 @@ class Agent(object):
             q_t_plus_1_with_pred_action = target_q_with_idx.eval(target_q_with_idx_input)
        
             terminal, reward = np.array(terminal), np.array(reward)
-            target_q_t = (1. - terminal) * self.ag.discount * \
+            target_q_t = (1. - terminal) * ag.discount * \
                                         q_t_plus_1_with_pred_action + reward
         else:
             # No double
@@ -385,7 +391,7 @@ class Agent(object):
             q_t_plus_1 = target_q.eval(target_q_input)
     
             max_q_t_plus_1 = np.max(q_t_plus_1, axis=1)
-            target_q_t = (1. - terminal) * self.ag.discount * max_q_t_plus_1 + reward
+            target_q_t = (1. - terminal) * ag.discount * max_q_t_plus_1 + reward
         
         return target_q_t        
     
@@ -393,16 +399,15 @@ class Agent(object):
         """
         Extends module with the Dueling architecture
         """
-        #print("ADDING due", prefix)
         if prefix in ['', 'target']:
             #DQN
-            architecture = self.config.ag.architecture_duel
+            architecture = self.ag.architecture_duel
             output_length = self.environment.action_size
         else:
             #HDQN
             if prefix in ['mc', 'mc_target']:
                 architecture = self.mc_ag.architecture_duel
-                output_length = self.ag.goal_size
+                output_length = self.goal_size
             elif prefix in ['c', 'c_target']:
                 architecture = self.c_ag.architecture_duel
                 output_length = self.environment.action_size
@@ -469,19 +474,15 @@ class Agent(object):
         """
         if prefix == '':
             action_space_size = self.environment.action_size
-            cnf = self.ag
         elif prefix == 'mc':
-            action_space_size = self.ag.goal_size
-            cnf = self.mc_ag
+            action_space_size = self.goal_size
         elif prefix == 'c':
             action_space_size = self.environment.action_size
-            cnf = self.c_ag
-        else:
-            assert 0
-            
+
+        ag = self.get(prefix, 'ag')   
         extended_prefix = self.extend_prefix(prefix)
         with tf.variable_scope(extended_prefix + 'optimizer'):
-            if self.ag.pmemory:
+            if ag.pmemory:
                 loss_weight = tf.placeholder('float32', [None],
                                         name = extended_prefix + 'loss_weight')
                 self.set(prefix, 'loss_weight', loss_weight)
@@ -508,7 +509,7 @@ class Agent(object):
             td_error = tf.abs(target_q_t - q_acted)
             self.set(prefix, 'td_error', td_error)
                         
-            if self.ag.pmemory:
+            if ag.pmemory:
                 loss_function = utils.weighted_huber_loss
                 loss_weight = self.get(prefix, 'loss_weight')
             else:
@@ -528,12 +529,12 @@ class Agent(object):
             self.set(prefix, 'learning_rate_step', learning_rate_step)            
             
             learning_rate_op = tf.maximum(
-                    cnf.learning_rate_minimum,
+                    ag.learning_rate_minimum,
                     tf.train.exponential_decay(
-                        learning_rate = cnf.learning_rate,
+                        learning_rate = ag.learning_rate,
                         global_step   = learning_rate_step,
-                        decay_steps   = cnf.learning_rate_decay_step,
-                        decay_rate    = cnf.learning_rate_decay,
+                        decay_steps   = ag.learning_rate_decay_step,
+                        decay_rate    = ag.learning_rate_decay,
                         staircase     = True))
             self.set(prefix, 'learning_rate_op', learning_rate_op)
             
@@ -600,30 +601,30 @@ class Agent(object):
             #print(layer, 'added', layer_name)
         return last_layer, histograms
 
-    def create_target(self, config, prefix):
+    def create_target(self, prefix):
         """
         Create a target fro either DQN, MC or C networks
         (needs to be cleaned up a bit)
         """
-        #print("Creating target...")
+        ag = self.get(prefix, 'ag')
 
-        #prefix = config.prefix + '_' if config.prefix != '' else config.prefix
         extended_prefix = self.extend_prefix(prefix)
-        aux1 = extended_prefix + 'target'                         # mc_target
+        aux1 = extended_prefix + 'target'                # mc_target
         aux2 = aux1 + '_s_t'                             # mc_target_s_t
         aux3 = aux1 + '_w'                               # mc_target_w
         aux4 = aux1 + '_q'                               # mc_target_q
         aux5 = 'w' if extended_prefix == '' else extended_prefix + 'w'     # mc_w
         aux6 = aux4 + '_idx'                             # mc_target_q_idx        
         aux7 = aux4 + '_with_idx'                        # mc_target_q_with_idx
-        aux8 = extended_prefix + 'outputs_idx'                    # mc_outputs_idx
+        aux8 = extended_prefix + 'outputs_idx'           # mc_outputs_idx
+        
         target_w = {}
         
         
         setattr(self, aux3, target_w)
         with tf.variable_scope(aux1):
             target_s_t = tf.placeholder("float",
-                        [None, config.history_length, self.environment.state_size],
+                        [None, ag.history_length, self.environment.state_size],
                         name = aux2)
             shape = target_s_t.get_shape().as_list()
             target_s_t_flat = \
@@ -631,38 +632,37 @@ class Agent(object):
                           [-1, reduce(lambda x, y: x * y, shape[1:])])
             if prefix == 'c':
                 self.c_target_g_t = tf.placeholder("float",
-                                   [None, self.ag.goal_size],
+                                   [None, self.goal_size],
                                    name = 'c_target_g_t')
                 self.target_gs_t = tf.concat([self.c_target_g_t, target_s_t_flat],
                                    axis = 1,
                                    name = 'c_target_gs_concat')
-                last_layer = self.target_gs_t
+                last_layer = self.target_gs_t                
             else:
                 last_layer = target_s_t_flat
                 
-#            histograms_ = getattr(self, prefix + 'histograms')
+
             
-            last_layer, _ = self.add_dense_layers(architecture = config.architecture,
+            last_layer, _ = self.add_dense_layers(architecture = ag.architecture,
                                                input_layer = last_layer,
                                                parameters = target_w,
                                                name_aux = '')
-#            histograms_ += histograms
+          
             
             
-            if self.ag.dueling:
-                #print(aux4)
+            if ag.dueling:
                 target_q = self.add_dueling(prefix = aux1, input_layer = last_layer)
             else:
                 target_q, weights, biases = \
                             utils.linear(last_layer,
-                                   config.q_output_length, name=aux4)  
+                                   ag.q_output_length, name=aux4)  
                 getattr(self, aux3)['q_w'] = weights
                 getattr(self, aux3)['q_b'] = biases                   
             #print(target_q)
             
             setattr(self, aux2, target_s_t)
             setattr(self, aux4, target_q)
-            if self.config.ag.double_q:               
+            if ag.double_q:               
                 #Double DQN                  
                 target_q_idx = tf.placeholder('int32', [None, None], aux8)
                 target_q_with_idx = tf.gather_nd(target_q, target_q_idx)
@@ -674,17 +674,13 @@ class Agent(object):
             target_w_input = {}
             target_w_assign_op = {}
             w = getattr(self, aux5)
-            
             for name in w.keys():
-#                print("__________________________")
                 target_w_input[name] = tf.placeholder(
                                'float32',
                                target_w[name].get_shape().as_list(),
                                name=name)
                 target_w_assign_op[name] = target_w[name].assign(
                                                 value = target_w_input[name])
-#                print(target_w_input[name])
-#                print(target_w_assign_op[name])
         setattr(self, aux3 + "_input", target_w_input)
         setattr(self, aux3 + "_assign_op", target_w_assign_op)
         

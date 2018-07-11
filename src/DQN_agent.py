@@ -7,7 +7,7 @@ from metrics import Metrics
 
 from base import Agent
 from epsilon import Epsilon
-from replay_memory import PriorityExperienceReplay, OldReplayMemory#, ReplayMemory
+
 import utils
 
 
@@ -21,10 +21,11 @@ class DQNAgent(Agent):
         self.gl = self.config.gl
         self.environment = environment
         self.ag.update({"q_output_length" : self.environment.action_size}, add = True)
-        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory        
-        self.memory = memory_type(config      = self.ag,
-                                   screen_size = self.environment.state_size)       
-        
+#        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory        
+#        self.memory = memory_type(config      = self.ag,
+#                                   screen_size = self.environment.state_size)       
+        self.memory = self.create_memory(config = self.ag,
+                                         size   = self.environment.state_size)
        
         self.m = Metrics(self.config, self.logs_dir)       
         self.build_dqn()
@@ -191,7 +192,7 @@ class DQNAgent(Agent):
                                                       name='q')
             
             self.q_action = tf.argmax(self.q, axis = 1)
-        self.create_target(config = self.ag, prefix = '')
+        self.create_target(prefix = '')
         
         # optimizer
         self.build_optimizer(prefix = '')

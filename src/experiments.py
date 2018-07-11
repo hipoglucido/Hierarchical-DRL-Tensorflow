@@ -12,8 +12,44 @@ class Experiment():
         self.parallel = parallel
         self.name = name
         self._args_list = []
-    
-        if name == 'extensions_exp':
+        if name == 'ablation_exp':
+            # 32 cores
+            base_args = {'scale'          : 5000,
+                        'agent_type'      : 'hdqn',
+                        'mode'            : 'train',
+                        'env_name'        : 'SF-v0',
+                        'use_gpu'         : 0,
+                        'ez'              : 0,
+                        'mines_activated' : 1,
+                        'mc_double_q'     : 1,
+                        'mc_dueling'      : 1,
+                        'mc_pmemory'      : 1,
+                        'c_double_q'      : 1,
+                        'c_dueling'       : 1,
+                        'c_pmemory'       : 1,
+                        'goal_group'      : 2}
+            hyperparameter_space = {'random_seeds' : list(range(4))}
+            
+            #RAINBOW
+            self.add_params_to_arg_list(base_args, hyperparameter_space)
+            
+            #ABLATIONS
+            ablations = ['double_q', 'dueling', 'pmemory']
+            for ablation in ablations:
+                for module in ['mc', 'c']:
+                    base_args_copy = base_args.copy()
+                    base_args_copy["%s_%s" % (module, ablation)] = 0
+                    self.add_params_to_arg_list(base_args_copy, hyperparameter_space)
+            
+            # VANILLA
+            base_args_copy = base_args.copy()
+            for ablation in ablations:
+                for module in ['mc', 'c']:
+                    base_args_copy["%s_%s" % (module, ablation)] = 0
+            self.add_params_to_arg_list(base_args_copy, hyperparameter_space)
+                
+
+        elif name == 'extensions_exp':
             # 20 cores
             base_args = {'scale'          : 5000,
                         'agent_type'      : 'hdqn',

@@ -15,8 +15,7 @@ class Environment():
         self.gym.configure(cnf)
         self.action_size = self.gym.action_space.n
         self.state_size = self.gym.state_space.n
-        self.action_repeat, self.random_start = \
-                cnf.env.action_repeat, cnf.env.random_start
+        self.action_repeat = cnf.env.action_repeat
 
         self.display_prob = cnf.gl.display_prob
         self._screen = None

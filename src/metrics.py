@@ -16,25 +16,20 @@ class Metrics:
         self.config = config
         self.model_log_dir = model_log_dir
         self.is_hdqn = isinstance(self.config.ag, hDQNSettings) 
-        self.is_pmemory = config.ag.pmemory
         self.is_SF = self.config.env.env_name in CT.SF_envs
         self.aux = 0
         lower_bound = -99999
         if self.is_hdqn:        
             self.mc_max_avg_ep_reward = lower_bound
             self.c_max_avg_ep_reward = lower_bound #Not used for now
-        else:
-            self.max_avg_ep_reward = lower_bound
-        self._define_metrics(goals)
-        self.restart()
-        if self.is_hdqn:
             self.mc_params = config.ag.mc
             self.c_params = config.ag.c
-        elif isinstance(self.config.ag, DQNSettings):        
-            self.params = config.ag
         else:
-            raise ValueError
+            self.max_avg_ep_reward = lower_bound
+            self.params = config.ag
+        self._define_metrics(goals)
         self.error_value = -1.
+        self.restart()
 
     def _define_metrics(self, goals):
         self.scalar_global_tags = ['elapsed_time', 'games',
@@ -61,12 +56,21 @@ class Metrics:
         
         
         self.scalar_dual_tags = ['avg_reward', 'avg_loss', 'avg_q', \
-                     'max_ep_reward', 'min_ep_reward', \
+                     'max_epis_pmemory_reward', 'min_ep_reward', \
                      'avg_ep_reward', 'learning_rate', 'total_reward', \
                      'ep_reward', 'total_loss', 'total_q', 'update_count',
                      'memory_size', 'td_error', 'steps_per_episode']
-        if self.is_pmemory:
-            self.scalar_dual_tags.append('beta')
+        if self.is_hdqn:
+            # hDQN
+            if self.mc_params.pmemory:
+                self.mc_scalar_tags.append('mc_beta')
+            if self.c_params.pmemory:
+                self.c_scalar_tags.append('c_beta')
+        else:
+            # DQN
+            if self.params.pmemory:
+                self.ag_scalar_tags.append('beta')
+            
         for tag in self.scalar_dual_tags:
             if self.is_hdqn:
                 #hDQN

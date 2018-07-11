@@ -51,8 +51,7 @@ class MDPGoal(Goal):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
             
-    def is_achieved(self, screen, action):
-        #action not used
+    def is_achieved(self, screen, *args, **kwargs):
         return np.array_equal(screen, self.one_hot)
 
 class SFGoal(Goal):

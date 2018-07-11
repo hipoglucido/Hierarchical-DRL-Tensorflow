@@ -38,9 +38,17 @@ class Configuration:
     def model_name(self):
         chain = []
         for attr_fullname in self.gl.attrs_in_dir:
-            [attr_type, attr_name] = attr_fullname.split('.')
+            strings = attr_fullname.split('.')
+            if len(strings) == 2:
+                [attr_type, attr_name] = strings
+                module = ''
+                obj = getattr(self, attr_type)
+            else:
+                [attr_type, module, attr_name] = strings
+                obj = getattr(getattr(self, attr_type), module)
+                
             try:
-                attr_value = getattr(getattr(self, attr_type), attr_name)
+                attr_value = getattr(obj, attr_name)
             except AttributeError:
                 attr_value = ''
             if 'architecture' in attr_name:
@@ -48,7 +56,9 @@ class Configuration:
             else:
                 value = str(attr_value)
             attr_name_initials = ''.join([word[0] for word in attr_name.split('_')])
-            part = attr_name_initials + str(value)
+            part = module.upper() + attr_name_initials + str(value)
+            if value == '':
+                continue
             chain.append(part)
         result = '_'.join(chain)
         return result        
@@ -137,6 +147,16 @@ class GlobalSettings(GenericSettings):
                  'ag.double_q',
                  'ag.dueling',
                  'ag.pmemory',
+                 
+                 'ag.mc.architecture',
+                 'ag.mc.double_q',
+                 'ag.mc.dueling',
+                 'ag.mc.pmemory',
+                 
+                 'ag.c.architecture',
+                 'ag.c.double_q',
+                 'ag.c.dueling',
+                 'ag.c.pmemory',
                  #'ag.memory_size',
                  'env.action_repeat',
                  'gl.random_seed',
@@ -164,10 +184,8 @@ class AgentSettings(GenericSettings):
     def __init__(self, scale = 1):
         self.scale = scale
         self.mode = 'train'
-        self.pmemory = 0
         self.max_step = self.scale * 5000
-        self.double_q = 0
-        self.dueling = 0
+        
         self.fresh_start = 0
         self.experiment_name = ''
     
@@ -194,7 +212,6 @@ class DQNSettings(AgentSettings):
         self.memory_size = int(1e6)
         
         self.batch_size = 32
-        self.random_start = 30
         
         self.discount = 0.99
         self.target_q_update_step = 1 * self.scale
@@ -214,13 +231,16 @@ class DQNSettings(AgentSettings):
         self.architecture = [512, 512]
         self.architecture_duel = [128]
         
-        self.test_step = 10000#int(self.max_step / 10)
-        self.save_step = self.test_step * 10
+        self.test_step = 10000
         
         self.activation_fn = 'relu'
         self.prefix = ''
         
         self.memory_minimum = 10000
+        
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
         
     
@@ -231,35 +251,32 @@ class hDQNSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'hdqn'
-        self.architecture = [512, 512]
-        self.architecture_duel = [128]
-        self.memory_size = int(5e4)
+        
+        
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
-        self.random_start = 30
-        self.discount = 0.99
-        self.goal_group = 2
-        self.save_step = 4       
         
-    def update(self, args):
-        super().update(args)
-        self.mc.architecture = self.architecture
-        self.c.architecture = self.architecture
-        self.mc.architecture_duel = self.architecture_duel
-        self.c.architecture_duel = self.architecture_duel
+        self.goal_group = 2  
+        
         if 'ep_start' in args:
             self.mc.update({'ep_start' : args['ep_start']})
-       
-        
+               
     def to_dict(self):       
         dictionary = vars(self).copy()
         dictionary['mc'] = self.mc.to_dict()
         dictionary['c'] = self.c.to_dict()
         return dictionary
         
-
-
-
+    def update(self, args):
+        super().update(args)
+        for ag_name in ['c', 'mc']:
+            ag = getattr(self, ag_name)
+            args_copy = {}
+            for k, v in args.items():
+                new_key = k.replace("%s_" % ag_name, "")
+                args_copy[new_key] = v
+            ag.update(args_copy)
+        
 class ControllerSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -276,21 +293,21 @@ class ControllerSettings(AgentSettings):
         
         self.memory_size = int(1e6)   
         self.batch_size = 32
-        self.random_start = 30
-        
         
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 5*1e-4
         self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.96
         self.learning_rate_decay_step = 5 * self.scale
-        
+        self.discount = 0.99
        
-        self.architecture = None
-        self.architecture_duel = None
+        self.architecture = [512, 512]
+        self.architecture_duel = [128]
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
         self.test_step = 10000
-        self.save_step = self.test_step * 10
         self.activation_fn = 'relu'
         
         
@@ -301,28 +318,29 @@ class ControllerSettings(AgentSettings):
         self.learnt_threshold = 0.95
     
         self.memory_minimum = 10000
-    
-    
+        
+
     
 class MetaControllerSettings(AgentSettings):
+        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
         self.history_length = 1    
         
-        self.memory_size = int(5e4)# * self.scale
+        self.memory_size = int(5e4)
          
-        #max_step = 5000 * scale
+     
         
-        self.batch_size = 32
-        self.random_start = 30        
+        self.batch_size = 32    
         
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 5*1e-4
         self.learning_rate_minimum = 2*1e-4
         self.learning_rate_decay = 0.94
         self.learning_rate_decay_step = 5 * self.scale
-        
+        self.discount = 0.99
         self.ep_end = 0.05
         self.ep_start = 1.
         self.ep_end_t_perc = .7
@@ -330,8 +348,11 @@ class MetaControllerSettings(AgentSettings):
         self.train_frequency = 4
         self.learn_start = 1000
         
-        self.architecture = None
-        self.architecture_duel = None
+        self.architecture = [512, 512]
+        self.architecture_duel = [128]
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
 
         self.activation_fn = 'relu'
@@ -343,7 +364,7 @@ class MetaControllerSettings(AgentSettings):
 class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
-        self.random_start = False 
+        self.random_start = False
         self.action_repeat = 6    
         self.right_failure_prob = 0.
         

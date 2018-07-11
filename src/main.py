@@ -60,6 +60,14 @@ ag_args.add_argument("--learning_rate_decay", default = None, type = float)
 ag_args.add_argument("--double_q", default = None, type = utils.str2bool)
 ag_args.add_argument("--dueling", default = None, type = utils.str2bool)
 ag_args.add_argument("--pmemory", default = None, type = utils.str2bool)
+ag_args.add_argument("--c_architecture", default = None, type = str)
+ag_args.add_argument("--mc_architecture", default = None, type = str)
+ag_args.add_argument("--c_double_q", default = None, type = utils.str2bool)
+ag_args.add_argument("--c_dueling", default = None, type = utils.str2bool)
+ag_args.add_argument("--c_pmemory", default = None, type = utils.str2bool)
+ag_args.add_argument("--mc_double_q", default = None, type = utils.str2bool)
+ag_args.add_argument("--mc_dueling", default = None, type = utils.str2bool)
+ag_args.add_argument("--mc_pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
 ag_args.add_argument("--ep_start", default = None, type = float)
@@ -77,13 +85,12 @@ def execute_experiment(args):
    
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
-#    if args['env_name'] == 'SF-v0' and args['experiment_name']:
-#        if args['mines_activated']:
-#            args['goal_group'] = 3
-#        else:
-#            args['goal_group'] = 4
-    if 'architecture' in args and args['architecture'] is not None:
-        args['architecture'] = args['architecture'].split('-')
+    arch_names = [n for n in args.keys() if 'architecture' in n]
+    for arch_name in arch_names:
+        if args[arch_name] is None:
+            continue
+        else:
+            args[arch_name] = args[arch_name].split('-')
         
     cnf = configuration.Configuration()
     
@@ -103,8 +110,7 @@ def execute_experiment(args):
     else:
         raise ValueError("Wrong agent %s" % args['agent_type'])
      
-#    print(args)
-    #print(args['experiment_name'], args['goal_group'])
+
     ag_st.update(args)
     cnf.set_agent_settings(ag_st)
     
