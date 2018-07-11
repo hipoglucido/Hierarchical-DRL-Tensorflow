@@ -696,10 +696,16 @@ class SFEnv(gym.Env):
        
         
     def get_prep_feature(self, observation, feature_name):
+        """
+        Gets preprocessed feature
+        """
         index = self.feature_names.index(feature_name)
         return observation[index]
         
     def get_raw_feature(self, observation, feature_name):
+        """
+        Gets raw feature
+        """
         return observation[self.raw_features_name_to_ix[feature_name]]
    
     def define_features(self):
@@ -711,6 +717,14 @@ class SFEnv(gym.Env):
         """
         self.define_raw_feature_mappings()
         
+        """
+        These two list are aligned. For each position, there is a feature name
+        (string) and a preprocessing function (lambda x) that extracts it.
+        NB: one feature name, if cyclic, will be decomposed in two different
+        features (_sin and _cos) by its preprocessinf function, so the length
+        of these lists is not necessarily equals to the state space that the
+        agent sees.
+        """
         prep_fs = []
         feature_names = [] 
       

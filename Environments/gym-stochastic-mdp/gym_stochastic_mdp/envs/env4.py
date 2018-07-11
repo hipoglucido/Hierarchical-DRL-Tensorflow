@@ -33,9 +33,7 @@ class Key_MDPEnv(MDP):
         self.has_key = False
         observation = self.current_state.flatten()
         return observation
-                
-            
-        
+                     
     @property
     def state_size(self): return self.state_space.n 
     @property
