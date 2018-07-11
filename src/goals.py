@@ -244,7 +244,7 @@ class SFGoal(Goal):
                                           B_j     = pfs['mine_pos_j'],
                                           epsilon = epsilon)
             elif 'fortress' in self.name:
-                epsilon = .1
+                epsilon = .15
                 if self.environment.is_wrapper:
                     # Rotation activated and WRAPPING
                     new_pfs = {}

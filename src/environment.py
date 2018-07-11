@@ -101,56 +101,59 @@ class Environment():
         """
         cumulated_reward = 0        
         
-        #First we decide if we have to force action_repeat to be 1 or not        
-        small_step = False
-        if 'goal_name' in info.keys():
-            # We force if the goal is to aim at something
-            cheat_if_goal_is = ['aim_at', 'hit', 'shoot']
-            if any([c in info['goal_name'] for c in cheat_if_goal_is]):
-                small_step = True
+        #First we decide if we have to force action_repeat to be 1 or not
+        repeat = self.action_repeat
         if self.env_name == 'SF-v0':
-            # We force it if the action is shooting
+            # We force it if the action is to shoot
             if CT.action_to_sf[self.env_name][action] == \
                                             CT.key_to_sf['Key.space']:
-                small_step = True      
-       
-        
-        if small_step:
-            repeat = 1
-        else:
-            repeat = self.action_repeat
+                repeat = 1
+          
         # Perform the action repeat times            
         for i in range(repeat):            
             self._step(action) # Perform the action
             cumulated_reward = cumulated_reward + self.reward
-            ##############################################################
-            #  This code is only for the panel of Space Fortress
-            #
-            if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
-                if self.gym.goal_has_changed:
-                    self.gym.panel.add(key  = 'actions',
-                                   item     = '%s:' % info['goal_name'])
-                    self.gym.panel.add(key  = 'goals',
-                                       item = info['goal_name'])
-                    self.gym.panel.add(key  = 'rewards',
-                                       item = ' ')
-                    self.gym.goal_has_changed = False
-            if self.env_name in CT.SF_envs:
-                action_name = CT.SF_action_spaces[self.env_name][action]
-                self.gym.panel.add(key  = 'actions',
-                                   item = action_name)
-                self.gym.panel.add(key  = 'rewards',
-                                   item = self.reward)
-            if i != repeat - 1 and (info['display_episode'] or info['watch']) \
-                               and self.env_name in CT.SF_envs:
-                # In SpaceFortress we render the skipped frames as well
-                self.gym.render()
-            #
-            ##############################################################
-            if self.terminal:
+            should_break = self.extra_checks(i, repeat, info, action)
+                
+            if should_break:
                 break
         self.reward = cumulated_reward
         return self.state
+    
+    def extra_checks(self, i, repeat, info, action):
+        
+        should_break = False
+        ##############################################################
+        #  This code is only for the panel of Space Fortress
+        #
+        if 'goal_name' in info.keys() and self.env_name in CT.SF_envs:
+            if self.gym.goal_has_changed:
+                self.gym.panel.add(key  = 'actions',
+                               item     = '%s:' % info['goal_name'])
+                self.gym.panel.add(key  = 'goals',
+                                   item = info['goal_name'])
+                self.gym.panel.add(key  = 'rewards',
+                                   item = ' ')
+                self.gym.goal_has_changed = False
+        if self.env_name in CT.SF_envs:
+            action_name = CT.SF_action_spaces[self.env_name][action]
+            self.gym.panel.add(key  = 'actions',
+                               item = action_name)
+            self.gym.panel.add(key  = 'rewards',
+                               item = self.reward)
+        if i != repeat - 1 and (info['display_episode'] or info['watch']) \
+                           and self.env_name in CT.SF_envs:
+            # In SpaceFortress we render the skipped frames as well
+            self.gym.render()
+        #
+        ##############################################################
+        if self.terminal:
+            should_break = True
+            
+        # Check if is aiming?
+            
+        return should_break
+        
     
 
                 

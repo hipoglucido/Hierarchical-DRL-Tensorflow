@@ -42,13 +42,15 @@ class Configuration:
             if len(strings) == 2:
                 [attr_type, attr_name] = strings
                 module = ''
-                obj = getattr(self, attr_type)
+                #obj = getattr(self, attr_type)
+                f = lambda x: getattr(x, attr_type)
             else:
                 [attr_type, module, attr_name] = strings
-                obj = getattr(getattr(self, attr_type), module)
+                f = lambda x: getattr(getattr(x, attr_type), module)
+                #obj = getattr(getattr(self, attr_type), module)
                 
             try:
-                attr_value = getattr(obj, attr_name)
+                attr_value = getattr(f(self), attr_name)
             except AttributeError:
                 attr_value = ''
             if 'architecture' in attr_name:

@@ -29,7 +29,7 @@ class HumanAgent():
         #self.config.print()
         # Current key has to be initialized before first input of keyboard
         self.key_to_action = CT.key_to_action[self.config.env.env_name]
-        print(self.key_to_action)
+       
     def train(self):
         pass
     
