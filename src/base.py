@@ -206,7 +206,7 @@ class Agent(object):
         except:
             value = 0      
         # Record the end of training regardless of the file names
-        record_last_n_steps = 3000
+        record_last_n_steps = 30000
         if value == 0:
             try:
                 if self.config.ag.agent_type == 'hdqn':
