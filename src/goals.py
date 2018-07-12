@@ -137,30 +137,38 @@ class SFGoal(Goal):
 
         if A_min < A_target < A_max:
             result = True
-        elif weird:
-            
+        elif weird:            
             if A_target > A_min or A_target < A_max:
-                result = True
- 
+                result = True 
         return result
     
     def is_achieved(self, screen, action, info):
+        """
+        Check if the goal has been achieved taking as information the state
+        space, the action and other variables (included in info). The check is
+        different for each goal.
         
+        return achieved: Boolean, whether the goal has been achieved or not
+        """
         pfs = self.get_prep_features(screen)
         
         achieved = False
         if self.name == 'G_hit_fortress_twice':
             if info['fortress_hit'] and \
-                    info['steps_since_last_fortress_hit_aux'] < info['min_steps_between_shots']:
+                    info['steps_since_last_fortress_hit_aux'] < \
+                                            info['min_steps_between_shots']:
                 achieved = True
         if self.name == 'G_hit_fortress_once':
-            if info['min_steps_between_shots'] == info['steps_since_last_fortress_hit']:
+            if info['min_steps_between_shots'] <= info['steps_since_last_fortress_hit'] \
+                < info['action_repeat']+ info['min_steps_between_shots']:
                 achieved = True
         if self.name == 'G_single_shoot':
-            if info['min_steps_between_shots'] == info['steps_since_last_shot']:
-                achieved = True
+            if info['min_steps_between_shots'] <= info['steps_since_last_shot'] \
+                <= max(info['action_repeat'], info['min_steps_between_shots']):
+                achieved = True                
         elif self.name == 'G_double_shoot':
-            its_a_shot = action == CT.SF_action_spaces[self.environment.env_name].index('Key.space')            
+            its_a_shot = action == \
+                CT.SF_action_spaces[self.environment.env_name].index('Key.space')            
             if its_a_shot and \
                0 <= info['steps_since_last_shot'] < info['min_steps_between_shots']:
                 achieved = True
@@ -177,8 +185,7 @@ class SFGoal(Goal):
                     #Aiming at square doesn't make sense if rotation is deactivated
                     assert 0
             if 'square' in self.name:
-                # aim_at_aquare
-                
+                # aim_at_aquare                
                 epsilon = 0.3
                 if self.environment.is_wrapper:
                     # Rotation activated and WRAPPING
@@ -199,8 +206,7 @@ class SFGoal(Goal):
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = new_pfs['square_pos_i'],
                                       B_j     = new_pfs['square_pos_j'],
-                                      epsilon = epsilon)
-                    
+                                      epsilon = epsilon)                    
                 else:
                     # Rotation activated and NO WRAPPING
                     achieved = self.is_aiming_at(
@@ -210,9 +216,7 @@ class SFGoal(Goal):
                                       A_cos   = pfs['ship_headings_cos'],
                                       B_i     = pfs['square_pos_i'],
                                       B_j     = pfs['square_pos_j'],
-                                      epsilon = epsilon)
-
-                
+                                      epsilon = epsilon)                
             elif 'mine' in self.name:
                 # aim_at_mine
                 epsilon = .2        
@@ -300,6 +304,7 @@ class SFGoal(Goal):
                                         region = int(region_id),
                                         n      = int(total_regions))
         elif self.name[2:] in CT.SF_action_spaces[self.environment.env_name]:
+            # Low level goals (aka actions)
             goal_action = CT.SF_action_spaces[self.environment.env_name].index(self.name[2:])
             achieved = action == goal_action
         return achieved

@@ -62,7 +62,7 @@ class Environment():
         self.step_counter += 1
         self._screen, self.reward, self.terminal, self.info = \
                                                     self.gym.step(action)
-        
+        self.info['action_repeat'] = self.action_repeat
         self.info['step_counter'] = self.step_counter
         
 
@@ -100,7 +100,6 @@ class Environment():
                 needs to be displayed or not.
         """
         cumulated_reward = 0        
-        
         #First we decide if we have to force action_repeat to be 1 or not
         repeat = self.action_repeat
         if self.env_name == 'SF-v0':
@@ -113,8 +112,7 @@ class Environment():
         for i in range(repeat):            
             self._step(action) # Perform the action
             cumulated_reward = cumulated_reward + self.reward
-            should_break = self.extra_checks(i, repeat, info, action)
-                
+            should_break = self.extra_checks(i, repeat, info, action)                
             if should_break:
                 break
         self.reward = cumulated_reward

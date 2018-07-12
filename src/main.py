@@ -82,7 +82,7 @@ def execute_experiment(args):
         args['render_delay'] = 0
         args['mode'] = 'play'
         args['display_prob'] = 1
-        args['action_repeat'] = 1
+#        args['action_repeat'] = 1
    
     if args['env_name'] == 'key_mdp-v0':
         args['action_repeat'] = 1
