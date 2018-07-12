@@ -27,7 +27,7 @@ class Experiment():
                         'c_double_q'      : 1,
                         'c_dueling'       : 1,
                         'c_pmemory'       : 1,
-                        'goal_group'      : 2}
+                        'goal_group'      : 3}
             hyperparameter_space = {'random_seeds' : list(range(4))}
             
             #RAINBOW
@@ -112,7 +112,7 @@ class Experiment():
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0,
-                        'goal_group'      : 2}
+                        'goal_group'      : 3}
             architectures = [[16],
                             [64],
                             [64, 64],
