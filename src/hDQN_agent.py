@@ -99,6 +99,7 @@ class HDQNAgent(base.Agent):
         goal = self.get_goal(n_goal)
         goal.set_counter += 1
         self.current_goal = goal
+        self.current_goal.achieved_inside_frameskip = False
         self.environment.gym.goal_has_changed = True
        
             
@@ -259,7 +260,8 @@ class HDQNAgent(base.Agent):
             info = {'goal_name'       : self.current_goal.name,
                     'is_SF'           : self.m.is_SF,
                     'display_episode' : self.display_episode,
-                    'watch'           : self.gl.watch}
+                    'watch'           : self.gl.watch,
+                    'goal'            : self.current_goal}
             
             new_obs, ext_reward, terminal, info = self.environment.act(
                                         action = action,

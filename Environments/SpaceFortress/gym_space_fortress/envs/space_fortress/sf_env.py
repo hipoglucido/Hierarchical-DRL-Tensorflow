@@ -226,6 +226,7 @@ class SFEnv(gym.Env):
             # Double shoot not allowed
             self.shot_too_fast = True
             reward -= cnf.fast_shooting_penalty
+            self.steps_since_last_fortress_hit = 0
             if not cnf.ez:
                 # Restart fortress lifes if in hard mode
                 self.fortress_lifes = cnf.fortress_lifes

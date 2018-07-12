@@ -127,7 +127,7 @@ class Experiment():
         elif name == 'goals_exp':
             # 36 cores
             base_args_hdqn = {
-                        'scale'           : 3500,
+                        'scale'           : 3000,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'agent_type'      : 'hdqn',

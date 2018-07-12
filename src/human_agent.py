@@ -47,8 +47,7 @@ class HumanAgent():
             while True:
                 if self.display_episode:
                     self.environment.gym.render()
-                    
-                    
+ 
                 else:
                     time.sleep(.01)
                 if self.current_key == 'Key.esc':
@@ -57,8 +56,12 @@ class HumanAgent():
                     self.current_key = 'wait'
                 
                 action = self.key_to_action[self.current_key]
-
-                info_input = {'goal_name'       : 'aim_at_fortress',
+                
+                goal_id = 2
+                self.current_goal = self.goals[goal_id]
+                #print("Current goal %s" % self.current_goal.name)
+                info_input = {'goal_name'       : self.current_goal.name,
+                              'goal'            : self.current_goal,
                         'display_episode' : self.display_episode}
                 observation, reward, done, info = self.environment.act(
                                                     action = action,
@@ -75,6 +78,11 @@ class HumanAgent():
                 for i, goal in self.goals.items():
                     achieved = goal.is_achieved(observation, action, info)
                     print("Goal %s achieved -> %s" % (goal.name, str(achieved)))
+                    if achieved and i == goal_id:
+                        self.current_goal.achieved_inside_frameskip = False
+#                achieved = self.current_goal.is_achieved(observation, action, info)
+#                print("Goal %s achieved -> %s" % (self.current_goal.name, str(achieved)))
+               
                 
                 if done == 1:
                     if self.display_episode:

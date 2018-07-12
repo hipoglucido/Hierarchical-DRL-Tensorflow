@@ -89,6 +89,8 @@ class Constants:
                  'double_shoot', 'single_shoot',
                  'aim_at_fortress', 'aim_at_mine',
                  ] + SF_action_spaces['SF-v0'],
+            6 : ['hit_fortress_once',
+                 'hit_fortress_twice'],
         },
         # Aim task
         'AIM-v0' : {

@@ -145,6 +145,20 @@ class Environment():
             self.gym.render()
         #
         ##############################################################
+        """
+        For the goals related with hitting the fortress we check if they have
+        been accomplished while frameskipping. It is easier doing this than
+        checking it when the MC takes control back.
+        """
+        lg = ['G_hit_fortress_twice', 'G_hit_fortress_once']
+        
+        if info['goal_name'] in lg:
+            if not info['goal'].achieved_inside_frameskip and \
+                info['goal'].is_achieved(screen = self.screen,
+                                           action = action,
+                                           info = self.info):
+                
+                info['goal'].achieved_inside_frameskip = True
         if self.terminal:
             should_break = True
             
