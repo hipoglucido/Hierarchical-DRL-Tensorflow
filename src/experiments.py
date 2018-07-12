@@ -14,7 +14,7 @@ class Experiment():
         self._args_list = []
         if name == 'ablation_exp':
             # 32 cores
-            base_args = {'scale'          : 5000,
+            base_args = {'scale'          : 3500,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -51,7 +51,7 @@ class Experiment():
 
         elif name == 'extensions_exp':
             # 20 cores
-            base_args = {'scale'          : 5000,
+            base_args = {'scale'          : 3500,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -86,7 +86,7 @@ class Experiment():
             self.add_params_to_arg_list(rainbow_base_args, hyperparameter_space)
         elif name == 'action_repeat_exp':
             # 32 cores
-            base_args = {'scale'          : 5000,
+            base_args = {'scale'          : 3500,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -102,7 +102,7 @@ class Experiment():
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'architectures_exp':
             # 28 cores
-            base_args = {'scale'          : 5000,
+            base_args = {'scale'          : 3500,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -127,7 +127,7 @@ class Experiment():
         elif name == 'goals_exp':
             # 36 cores
             base_args_hdqn = {
-                        'scale'           : 5000,
+                        'scale'           : 3500,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'agent_type'      : 'hdqn',
