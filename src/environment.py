@@ -152,7 +152,7 @@ class Environment():
         """
         lg = ['G_hit_fortress_twice', 'G_hit_fortress_once']
         
-        if info['goal_name'] in lg:
+        if 'goal_name' in info.keys() and info['goal_name'] in lg:
             if not info['goal'].achieved_inside_frameskip and \
                 info['goal'].is_achieved(screen = self.screen,
                                            action = action,
