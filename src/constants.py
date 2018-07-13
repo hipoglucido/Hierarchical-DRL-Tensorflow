@@ -79,7 +79,7 @@ class Constants:
                  'double_shoot', 'single_shoot'] + move_actions,
             # High level of abstraction
             3 : ['hit_mine', 'hit_fortress_once',
-                 'hit_fortress_twice'] + move_actions,
+                 'hit_fortress_twice', 'wait'],# + move_actions,
             # Custom
             4 : ['aim_at_fortress', 'aim_at_mine',
                  'hit_fortress_once', 'hit_fortress_twice']

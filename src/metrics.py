@@ -10,7 +10,10 @@ from constants import Constants as CT
 class Metrics:
     """
     Class for recording learning metrics. Meant to be written to tensorboard
-    periodically
+    periodically.
+    NB some of the recorded metrics are kept in this class as attributes and
+    they are copies from the values that the agents use. Thus each agent use
+    its own internal variables and does not accesss the one stored here.
     """
     def __init__(self, config, model_log_dir, goals = {}):
         self.config = config
@@ -168,6 +171,7 @@ class Metrics:
         total_goals_set = 0
         total_achieved_goals = 0
         goal_success_rates = []
+        # Gather attempts and successes and compute total values
         for _, goal in goals.items():
             name = goal.name
             successes = getattr(self, name + '_successes')
@@ -183,6 +187,7 @@ class Metrics:
             setattr(self, name + "_epsilon", goal.epsilon)
         debug_goals_rfreq_sum = 0
         
+        # Compute rate values
         for _, goal in goals.items():
             name = goal.name
             frequency = getattr(self, name + "_freq")

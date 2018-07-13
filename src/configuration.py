@@ -317,7 +317,10 @@ class ControllerSettings(AgentSettings):
         #Visualize weights initialization in the histogram
         self.learn_start = 10000
         # C needs to reach `learnt_threshold` of its goals so that MC starts learning
-        self.learnt_threshold = 0.95
+        self.learnt_threshold = 0.85
+        # In order to compute the rate of success of each goal, take only into
+        # account the X last attempts
+        self.goal_attempts_list_len = 1000
     
         self.memory_minimum = 10000
         

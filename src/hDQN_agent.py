@@ -29,15 +29,7 @@ class HDQNAgent(base.Agent):
         
         self.mc_ag.update({"q_output_length" : self.goal_size}, add = True)
         self.c_ag.update({"q_output_length" : self.environment.action_size}, add = True)
-        
-        
-#        memory_type = PriorityExperienceReplay if self.ag.pmemory else OldReplayMemory
-#        if self.mc.pmemory:
-#        self.mc_memory = memory_type(config       = self.mc_ag,
-#                                      screen_size  = self.environment.state_size)
-#        self.c_memory = memory_type(config        = self.c_ag,
-#                                      screen_size  = self.environment.state_size + \
-#                                                          self.goal_size)   
+                
         self.mc_memory = self.create_memory(config = self.mc_ag,
                                          size   = self.environment.state_size)
         self.c_memory = self.create_memory(config = self.c_ag,
@@ -70,7 +62,8 @@ class HDQNAgent(base.Agent):
                 CT.goal_groups[self.environment.env_name][self.config.ag.goal_group]
             goals = generate_SF_goals(
                     environment = self.environment,
-                    goal_names  = goal_names)
+                    goal_names  = goal_names,
+                    config      = self.c_ag)
             self.goal_size = len(goals)
             
         else:
@@ -96,6 +89,7 @@ class HDQNAgent(base.Agent):
             n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
         self.mc_old_obs = obs
         self.m.mc_goals.append(n_goal)
+        self.c_learnt = self.is_knowledge_of_goals_enough()
         goal = self.get_goal(n_goal)
         goal.set_counter += 1
         self.current_goal = goal
@@ -318,8 +312,16 @@ class HDQNAgent(base.Agent):
             
             self.m.compute_test('c')
             self.m.compute_test('mc')
-            goal_success_rate = self.m.compute_goal_results(self.goals)
-            self.c_learnt = goal_success_rate > self.c_ag.learnt_threshold
+            self.m.compute_goal_results(self.goals)
+#            print("\nName\tEpsilon\tAttempts\tSuccesses\tRate\tR2")
+#            for i, goal in self.goals.items():
+#                print("%s\t%.2f\t%d\t%d\t%.2f\t%.2f" % (goal.name.ljust(20),
+#                                            goal.epsilon,
+#                                            goal.set_counter,
+#                                            goal.achieved_counter,
+#                                            goal.success_rate,
+#                                            goal.achieved_counter / goal.set_counter))
+            #self.c_learnt = goal_success_rate > self.c_ag.learnt_threshold
 
             self.m.compute_state_visits()
             
@@ -480,3 +482,19 @@ class HDQNAgent(base.Agent):
         self.update_target_q_network(prefix = 'mc')
         self.update_target_q_network(prefix = 'c')
         
+    def is_knowledge_of_goals_enough(self):
+        if self.c_learnt:
+            """
+            If the threshold has been surpased once already then we assume that
+            it is enough
+            """
+            return True
+        for _, goal in self.goals.items():
+            if goal.success_rate < self.c_ag.learnt_threshold:
+                return False
+        print("\nEnough goal learning")
+        return True
+        
+            
+            
+            

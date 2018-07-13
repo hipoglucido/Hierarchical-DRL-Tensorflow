@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 from epsilon import Epsilon
+import collections
 import numpy as np
 import math
 from constants import Constants as CT
@@ -8,26 +9,53 @@ import utils
 
 
 class Goal(metaclass = ABCMeta):
+    """
+    Abstract class of a goal
+    """
     def __init__(self, n, name, config = None):
         self.n = n
         self.name = str(name)
         self.steps_counter = 0.
         self.set_counter = 0.
         self.achieved_counter = 0.
+        self.success_rate = 0
+        
+        if config is not None:
+            # Take only the last attempts to compute epsilon
+            self.last_attempts = collections.deque(maxlen = \
+                                            config.goal_attempts_list_len)
+        else:
+            # Take all the attempts to compute epsilon
+            self.last_attempts = []
         
         self._epsilon = Epsilon()
         
    
     @property
     def epsilon(self):
+        """
+        The epsilon of a goal is related with its rate of achievement
+        """
 
-        result = self._epsilon.successes_value(
-                            attempts = self.set_counter,
-                            successes = self.achieved_counter)
+#        result = self._epsilon.successes_value(
+#                            attempts = self.set_counter,
+#                            successes = self.achieved_counter)
+        try:
+            self.success_rate = sum(self.last_attempts) / len(self.last_attempts)
+        except ZeroDivisionError:
+            self.success_rate = 0
+        
+        return 1 - min(self.success_rate, .99)
 
-        return result
     
     def setup_one_hot(self, length):
+        """
+        Build the one-hot-encoding representation of the goal, which depends
+        on the amount of goals that the hDQN is using
+        
+        params:
+            length: int, total amount of goals that the hDQN is using
+        """
         one_hot = np.zeros(length)
         one_hot[self.n] = 1.
         self.one_hot = one_hot
@@ -38,7 +66,14 @@ class Goal(metaclass = ABCMeta):
 
     
     def finished(self, metrics, is_achieved):
+        """
+        Function to indicate that the goal has finished.
         
+        params:
+            metrics: Metrics, object with metrics to be updated
+            is_achieved: Boolean, whether the goal has been achieved or not
+        """
+        self.last_attempts.append(int(is_achieved))
         self.achieved_counter += int(is_achieved)
         metrics.store_goal_result(self, is_achieved)
     
@@ -324,7 +359,7 @@ class SFGoal(Goal):
             
 
  
-def generate_SF_goals(environment, goal_names):
+def generate_SF_goals(environment, goal_names, config):
     """
     Gnerate Goal objects
     
@@ -339,8 +374,9 @@ def generate_SF_goals(environment, goal_names):
     for i, goal_name in enumerate(goal_names):
         #print(goal_name)
         goals[i] = SFGoal(n = i,
-                          name = goal_name,
-                          environment = environment)
+                          name        = goal_name,
+                          environment = environment,
+                          config      = config)
         goals[i].setup_one_hot(goal_size)
 
     return goals
