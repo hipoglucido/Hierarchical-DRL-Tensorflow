@@ -203,7 +203,7 @@ class HumanSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'human'
-        self.goal_group = 5
+        self.goal_group = 4
         
 
 class DQNSettings(AgentSettings):
@@ -260,7 +260,7 @@ class hDQNSettings(AgentSettings):
         self.mc = MetaControllerSettings(*args, **kwargs)
         self.c = ControllerSettings(*args, **kwargs)
         
-        self.goal_group = 2  
+        self.goal_group = 1 
         
         if 'ep_start' in args:
             self.mc.update({'ep_start' : args['ep_start']})
@@ -372,7 +372,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False
-        self.action_repeat = 4    
+        self.action_repeat = 2   
         self.right_failure_prob = 0.
         
 class EZ_MDPSettings(EnvironmentSettings):

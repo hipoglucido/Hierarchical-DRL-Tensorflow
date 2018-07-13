@@ -13,8 +13,8 @@ class Experiment():
         self.name = name
         self._args_list = []
         if name == 'ablation_exp':
-            # 32 cores
-            base_args = {'scale'          : 3500,
+            # 24 cores
+            base_args = {'scale'          : 2000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -27,8 +27,9 @@ class Experiment():
                         'c_double_q'      : 1,
                         'c_dueling'       : 1,
                         'c_pmemory'       : 1,
-                        'goal_group'      : 3}
-            hyperparameter_space = {'random_seeds' : list(range(4))}
+                        'goal_group'      : 2,
+                        'action_repeat'   : 2}
+            hyperparameter_space = {'random_seeds' : list(range(3))}
             
             #RAINBOW
             self.add_params_to_arg_list(base_args, hyperparameter_space)
@@ -51,7 +52,7 @@ class Experiment():
 
         elif name == 'extensions_exp':
             # 20 cores
-            base_args = {'scale'          : 3500,
+            base_args = {'scale'          : 2000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -61,7 +62,8 @@ class Experiment():
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0,
-                        'goal_group'      : 2}
+                        'goal_group'      : 2,
+                        'action_repeat'   : 2}
             hyperparameter_space = {'random_seeds' : list(range(5))}
             # VANILLA
             vanilla_base_args = base_args.copy()
@@ -124,9 +126,9 @@ class Experiment():
                                     'architectures'  : architectures}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'intrinsic_exp':
-            #  cores
+            # 12 cores
             base_args = {
-                        'scale'           : 2000,
+                        'scale'           : 500,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'agent_type'      : 'hdqn',
@@ -136,7 +138,7 @@ class Experiment():
                         'double_q'        : 0,
                         'dueling'         : 0,
                         'pmemory'         : 0}
-            goal_groups = [2, 3]
+            goal_groups = [1, 2]
             intrinsic_time_penalties = [0, 0.01]
             hyperparameter_space = {'random_seeds'            : list(range(3)),
                                     'goal_groups'             : goal_groups,
@@ -144,9 +146,9 @@ class Experiment():
          
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'goals_exp':
-            # 36 cores
+            # 27 cores
             base_args_hdqn = {
-                        'scale'           : 3000,
+                        'scale'           : 2000,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'agent_type'      : 'hdqn',
@@ -161,9 +163,9 @@ class Experiment():
             
             
             hyperparameter_space_dqn = {'random_seeds'   : list(range(3)),
-                                        'action_repeats' : [1, 3, 5, 7]}
+                                        'action_repeats' : [1, 3, 5]}
             hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
-            hyperparameter_space_hdqn['goal_groups'] = [2, 3]
+            hyperparameter_space_hdqn['goal_groups'] = [1, 2]
             
             self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
             self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
