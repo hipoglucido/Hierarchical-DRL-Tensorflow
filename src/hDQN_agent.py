@@ -260,6 +260,7 @@ class HDQNAgent(base.Agent):
             new_obs, ext_reward, terminal, info = self.environment.act(
                                         action = action,
                                         info   = info)
+            self.current_goal.steps_counter += 1
             self.process_info(info)            
             self.m.add_act(action, self.environment.gym.one_hot_inverse(new_obs))
             
@@ -490,7 +491,8 @@ class HDQNAgent(base.Agent):
             """
             return True
         for _, goal in self.goals.items():
-            if goal.success_rate < self.c_ag.learnt_threshold:
+            if goal.success_rate < self.c_ag.learnt_threshold or \
+                                                 goal.achieved_counter < 100:
                 return False
         print("\nEnough goal learning")
         return True

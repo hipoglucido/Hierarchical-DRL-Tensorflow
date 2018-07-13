@@ -76,7 +76,7 @@ class Constants:
             1 : SF_action_spaces['SF-v0'],
             # Medium level of abstraction
             2 : ['aim_at_fortress', 'aim_at_mine',
-                 'double_shoot', 'single_shoot'] + move_actions,
+                 'double_shoot', 'single_shoot', 'wait'],# + move_actions,
             # High level of abstraction
             3 : ['hit_mine', 'hit_fortress_once',
                  'hit_fortress_twice', 'wait'],# + move_actions,

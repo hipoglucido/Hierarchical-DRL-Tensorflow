@@ -71,6 +71,7 @@ ag_args.add_argument("--mc_pmemory", default = None, type = utils.str2bool)
 ag_args.add_argument("--memory_size", default = None, type = int)
 ag_args.add_argument("--goal_group", default = None, type = int)
 ag_args.add_argument("--ep_start", default = None, type = float)
+ag_args.add_argument("--c_intrinsic_time_penalty", default = None, type = float)
 
 
 def execute_experiment(args):

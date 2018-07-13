@@ -162,10 +162,12 @@ class Metrics:
     def store_goal_result(self, goal, achieved):
         name = goal.name
         frequency_tag = name + '_freq'
+        avg_steps_tag = name + '_avg_steps'
         setattr(self, frequency_tag, getattr(self, frequency_tag) + 1.)
         if achieved:
             successes_tag = name + '_successes'
             setattr(self, successes_tag, getattr(self, successes_tag) + 1.)
+            setattr(self, avg_steps_tag, getattr(self, avg_steps_tag) + goal.steps_counter)
             
     def compute_goal_results(self, goals):
         total_goals_set = 0
@@ -176,6 +178,12 @@ class Metrics:
             name = goal.name
             successes = getattr(self, name + '_successes')
             frequency = getattr(self, name + '_freq')
+            total_steps = getattr(self, name + '_avg_steps')
+            try:
+                avg_steps = total_steps / successes
+            except ZeroDivisionError:                
+                avg_steps = self.error_value
+            setattr(self, name + '_avg_steps', avg_steps)
             try:
                 success_rate = successes / frequency
             except ZeroDivisionError:                
@@ -298,7 +306,7 @@ class Metrics:
 
     def filter_summary(self, summary):
         
-        exclude_inside = ['_avg_steps', '_freq']
+        exclude_inside = ['_freq'] # '_avg_steps', 
         exclude_equals = [
                   'mc_ep_reward',
                   'c_ep_reward',

@@ -123,7 +123,26 @@ class Experiment():
             hyperparameter_space = {'random_seeds'   : list(range(4)),
                                     'architectures'  : architectures}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
-            
+        elif name == 'intrinsic_exp':
+            #  cores
+            base_args = {
+                        'scale'           : 2000,
+                        'mode'            : 'train',
+                        'env_name'        : 'SF-v0',
+                        'agent_type'      : 'hdqn',
+                        'use_gpu'         : 0,
+                        'ez'              : 0,
+                        'mines_activated' : 1,
+                        'double_q'        : 0,
+                        'dueling'         : 0,
+                        'pmemory'         : 0}
+            goal_groups = [2, 3]
+            intrinsic_time_penalties = [0, 0.01]
+            hyperparameter_space = {'random_seeds'            : list(range(3)),
+                                    'goal_groups'             : goal_groups,
+                                    'intrinsic_time_penaltys' : intrinsic_time_penalties}
+         
+            self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'goals_exp':
             # 36 cores
             base_args_hdqn = {

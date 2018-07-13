@@ -83,9 +83,9 @@ class GenericSettings():
                     we keep the instance value"""
                     continue
                 else:
-                    #old_value = getattr(self, key) if hasattr(self, key) else '_'
-                    #logging.debug("Updated %s: %s -> %s", key, str(old_value),
-                    #                                      str(value))
+#                    old_value = getattr(self, key) if hasattr(self, key) else '_'
+#                    print("Updated %s: %s -> %s" % (key, str(old_value),
+#                                                          str(value)))
                     setattr(self, key, value)
                     
         elif isinstance(new_attrs, GenericSettings):
@@ -275,7 +275,7 @@ class hDQNSettings(AgentSettings):
             ag = getattr(self, ag_name)
             args_copy = {}
             for k, v in args.items():
-                new_key = k.replace("%s_" % ag_name, "")
+                new_key = k.replace("%s_" % ag_name, "", 1)
                 args_copy[new_key] = v
             ag.update(args_copy)
         

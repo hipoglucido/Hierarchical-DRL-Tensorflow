@@ -19,6 +19,7 @@ class Goal(metaclass = ABCMeta):
         self.set_counter = 0.
         self.achieved_counter = 0.
         self.success_rate = 0
+        self.steps_for_achievement = 0
         
         if config is not None:
             # Take only the last attempts to compute epsilon
@@ -73,9 +74,11 @@ class Goal(metaclass = ABCMeta):
             metrics: Metrics, object with metrics to be updated
             is_achieved: Boolean, whether the goal has been achieved or not
         """
+        
         self.last_attempts.append(int(is_achieved))
         self.achieved_counter += int(is_achieved)
         metrics.store_goal_result(self, is_achieved)
+        self.steps_counter = 0.
     
 class MDPGoal(Goal):
     """
