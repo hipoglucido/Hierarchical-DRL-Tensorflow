@@ -140,7 +140,7 @@ class Experiment():
             intrinsic_time_penalties = [0, 0.01]
             hyperparameter_space = {'random_seeds'            : list(range(3)),
                                     'goal_groups'             : goal_groups,
-                                    'intrinsic_time_penaltys' : intrinsic_time_penalties}
+                                    'c_intrinsic_time_penaltys' : intrinsic_time_penalties}
          
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'goals_exp':

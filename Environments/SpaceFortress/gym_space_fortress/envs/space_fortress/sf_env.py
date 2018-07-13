@@ -524,8 +524,7 @@ class SFEnv(gym.Env):
         """
         Takes the list of images of the current episode and makes a video out
         of them
-        """
-        
+        """        
         video_name = "%dsteps_%s_R%.2f_win%d.mp4" % \
             (self.step_counter, self.current_time, self.ep_reward, int(self.win))
         video_path = os.path.join(self.episode_dir, video_name)

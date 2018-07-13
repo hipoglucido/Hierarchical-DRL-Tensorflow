@@ -150,6 +150,7 @@ class GlobalSettings(GenericSettings):
                  'ag.dueling',
                  'ag.pmemory',
                  
+                 
                  'ag.mc.architecture',
                  'ag.mc.double_q',
                  'ag.mc.dueling',
@@ -159,6 +160,7 @@ class GlobalSettings(GenericSettings):
                  'ag.c.double_q',
                  'ag.c.dueling',
                  'ag.c.pmemory',
+                 'ag.c.intrinsic_time_penalty',
                  #'ag.memory_size',
                  'env.action_repeat',
                  'gl.random_seed',
