@@ -140,8 +140,8 @@ class GlobalSettings(GenericSettings):
                  'gl.date',
                  'ag.goal_group',
                  'env.env_name',
-                 'env.ez',
-                 'env.mines_activated',
+                 'env.sparse_rewards',
+                 #'env.mines_activated',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
 #                 'env.total_states',
@@ -160,7 +160,7 @@ class GlobalSettings(GenericSettings):
                  'ag.c.double_q',
                  'ag.c.dueling',
                  'ag.c.pmemory',
-                 'ag.c.intrinsic_time_penalty',
+                 #'ag.c.intrinsic_time_penalty',
                  #'ag.memory_size',
                  'env.action_repeat',
                  'gl.random_seed',
@@ -242,9 +242,9 @@ class DQNSettings(AgentSettings):
         
         self.memory_minimum = 10000
         
-        self.dueling = 0
-        self.double_q = 0
-        self.pmemory = 0
+        self.dueling = 1
+        self.double_q = 1
+        self.pmemory = 1
         
         
     
@@ -307,9 +307,9 @@ class ControllerSettings(AgentSettings):
        
         self.architecture = [512, 512]
         self.architecture_duel = [128]
-        self.dueling = 0
-        self.double_q = 0
-        self.pmemory = 0
+        self.dueling = 1
+        self.double_q = 1
+        self.pmemory = 1
         
         self.test_step = 10000
         self.activation_fn = 'relu'
@@ -319,7 +319,7 @@ class ControllerSettings(AgentSettings):
         #Visualize weights initialization in the histogram
         self.learn_start = 10000
         # C needs to reach `learnt_threshold` of its goals so that MC starts learning
-        self.learnt_threshold = 0.85
+        self.learnt_threshold = 0.95
         # In order to compute the rate of success of each goal, take only into
         # account the X last attempts
         self.goal_attempts_list_len = 1000
@@ -357,9 +357,9 @@ class MetaControllerSettings(AgentSettings):
         
         self.architecture = [512, 512]
         self.architecture_duel = [128]
-        self.dueling = 0
-        self.double_q = 0
-        self.pmemory = 0
+        self.dueling = 1
+        self.double_q = 1
+        self.pmemory = 1
         
 
         self.activation_fn = 'relu'
@@ -430,6 +430,7 @@ class SpaceFortressSettings(EnvironmentSettings):
                                          'gym_space_fortress','envs',
                                          'space_fortress','shared')             
         self.ez = 0    # easy mode
+        self.sparse_rewards = 1
         self.mines_activated = 1  
         self.render_delay = 10        
         self.ship_lifes = 3
@@ -441,18 +442,19 @@ class SpaceFortressSettings(EnvironmentSettings):
         self.update(new_attrs)
         
     def set_reward_function(self):
+       
+        sr = self.sparse_rewards
         # Positive rewards
-        reward = 1 if self.ez else 1
-        self.hit_fortress_reward = reward
-        self.hit_mine_reward = 0#reward  
-        self.final_double_shot_reward = 5       
-        self.fast_shooting_penalty = 5
+        self.hit_fortress_reward = 0 if sr else 1
+        self.hit_mine_reward = 0
+        self.final_double_shot_reward = 5 if sr else 5      
+        self.fast_shooting_penalty = 0 if sr else 5
         
         # Negative rewards
         self.wrapping_penalty = 1
-        self.hit_by_fortress_penalty = 1
-        self.hit_by_mine_penalty = 1
-        self.time_penalty = 0.01        
+        self.hit_by_fortress_penalty = 0 if sr else 1
+        self.hit_by_mine_penalty = 0 if sr else 1
+        self.time_penalty = 0 if sr else 0.01        
         
 
 

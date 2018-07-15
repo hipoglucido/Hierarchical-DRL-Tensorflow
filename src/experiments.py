@@ -6,8 +6,7 @@ import utils
 import pprint
 
 
-class Experiment():
-        
+class Experiment():        
     def __init__(self, name, parallel):
         self.parallel = parallel
         self.name = name
@@ -145,25 +144,23 @@ class Experiment():
                                     'c_intrinsic_time_penaltys' : intrinsic_time_penalties}
          
             self.add_params_to_arg_list(base_args, hyperparameter_space)
-        elif name == 'goals_exp':
-            # 27 cores
+        elif name == 'sparse_exp':
+            # 24 cores
             base_args_hdqn = {
-                        'scale'           : 2000,
+                        'scale'           : 5000,
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
                         'agent_type'      : 'hdqn',
                         'use_gpu'         : 0,
                         'ez'              : 0,
                         'mines_activated' : 1,
-                        'double_q'        : 0,
-                        'dueling'         : 0,
-                        'pmemory'         : 0}
+                        'action_repeat'   : 1}
             base_args_dqn = base_args_hdqn.copy()
             base_args_dqn['agent_type'] = 'dqn'
             
             
-            hyperparameter_space_dqn = {'random_seeds'   : list(range(3)),
-                                        'action_repeats' : [1, 3, 5]}
+            hyperparameter_space_dqn = {'random_seeds'   : list(range(4)),
+                                        'sparse_rewardss': [0, 1]}
             hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
             hyperparameter_space_hdqn['goal_groups'] = [1, 2]
             

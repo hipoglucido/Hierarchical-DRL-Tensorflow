@@ -46,6 +46,7 @@ env_args.add_argument("--render_delay", default = None, type = int)
 env_args.add_argument("--action_repeat", default = None, type = int)
 env_args.add_argument("--mines_activated", default = None, type = utils.str2bool)
 env_args.add_argument("--ez", default = None, type = utils.str2bool)
+env_args.add_argument("--sparse_rewards", default = None, type = utils.str2bool)
 
 
 # AGENT PARAMETERS
