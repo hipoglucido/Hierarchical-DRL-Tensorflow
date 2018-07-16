@@ -1,2 +1,0 @@
-make -ffilt.mak
-

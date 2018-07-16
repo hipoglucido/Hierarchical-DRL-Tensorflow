@@ -1,1 +1,1 @@
-from gym_space_fortress.envs.space_fortress.sf_env import SFEnv
+from gym_space_fortress.envs.space_fortress.space_fortress_gym import SFEnv

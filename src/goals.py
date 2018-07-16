@@ -362,7 +362,7 @@ class SFGoal(Goal):
             
 
  
-def generate_SF_goals(environment, goal_names, config):
+def generate_SF_goals(environment, goal_names, config = None):
     """
     Gnerate Goal objects
     
