@@ -80,9 +80,8 @@ class Constants:
             2 : ['hit_mine', 'hit_fortress_once',
                  'hit_fortress_twice'],# + move_actions,
             # Custom
-            3 : ['aim_at_fortress', 'aim_at_mine',
-                 'hit_fortress_once', 'hit_fortress_twice']
-                 + SF_action_spaces['SF-v0'],
+            3 : ['hit_mine', 'hit_fortress_once',
+                 'hit_fortress_twice', 'aim_at_fortress'],
             # All
             4 : ['hit_mine', 'hit_fortress_once', 'hit_fortress_twice',
                  'double_shoot', 'single_shoot',

@@ -145,7 +145,7 @@ class Experiment():
          
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'sparse_exp':
-            # 24 cores
+            # 32 cores
             base_args_hdqn = {
                         'scale'           : 5000,
                         'mode'            : 'train',
@@ -162,7 +162,7 @@ class Experiment():
             hyperparameter_space_dqn = {'random_seeds'   : list(range(4)),
                                         'sparse_rewardss': [0, 1]}
             hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
-            hyperparameter_space_hdqn['goal_groups'] = [1, 2]
+            hyperparameter_space_hdqn['goal_groups'] = [1, 2, 3]
             
             self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
             self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
