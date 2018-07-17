@@ -375,15 +375,7 @@ class EnvironmentSettings(GenericSettings):
         self.action_repeat = 1  
         self.right_failure_prob = 0.
         
-class EZ_MDPSettings(EnvironmentSettings):
-    def __init__(self, new_attrs):
-        super().__init__()
-        self.total_states = 6
-        self.initial_state = 1
-        self.terminal_states = [0, 5]
-        self.total_actions = 2
-        self.right_failure_prob = 0.
-        self.update(new_attrs)
+
        
 class Key_MDPSettings(EnvironmentSettings):
      def __init__(self, new_attrs): 
@@ -393,33 +385,13 @@ class Key_MDPSettings(EnvironmentSettings):
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
         self.random_reset = False
-        self.time_penalty = 1e-2
+        
+        self.time_penalty = 0
+        self.small_reward = .1
+        self.big_reward = 1
         
         
-class Stochastic_MDPSettings(EnvironmentSettings):
-    def __init__(self, new_attrs):
-        super().__init__()
-        self.total_states = 6
-        self.initial_state = 1
-        self.terminal_states = [0]
-        self.total_actions = 2
-        self.right_failure_prob = 0.5
-        self.update(new_attrs)
 
-           
-        
-          
-class Trap_MDPSettings(EnvironmentSettings):
-    def __init__(self, new_attrs):
-        super().__init__()
-        self.total_states = 6
-        self.initial_state = 1
-        self.terminal_states = [0, 5]
-        self.total_actions = 2
-        self.update(new_attrs)
-     
-        self.trap_states = [3, 4]
-        
    
     
 class SpaceFortressSettings(EnvironmentSettings):

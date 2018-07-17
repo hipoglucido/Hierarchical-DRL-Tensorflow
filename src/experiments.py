@@ -12,7 +12,7 @@ class Experiment():
         self.name = name
         self._args_list = []
         if name == 'ablation_exp':
-            # 24 cores
+            # 26 cores
             base_args = {'scale'          : 3000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
