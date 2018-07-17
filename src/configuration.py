@@ -447,14 +447,14 @@ class SpaceFortressSettings(EnvironmentSettings):
         # Positive rewards
         self.hit_fortress_reward = 0 if sr else 1
         self.hit_mine_reward = 0
-        self.final_double_shot_reward = 5 if sr else 5      
+        self.final_double_shot_reward = 1 if sr else 5      
         self.fast_shooting_penalty = 0 if sr else 5
         
         # Negative rewards
         self.wrapping_penalty = 1
         self.hit_by_fortress_penalty = 0 if sr else 1
         self.hit_by_mine_penalty = 0 if sr else 1
-        self.time_penalty = 0 if sr else 0.01        
+        self.time_penalty = 0.01        
         
 
 

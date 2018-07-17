@@ -222,7 +222,7 @@ if __name__ == "__main__":
     else:
         # Execute experiments in parallel
         from multiprocessing import Pool    
-        n_processes = args['parallel']    
+        n_processes = args['parallel']
         with Pool(n_processes) as pool:
             pool.starmap(execute_experiment, zip(args_list))
     print("Done :D")

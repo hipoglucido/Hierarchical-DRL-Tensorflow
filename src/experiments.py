@@ -13,7 +13,7 @@ class Experiment():
         self._args_list = []
         if name == 'ablation_exp':
             # 24 cores
-            base_args = {'scale'          : 2000,
+            base_args = {'scale'          : 3000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -26,9 +26,9 @@ class Experiment():
                         'c_double_q'      : 1,
                         'c_dueling'       : 1,
                         'c_pmemory'       : 1,
-                        'goal_group'      : 2,
-                        'action_repeat'   : 2}
-            hyperparameter_space = {'random_seeds' : list(range(3))}
+                        'goal_group'      : 1,
+                        'action_repeat'   : 1}
+            hyperparameter_space = {'random_seeds' : list(range(2))}
             
             #RAINBOW
             self.add_params_to_arg_list(base_args, hyperparameter_space)
@@ -167,6 +167,29 @@ class Experiment():
             self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
             self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
             
+        elif name == 'sparse_small_exp':
+            # 32 cores
+            base_args_hdqn = {
+                        'scale'           : 5000,
+                        'mode'            : 'train',
+                        'env_name'        : 'SF-v0',
+                        'agent_type'      : 'hdqn',
+                        'use_gpu'         : 0,
+                        'ez'              : 0,
+                        'mines_activated' : 1,
+                        'action_repeat'   : 1}
+            base_args_dqn = base_args_hdqn.copy()
+            base_args_dqn['agent_type'] = 'dqn'
+            
+            
+            hyperparameter_space_dqn = {'random_seeds'   : list(range(2)),
+                                        'sparse_rewardss': [1, 0]}
+            hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
+            hyperparameter_space_hdqn['goal_groups'] = [1, 2]
+            
+            self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
+            self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
+            
             
             
         elif name == 'toy_problem':
@@ -192,15 +215,12 @@ class Experiment():
         base_args['parallel'] = self.parallel
         for args in self.get_hyperparameters_iterator(hyperparameter_space,
                                                       base_args):
-            
             if 'architecture' in args:
                 args['architecture'] = '-'.join([str(l) for l in args['architecture']])
             t = utils.get_timestamp()
             args['experiment_name'] = "%s_%s" % (t, self.name)
-            
             self._args_list.append(args)
-       
-        
+            
     def get_hyperparameters_iterator(self, hyperparameters_space, base_dict):
         lists = []
         for k, hyperparameters in hyperparameters_space.items():
