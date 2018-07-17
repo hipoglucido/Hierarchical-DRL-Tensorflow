@@ -47,6 +47,7 @@ env_args.add_argument("--action_repeat", default = None, type = int)
 env_args.add_argument("--mines_activated", default = None, type = utils.str2bool)
 env_args.add_argument("--ez", default = None, type = utils.str2bool)
 env_args.add_argument("--sparse_rewards", default = None, type = utils.str2bool)
+env_args.add_argument("--reward_type", default = None, type = int)
 
 
 # AGENT PARAMETERS
@@ -119,40 +120,17 @@ def execute_experiment(args):
     
     #Environment settings
     utils.insert_dirs(cnf.gl.env_dirs)
-      
-    
-    if args['env_name'] == 'SFC-v0':
+    if args['env_name'] == 'SF-v0':
         #Space Fortress
         env_st = configuration.SpaceFortressSettings(new_attrs = args)
-        
-    elif args['env_name'] == 'AIM-v0':
-        #Space Fortress
-        env_st = configuration.SpaceFortressSettings(new_attrs = args)
-        
-    elif args['env_name'] == 'SF-v0':
-        #Space Fortress
-        env_st = configuration.SpaceFortressSettings(new_attrs = args)
-        env_st.set_reward_function()
-        
-    elif args['env_name'] == 'stochastic_mdp-v0':
-        #MDP
-        env_st = configuration.Stochastic_MDPSettings(new_attrs = args)
-    elif args['env_name'] == 'ez_mdp-v0':
-        #MDP
-        env_st = configuration.EZ_MDPSettings(new_attrs = args)
     elif args['env_name'] == 'key_mdp-v0':
         #MDP
         env_st = configuration.Key_MDPSettings(new_attrs = args)
-    elif args['env_name'] == 'trap_mdp-v0':
-        #MDP
-        env_st = configuration.Trap_MDPSettings(new_attrs = args)
-    elif args['env_name'] == 'CartPole-v0':
-        #MDP
-        env_st = configuration.CartPoleSettings(new_attrs = args)
     else:
         raise ValueError("Wrong env_name %s, (env_names: s%)"\
                          .format(args['env_name'], ', '.join(CT.env_names)))
     
+    env_st.set_reward_function()
     cnf.set_environment_settings(env_st)
     environment = Environment(cnf)
     

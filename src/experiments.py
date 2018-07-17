@@ -192,23 +192,34 @@ class Experiment():
             
             
             
-        elif name == 'toy_problem':
-            # toy_problem
-            hyperparameter_space = {
-                    'agent_types'             : ['dqn', 'hdqn'],
-                    'random_seeds'           : list(range(10))
-                    }
-            base_args = {
-                    'agent_type'            : 'dqn',
-                    'env_name'              : 'key_mdp-v0',
-                    'scale'                 : 100,    
-                    'mode'                  : 'train',
-                    'display_prob'          : 0.001,
-                    'use_gpu'               : 0,
-                    'dueling'               : 0,
-                    'double_q'              : 0
-            }  
-        
+        elif name == 'key_exp':
+            # 6 cores
+            base_args = {'scale'          : 1000,
+                        'mode'            : 'train',
+                        'env_name'        : 'key_mdp-v0',
+                        'use_gpu'         : 0,
+                        'double_q'        : 0,
+                        'pmemory'         : 0,
+                        'dueling'         : 0,
+                        'mc_double_q'     : 0,
+                        'mc_dueling'      : 0,
+                        'mc_pmemory'      : 0,
+                        'c_double_q'      : 0,
+                        'c_dueling'       : 0,
+                        'c_pmemory'       : 0,
+                        'action_repeat'   : 1}
+            random_seeds = list(range(2))
+            hyperparameter_space = {'random_seeds'     : list(range(2)),
+                                    'agent_types'      : ['dqn'],# 'hdqn'],
+                                    'reward_types'     : [1],
+                                    'double_qs'        : [0, 1]}
+            self.add_params_to_arg_list(base_args, hyperparameter_space)
+            
+            hyperparameter_space = {'random_seeds'     : list(range(2)),
+                                    'agent_types'      : ['hdqn'],# 'hdqn'],
+                                    'reward_types'     : [1]}
+            self.add_params_to_arg_list(base_args, hyperparameter_space)
+            
         
     def add_params_to_arg_list(self, base_args, hyperparameter_space):
         print("Experiment %s:\n%s" % (self.name, pprint.pformat(hyperparameter_space)))

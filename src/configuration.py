@@ -141,6 +141,7 @@ class GlobalSettings(GenericSettings):
                  'ag.goal_group',
                  'env.env_name',
                  'env.sparse_rewards',
+                 'env.reward_type',
                  #'env.mines_activated',
                  'ag.agent_type',
 #                 'env.right_failure_prob', 
@@ -381,16 +382,24 @@ class Key_MDPSettings(EnvironmentSettings):
      def __init__(self, new_attrs): 
         super().__init__()
         self.factor = 3
+        self.reward_type = 1
         self.update(new_attrs)
         self.total_states = self.factor ** 2
         self.initial_state = int(self.total_states / 2)
         self.random_reset = False
-        
-        self.time_penalty = 0
-        self.small_reward = .1
-        self.big_reward = 1
-        
-        
+
+     def set_reward_function(self):
+        if self.reward_type == 1:
+            self.time_penalty = 0
+            self.small_reward = 0.1
+            self.big_reward = 1
+        elif self.reward_type == 2:
+            self.time_penalty = .01
+            self.small_reward = .1
+            self.big_reward = 1
+        else:
+            assert 0, "Wrong reward type %s" % str(self.reward_type)
+            
 
    
     
