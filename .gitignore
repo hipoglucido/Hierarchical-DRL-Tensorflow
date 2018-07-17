@@ -2,6 +2,7 @@
 src/__pycache__/
 Others/logs/
 *.sh
+*.save
 *.ipynb_checkpoints*
 *.ipynb_checkpoints
 *.ipynb_checkpoint
