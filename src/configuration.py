@@ -243,9 +243,9 @@ class DQNSettings(AgentSettings):
         
         self.memory_minimum = 10000
         
-        self.dueling = 1
-        self.double_q = 1
-        self.pmemory = 1
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
         
     
@@ -308,9 +308,9 @@ class ControllerSettings(AgentSettings):
        
         self.architecture = [512, 512]
         self.architecture_duel = [128]
-        self.dueling = 1
-        self.double_q = 1
-        self.pmemory = 1
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
         self.test_step = 10000
         self.activation_fn = 'relu'
@@ -358,9 +358,9 @@ class MetaControllerSettings(AgentSettings):
         
         self.architecture = [512, 512]
         self.architecture_duel = [128]
-        self.dueling = 1
-        self.double_q = 1
-        self.pmemory = 1
+        self.dueling = 0
+        self.double_q = 0
+        self.pmemory = 0
         
 
         self.activation_fn = 'relu'
@@ -428,7 +428,7 @@ class SpaceFortressSettings(EnvironmentSettings):
         # Positive rewards
         self.hit_fortress_reward = 0 if sr else 1
         self.hit_mine_reward = 0
-        self.final_double_shot_reward = 5 if sr else 5      
+        self.final_double_shot_reward = 10 if sr else 5      
         self.fast_shooting_penalty = 0 if sr else 5
         
         # Negative rewards
