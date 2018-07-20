@@ -39,7 +39,7 @@ class Metrics:
                                  'total_episodes', 'debug_states_rfreq_sum',
                                  'debug_no_ep_error', 'progress']
         if self.config.env.env_name == 'SF-v0':
-            self.special_SF_tags = ['steps_to_destroy', 'steps_to_win']
+            self.special_SF_tags = ['steps_to_destroy', 'steps_to_win', 'secs_to_win']
             self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits',
                                         'hits_by_fortress', 'hits_by_mine',
                                         'wrap_penalizations', 'win_rate',
