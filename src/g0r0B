@@ -1,3 +1,0 @@
-#! /bin/bash
-#SBATCH -n 1
-python main.py --agent_type=dqn --scale=7000 --sparse_rewards=0 --random_seed=14 --goal_group=0 --experiment_name=singles
