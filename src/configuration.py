@@ -227,7 +227,7 @@ class DQNSettings(AgentSettings):
         
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .8
+        self.ep_end_t_perc = .65
         
         self.history_length = 1
         self.train_frequency = 4
@@ -351,7 +351,7 @@ class MetaControllerSettings(AgentSettings):
         self.discount = 0.99
         self.ep_end = 0.05
         self.ep_start = 1.
-        self.ep_end_t_perc = .8
+        self.ep_end_t_perc = .65
         
         self.train_frequency = 4
         self.learn_start = 1000

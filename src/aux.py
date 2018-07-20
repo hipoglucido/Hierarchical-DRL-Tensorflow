@@ -16,5 +16,6 @@ for g in gs:
                 fp.write(base)
             
 print(' && '.join(starts))
+print()
 print(' && '.join(cancels))
 
