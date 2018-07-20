@@ -3,6 +3,7 @@ src/__pycache__/
 Others/logs/
 *.sh
 src/aux.py
+src/das.py
 *.save
 *.ipynb_checkpoints*
 *.ipynb_checkpoints
