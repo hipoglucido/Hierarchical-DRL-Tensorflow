@@ -1,0 +1,3 @@
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=1 --random_seed=14 --goal_group=2 --experiment_name=singles

@@ -33,7 +33,7 @@ gl_args.add_argument("--display_prob", default = None, type = float)
 gl_args.add_argument("--watch", default = None, type = utils.str2bool)
 gl_args.add_argument("--parallel", default = 0, type = int)
 gl_args.add_argument("--date", default = None, type = str)
-
+gl_args.add_argument("--experiment_name", default = None, type = str)
 
 # ENVIRONMENT PARAMETERS
 env_args = parser.add_argument_group('Environment')

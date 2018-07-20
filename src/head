@@ -1,0 +1,92 @@
+#! /bin/bash
+#SBATCH -n 8
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=ablation_exp --parallel=8
+#! /bin/bash
+#SBATCH -n 32
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=action_repeat_exp --parallel=32
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=dqn --scale=7000 --sparse_rewards=0 --random_seed=21
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=dqn --scale=7000 --sparse_rewards=1 --random_seed=21
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=0 --random_seed=21 --goal_group=1
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=1 --random_seed=21 --goal_group=1
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=0 --random_seed=21 --goal_group=2
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=1 --random_seed=21 --goal_group=2
+#! /bin/bash
+#SBATCH -n 28
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=architectures_exp --parallel=28
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=dqn --scale=7000 --sparse_rewards=0 --random_seed=28
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=dqn --scale=7000 --sparse_rewards=1 --random_seed=28
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=0 --random_seed=28 --goal_group=1
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=1 --random_seed=28 --goal_group=1
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=5000 --sparse_rewards=0 --random_seed=28 --goal_group=2
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=7000 --sparse_rewards=1 --random_seed=28 --goal_group=2
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=dqn --scale=5000 --sparse_rewards=0 --random_seed=14
+#! /bin/bash
+#SBATCH -n 20
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=extensions_exp --parallel=20
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=5000 --sparse_rewards=0 --random_seed=14 --goal_group=1
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=5000 --sparse_rewards=0 --random_seed=14 --goal_group=2
+#! /bin/bash
+#SBATCH -n 27
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=goals_exp --parallel=27
+#! /bin/bash
+#SBATCH -n 12
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=intrinsic_exp --parallel=12
+#! /bin/bash
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --agent_type=hdqn --goal_group=2 --scale=5000 --use_gpu=0 --sparse_rewards=1 --env_name=SF-v0 --action_repeat=3 --mc_dueling=1 --c_dueling=1
+#! /bin/bash
+#SBATCH --gres=gpu:1
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --agent_type=hdqn --goal_group=2 --scale=5000 --use_gpu=1 --sparse_rewards=1 --env_name=SF-v0 --action_repeat=3
+#! /bin/bash
+#SBATCH -n 12
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=vgarciacazorla@science.ru.nl
+python main.py --mode=sparse_small_exp --parallel=12
+#! /bin/bash
+#SBATCH -n 1
+python main.py --agent_type=hdqn --scale=5000 --sparse_rewards=1 --random_seed=2 --goal_group=1
