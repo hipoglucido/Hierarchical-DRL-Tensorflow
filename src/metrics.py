@@ -41,6 +41,7 @@ class Metrics:
         if self.config.env.env_name == 'SF-v0':
             self.special_SF_tags = ['steps_to_destroy', 'steps_to_win']
             self.scalar_global_tags += ['fortress_hits', 'wins', 'mine_hits',
+                                        'hits_by_fortress', 'hits_by_mine',
                                         'wrap_penalizations', 'win_rate',
                                         'shot_too_fast_penalizations']
             self.destroy_ats = []

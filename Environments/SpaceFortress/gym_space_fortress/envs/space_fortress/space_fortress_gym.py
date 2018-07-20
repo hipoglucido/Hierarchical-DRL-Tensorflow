@@ -323,6 +323,8 @@ class SFEnv(gym.Env):
         info = {
             'fortress_hit'                  : self.did_I_hit_fortress(),
             'mine_hit'                      : self.did_I_hit_mine(),
+            'hit_by_fortress'               : self.did_fortress_hit_me(),
+            'hit_by_mine'                   : self.did_mine_hit_me(),
             'win'                           : int(self.win),
             'destroyed'                     : destroyed,
             'steps'                         : self.step_counter, 

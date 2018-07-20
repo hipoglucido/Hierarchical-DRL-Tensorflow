@@ -433,8 +433,8 @@ class SpaceFortressSettings(EnvironmentSettings):
         
         # Negative rewards
         self.wrapping_penalty = 1
-        self.hit_by_fortress_penalty = 1 if sr else 1
-        self.hit_by_mine_penalty = 1 if sr else 1
+        self.hit_by_fortress_penalty = 0 if sr else 1
+        self.hit_by_mine_penalty = 0 if sr else 1
         self.time_penalty = 0.01        
         
 

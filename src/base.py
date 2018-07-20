@@ -56,11 +56,15 @@ class Agent(object):
             
             self.m.fortress_hits += info['fortress_hit']
             self.m.mine_hits += info['mine_hit']
+            self.m.hits_by_fortress += info['hit_by_fortress']
+            self.m.hits_by_mine += info['hit_by_mine']
             self.m.wrap_penalizations += info['wrap_penalization']
             self.m.shot_too_fast_penalizations += info['shot_too_fast_penalization']
             self.m.wins += info['win']
             if info['win']:
                 self.m.steps_to_win.append(info['steps'])
+                seconds_per_step = 50 / 1000 
+                self.m.secs_to_win.append(info['steps'] * seconds_per_step)
             if info['destroyed']:
                 self.m.add_fortress_destroy(info)
            
