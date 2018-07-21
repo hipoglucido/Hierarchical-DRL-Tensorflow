@@ -11,8 +11,41 @@ from constants import Constants as CT
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+from matplotlib import pyplot as plt
 
-
+class QPanel:
+    def __init__(self, height, width, agent_type):
+        self.length = 100
+#        self.history_keys = ['q', 'destroy']
+        self.history = {'q' : np.zeros(self.length)}
+        self.height = height
+        self.width = width
+        
+        if agent_type == 'human':
+            self.y_lim = None#[0, 1]
+            self.title = 'Random $\mathcal{R}$'
+        elif agent_type == 'dqn':
+            self.y_lym = None
+            self.title = 'Avg Q'
+    def add(self, info):
+        key = 'q'
+        item = info[key]
+        self.history[key][:-1] = self.history[key][1:]
+        self.history[key][-1] = item
+    def get_image(self, info):
+        # Draw q values
+        aux= plt.gcf()
+        dpi = aux.get_dpi()
+        figure = plt.figure(figsize = (self.width / dpi, self.height / dpi))
+        plot = figure.add_subplot(111)
+        plot.plot(self.history['q'], color = 'blue')
+        plt.ylim(self.y_lim)
+        plt.ylabel(self.title)
+        plt.tick_params(axis = 'x', which = 'both', bottom = 0, labelbottom = 0)
+        figure.tight_layout()
+        
+        q_panel = fig2img(figure)
+        return q_panel
 class Panel:
     """
     This class only serves for visualization purposes. It appends an image
@@ -21,7 +54,10 @@ class Panel:
     def __init__(self, height, font_path, agent_type):
         self.length = 17
         self.agent_type = agent_type
-        self.history_keys = ['goals', 'actions', 'rewards']
+        self.history_keys = ['goals', 'actions', 'rewards', 'q']
+        
+            
+        
         self.reset()
         
         self.height = height
@@ -44,7 +80,9 @@ class Panel:
         for k in self.history_keys:
             self.history[k] = ["..." for _ in range(self.length)]
         
+        
     def add(self, key, item):
+      
         if not isinstance(item, str) and item % 1 == 0:
             item = int(item)
         item = str(item)
@@ -133,10 +171,36 @@ class Panel:
         draw.text((j, 20), "Lifes: ship %d fort %d %s" % (info['ship'],
                   fortress_lifes, msg),
                                           color_aux, font = self.font1)
-        return panel
-            
-        
 
+        return panel#q_panel#panel
+            
+def fig2data ( fig ):
+    """
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    # draw the renderer
+    fig.canvas.draw ( )
+ 
+    # Get the RGBA buffer from the figure
+    w,h = fig.canvas.get_width_height()
+    buf = np.fromstring ( fig.canvas.tostring_argb(), dtype=np.uint8 )
+    buf.shape = ( w, h,4 )
+ 
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll ( buf, 3, axis = 2 )
+    return buf
+def fig2img ( fig ):
+    """
+    @brief Convert a Matplotlib figure to a PIL Image in RGBA format and return it
+    @param fig a matplotlib figure
+    @return a Python Imaging Library ( PIL ) image
+    """
+    # put the figure pixmap into a numpy array
+    buf = fig2data ( fig )
+    w, h, d = buf.shape
+    return Image.frombytes( "RGBA", ( w ,h ), buf.tostring( ) )
 class SFEnv(gym.Env):
     """
     Space Fortress Gym
@@ -505,11 +569,13 @@ class SFEnv(gym.Env):
                                                     }
         
         panel_img = self.panel.get_image(info)
+        qpanel_img = self.qpanel.get_image(info)
         width = self.screen_width + self.panel.width
         height = self.screen_height
-        full_image = Image.new('RGB', (width, height))
+        full_image = Image.new('RGB', (width, height + 100))
         full_image.paste(env_img, (0, 0))
         full_image.paste(panel_img, (self.screen_width, 0))
+        full_image.paste(qpanel_img, (0, self.screen_height))
         
         if not self.config.gl.watch:
         #Appends the full image to the current episode's list of images
@@ -937,8 +1003,10 @@ class SFEnv(gym.Env):
         
         #print("Using features", ', '.join(self.feature_names))
         font_path = os.path.join(self.config.gl.others_dir, 'Consolas.ttf')
-        self.panel = Panel(self.screen_height, font_path, self.config.ag)
-        
+        self.panel = Panel(self.screen_height, font_path, self.config.ag.agent_type)
+        self.qpanel = QPanel(height = 100,
+                             width = self.screen_width + self.panel.width,
+                             agent_type = self.config.ag.agent_type)
         self.fortress_lifes = self.config.env.fortress_lifes
         self.ship_lifes = self.config.env.ship_lifes
         
