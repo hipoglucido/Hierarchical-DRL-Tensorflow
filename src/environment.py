@@ -139,11 +139,16 @@ class Environment():
                                item = action_name)
             self.gym.panel.add(key  = 'rewards',
                                item = self.reward)
-            import random
-            q_value = random.random()
-            destroyed = q_value > 0.8
-            qinfo = {'destroyed' : destroyed,
-                     'q'         : q_value}
+ 
+            """
+            NB: Notation is a bit confusing here:
+            self.info = information coming from the gym environment
+            info = information coming from the agent
+            """
+            
+            qinfo = {'win' : self.info['win'],
+                     'fortress_hit' : self.info['fortress_hit'],
+                     'q'         : info['avg_q']}
             self.gym.qpanel.add(info = qinfo)
         if i != repeat - 1 and (info['display_episode'] or info['watch']) \
                            and self.env_name in CT.SF_envs:

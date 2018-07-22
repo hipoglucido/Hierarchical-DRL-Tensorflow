@@ -14,37 +14,58 @@ from PIL import ImageDraw
 from matplotlib import pyplot as plt
 
 class QPanel:
-    def __init__(self, height, width, agent_type):
+    def __init__(self, height, width, config):
+        agent_type = config.ag.agent_type
         self.length = 100
-#        self.history_keys = ['q', 'destroy']
-        self.history = {'q' : np.zeros(self.length)}
+        self.history_keys = ['q', 'win', 'fortress_hit']
+        self.history = {}
+        for k in self.history_keys:
+            self.history[k] = np.zeros(self.length)
         self.height = height
         self.width = width
-        
+        if config.env.sparse_rewards:
+            self.y_lim = [-2, 10]
+        else:
+            self.y_lim = [-2, 10]
         if agent_type == 'human':
-            self.y_lim = None#[0, 1]
             self.title = 'Random $\mathcal{R}$'
         elif agent_type == 'dqn':
-            self.y_lym = None
-            self.title = 'Avg Q'
+            self.title = 'Avg $Q$'
+        elif agent_type == 'hdqn':
+            self.title = 'Avg $Q_{MC}$'
     def add(self, info):
-        key = 'q'
-        item = info[key]
-        self.history[key][:-1] = self.history[key][1:]
-        self.history[key][-1] = item
+        for key, item in info.items():
+            self.history[key][1:] = self.history[key][:-1]
+            self.history[key][0] = item
     def get_image(self, info):
         # Draw q values
         aux= plt.gcf()
         dpi = aux.get_dpi()
         figure = plt.figure(figsize = (self.width / dpi, self.height / dpi))
         plot = figure.add_subplot(111)
-        plot.plot(self.history['q'], color = 'blue')
+        plot.plot(self.history['q'], color = 'blue', label = self.title)
+        
+        colors = ['red', 'green']
+        keys = ['fortress_hit']
+        for color, key in zip(colors, keys):
+            for i, boolean in enumerate(self.history[key]):
+                if boolean:
+                    plot.axvline(x = i, linestyle = '--', color = 'blue',
+                                 alpha = .5, linewidth = 1)
+                
         plt.ylim(self.y_lim)
         plt.ylabel(self.title)
+#        from collections import OrderedDict
+#        
+#        handles, labels = plt.gca().get_legend_handles_labels()
+#        by_label = OrderedDict(zip(labels, handles))
+#        plt.legend(by_label.values(), by_label.keys(), loc = 'upper right')
+        
         plt.tick_params(axis = 'x', which = 'both', bottom = 0, labelbottom = 0)
         figure.tight_layout()
         
         q_panel = fig2img(figure)
+        plt.close()
         return q_panel
 class Panel:
     """
@@ -733,12 +754,13 @@ class SFEnv(gym.Env):
         """
         Sometimes the game crashes and nothing makes sense anymore. As for now,
         it is hard to know why and detect how. It is fixed by restarting the
-        game
+        game        
         """
+        q_history = self.qpanel.history.copy()
         self.__init__()
         
         self.configure(self.config)
-        
+        self.qpanel.history = q_history
         #Get first observation
         observation = self.get_observation()
         return observation
@@ -1006,7 +1028,7 @@ class SFEnv(gym.Env):
         self.panel = Panel(self.screen_height, font_path, self.config.ag.agent_type)
         self.qpanel = QPanel(height = 100,
                              width = self.screen_width + self.panel.width,
-                             agent_type = self.config.ag.agent_type)
+                             config = self.config)
         self.fortress_lifes = self.config.env.fortress_lifes
         self.ship_lifes = self.config.env.ship_lifes
         

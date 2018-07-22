@@ -84,9 +84,13 @@ class HDQNAgent(base.Agent):
         if random.random() < ep and not self.is_playing():
             
             n_goal = random.randrange(self.goal_size)
+            mc_avg_q = -100
         else:
-            
-            n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
+            feed_dict = {self.mc_s_t: [[obs]]}
+            #n_goal = self.mc_q_action.eval({self.mc_s_t: [[obs]]})[0]
+            n_goal, mc_avg_q = self.sess.run([self.mc_q_action, self.mc_avg_q,],
+                                             feed_dict)
+            mc_avg_q, n_goal =  mc_avg_q[0], n_goal[0]
         self.mc_old_obs = obs
         self.m.mc_goals.append(n_goal)
         self.c_learnt = self.is_knowledge_of_goals_enough()
@@ -95,6 +99,7 @@ class HDQNAgent(base.Agent):
         self.current_goal = goal
         self.current_goal.achieved_inside_frameskip = False
         self.environment.gym.goal_has_changed = True
+        return mc_avg_q
        
             
         
@@ -241,7 +246,7 @@ class HDQNAgent(base.Agent):
         # Initial goal
         self.mc_step = self.mc_start_step
         self.c_step = self.c_start_step
-        self.set_next_goal(old_obs)
+        mc_avg_q = self.set_next_goal(old_obs)
         
         
         iterator = self.get_iterator(start_step  = self.c_start_step,
@@ -255,6 +260,7 @@ class HDQNAgent(base.Agent):
                     'is_SF'           : self.m.is_SF,
                     'display_episode' : self.display_episode,
                     'watch'           : self.gl.watch,
+                    'avg_q'           : mc_avg_q,
                     'goal'            : self.current_goal}
             
             new_obs, ext_reward, terminal, info = self.environment.act(
@@ -303,7 +309,7 @@ class HDQNAgent(base.Agent):
                 self.m.mc_steps += 1
                 
                 # Meta-controller sets goal
-                self.set_next_goal(old_obs)
+                mc_avg_q = self.set_next_goal(old_obs)
                 self.m.mc_goals.append(self.current_goal.n)
             if not terminal:
                 old_obs = new_obs.copy()
@@ -382,7 +388,7 @@ class HDQNAgent(base.Agent):
             
             q_summary = histograms
             avg_q = tf.reduce_mean(self.mc_q, 0)
-            
+            self.mc_avg_q = tf.reduce_max(self.mc_q, axis = 1)
             for idx in range(self.mc_ag.q_output_length):
                 q_summary.append(tf.summary.histogram('mc_q/%s' % idx, avg_q[idx]))
             self.mc_q_summary = tf.summary.merge(q_summary, 'mc_q_summary')

@@ -49,11 +49,12 @@ class DQNAgent(Agent):
         
         for self.step in iterator:
             # 1. predict
-            action = self.predict_next_action(old_obs)    
+            action, avg_q = self.predict_next_action(old_obs)    
        
             # 2. act            
             info = {'is_SF'           : self.m.is_SF,
                     'display_episode' : self.display_episode,
+                    'avg_q'           : avg_q,
                     'watch'           : self.gl.watch}
             new_obs, reward, terminal, info = self.environment.act(action, info)
             self.process_info(info = info)
@@ -110,10 +111,13 @@ class DQNAgent(Agent):
         self.m.update_epsilon(value = ep)
         if random.random() < ep and not self.is_playing():
             action = random.randrange(self.environment.action_size)
+            avg_q = -100
         else:
-            action = self.q_action.eval({self.s_t: [[old_obs]]})[0]
-
-        return action
+            feed_dict = {self.s_t: [[old_obs]]}
+#            action = self.q_action.eval(feed_dict)[0]
+            action, avg_q = self.sess.run([self.q_action, self.avg_q], feed_dict)
+            action, avg_q = action[0], avg_q[0]
+        return action, avg_q
 
     def observe(self, old_screen, action, reward, screen, terminal):
         self.memory.add(old_screen, action, reward, screen, terminal)
@@ -190,7 +194,7 @@ class DQNAgent(Agent):
                 self.q, self.w['q_w'], self.w['q_b'] = utils.linear(last_layer,
                                                       self.environment.action_size,
                                                       name='q')
-            
+            self.avg_q = tf.reduce_max(self.q, axis = 1)
             self.q_action = tf.argmax(self.q, axis = 1)
         self.create_target(prefix = '')
         
