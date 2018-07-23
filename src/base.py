@@ -220,6 +220,7 @@ class Agent(object):
                     value = int(self.total_steps - self.step < record_last_n_steps)
             except:
                 value = 0
+        value = 0 #Can't record because dpi is needed
         self.config.gl.update({'display_prob' : value})        
         self.display_episode = random.random() < self.gl.display_prob   
         
