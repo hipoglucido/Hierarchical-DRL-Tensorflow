@@ -26,7 +26,7 @@ class QPanel:
         if config.env.sparse_rewards:
             self.y_lim = [-2, 10]
         else:
-            self.y_lim = [-2, 10]
+            self.y_lim = [-2, 18]
         if agent_type == 'human':
             self.title = 'Random $\mathcal{R}$'
         elif agent_type == 'dqn':
@@ -39,8 +39,9 @@ class QPanel:
             self.history[key][0] = item
     def get_image(self, info):
         # Draw q values
-        aux= plt.gcf()
-        dpi = aux.get_dpi()
+        dpi= plt.gcf().get_dpi()
+        
+        
         figure = plt.figure(figsize = (self.width / dpi, self.height / dpi))
         plot = figure.add_subplot(111)
         plot.plot(self.history['q'], color = 'blue', label = self.title)

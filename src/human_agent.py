@@ -62,7 +62,8 @@ class HumanAgent():
                 #print("Current goal %s" % self.current_goal.name)
                 info_input = {'goal_name'       : self.current_goal.name,
                               'goal'            : self.current_goal,
-                        'display_episode' : self.display_episode}
+                              'display_episode' : self.display_episode,
+                              'avg_q'           : 0}
                 observation, reward, done, info = self.environment.act(
                                                     action = action,
                                                     info   = info_input)

@@ -120,6 +120,8 @@ class DQNAgent(Agent):
         return action, avg_q
 
     def observe(self, old_screen, action, reward, screen, terminal):
+        if self.is_playing():
+            return
         self.memory.add(old_screen, action, reward, screen, terminal)
         self.learn_if_ready(prefix = '')
 
