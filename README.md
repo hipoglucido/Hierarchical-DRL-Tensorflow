@@ -23,15 +23,18 @@ Train an DQN agent
 
 `python main.py --agent_type=dqn --env_name=SF-v0 --scale=5000 --double_q=1 --dueling=1 --pmemory=1 --architecture=128-128-128`
 
-Train a Hierarchical DQN agent
+When training a Hierarchical DQN agent we can set the desired DQN extensions separately for the meta-controller and controller using the prefixes 'mc' and 'c' respectively:
 
-`python main.py --agent_type=hdqn --env_name=SF-v0 --scale=5000 --double_q=1 --dueling=1 --pmemory=0 --goal_group=2`
+`python main.py --agent_type=hdqn --env_name=SF-v0 --scale=5000 --mc_double_q=1 --c_dueling=1 --c_pmemory=0 --goal_group=2`
 
 The hyperparameters available from command line are listed in `main.py` and will overwrite the default values of all the available hyperparameters, which are listed in `configuration.py`.
 
 The training will automatically generate the tensorboard logs and checkpoints of the network/s weights.
 
 It will record videos of the last steps of the game. For each run, in the logs folder the files `watch0` and `record0` are created. These can be renamed back and forth to `watch1` (to visualize the training in a window) and `record1` (to generate videos) at any point during training.
+
+### Goals
+If using the hDQN version, one may want to define a new set of goals. Each set of goals is defined as a list of goal names (strings) in the `goal_groups` dict in `constants.py`. Sets of goals can be defined by 1) changing such dict and 2)  add the functionality to check if the goal is accomplished in the method `is_achieved` of the class `Goal`.
 
 ## Others
 
