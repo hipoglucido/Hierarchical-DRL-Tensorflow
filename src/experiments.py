@@ -12,8 +12,8 @@ class Experiment():
         self.name = name
         self._args_list = []
         if name == 'ablation_exp':
-            # 26 cores
-            base_args = {'scale'          : 3000,
+            # 40 cores
+            base_args = {'scale'          : 5000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -26,9 +26,9 @@ class Experiment():
                         'c_double_q'      : 1,
                         'c_dueling'       : 1,
                         'c_pmemory'       : 1,
-                        'goal_group'      : 1,
+                        'goal_group'      : 3,
                         'action_repeat'   : 1}
-            hyperparameter_space = {'random_seeds' : list(range(2))}
+            hyperparameter_space = {'random_seeds' : list(range(5))}
             
             #RAINBOW
             self.add_params_to_arg_list(base_args, hyperparameter_space)
@@ -103,7 +103,7 @@ class Experiment():
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'architectures_exp':
             # 28 cores
-            base_args = {'scale'          : 3500,
+            base_args = {'scale'          : 5000,
                         'agent_type'      : 'hdqn',
                         'mode'            : 'train',
                         'env_name'        : 'SF-v0',
@@ -145,7 +145,7 @@ class Experiment():
          
             self.add_params_to_arg_list(base_args, hyperparameter_space)
         elif name == 'sparse_exp':
-            # 32 cores
+            # 30 cores
             base_args_hdqn = {
                         'scale'           : 5000,
                         'mode'            : 'train',
@@ -159,10 +159,10 @@ class Experiment():
             base_args_dqn['agent_type'] = 'dqn'
             
             
-            hyperparameter_space_dqn = {'random_seeds'   : list(range(4)),
+            hyperparameter_space_dqn = {'random_seeds'   : list(range(5)),
                                         'sparse_rewardss': [0, 1]}
             hyperparameter_space_hdqn = hyperparameter_space_dqn.copy()
-            hyperparameter_space_hdqn['goal_groups'] = [1, 2, 3]
+            hyperparameter_space_hdqn['goal_groups'] = [3, 4]
             
             self.add_params_to_arg_list(base_args_hdqn, hyperparameter_space_hdqn)
             self.add_params_to_arg_list(base_args_dqn, hyperparameter_space_dqn)
@@ -209,13 +209,13 @@ class Experiment():
                         'c_pmemory'       : 0,
                         'action_repeat'   : 1}
             random_seeds = list(range(2))
-            hyperparameter_space = {'random_seeds'     : list(range(2)),
+            hyperparameter_space = {'random_seeds'     : random_seeds,
                                     'agent_types'      : ['dqn'],# 'hdqn'],
                                     'reward_types'     : [1],
                                     'double_qs'        : [0, 1]}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
             
-            hyperparameter_space = {'random_seeds'     : list(range(2)),
+            hyperparameter_space = {'random_seeds'     : random_seeds,
                                     'agent_types'      : ['hdqn'],# 'hdqn'],
                                     'reward_types'     : [1]}
             self.add_params_to_arg_list(base_args, hyperparameter_space)
@@ -237,8 +237,7 @@ class Experiment():
         for k, hyperparameters in hyperparameters_space.items():
             assert k[-1] == 's', '"%s" must end with "s"' % k
             param_name = k[:-1]
-            list_ = [(param_name, v) for v in hyperparameters]
-            
+            list_ = [(param_name, v) for v in hyperparameters]            
             lists.append(list_)
         import random
         configurations = list(itertools.product(*lists))

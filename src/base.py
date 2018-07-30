@@ -224,7 +224,7 @@ class Agent(object):
             from matplotlib import pyplot as plt
             plt.gcf().get_dpi()
         except Exception as e:
-            value = value#0 #Can't record because dpi is needed
+            value = 0 #Can't record because dpi is needed
         self.config.gl.update({'display_prob' : value})        
         self.display_episode = random.random() < self.gl.display_prob   
         

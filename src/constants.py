@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-
+"""
+This class contains constant values to be used along the projects. They are
+mainly mappings between ids and values.
+"""
 import math
 
 class Constants:
@@ -37,8 +40,7 @@ class Constants:
         'SFS-v0'   : 0,
         'AIM-v0'   : 3
             }
-    #    print(key_to_action)
-    #    print(action_to_sf)
+
     
     MDP_envs = ['stochastic_mdp-v0', 'ez_mdp-v0', 'trap_mdp-v0', 'key_mdp-v0']
     GYM_envs = ['CartPole-v0']
@@ -68,8 +70,6 @@ class Constants:
             },
     
         # SF task
-        #get_region_names(5)
-        # 'Key.up', 'Key.right', 'Key.left', 'wait', 'Key.space'
         'SF-v0'  : {
             # Low level of abstraction
             0 : SF_action_spaces['SF-v0'],
@@ -92,7 +92,7 @@ class Constants:
             1 : []
                 },
         }
-    
+    # Add 'G_' prefix to goal names (for tensorboard regexes)
     temp = {}
     for env_name, goals_dict in goal_groups.items():
         temp[env_name] = {}
@@ -100,6 +100,7 @@ class Constants:
             temp[env_name][key] = ['G_' + g for g in goals]
     goal_groups = temp
     
+    # Auxiliar constants for trigonometric calculations
     c = 2 * math.pi
     c34 = 3 / 4 * c
     c12 = 1 / 2 * c

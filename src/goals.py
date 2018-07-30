@@ -10,7 +10,14 @@ import utils
 
 class Goal(metaclass = ABCMeta):
     """
-    Abstract class of a goal
+    Abstract class of a goal. If the user wants to add a new goal group this
+    is the procedure:
+        1. Add the goal name to the corresponding goal group in constants.py.
+            (a new goal group can be created as well).
+        2. Implement the functionality for checking if the new goal has been
+            achieved at any point in time. This is done by adding a new
+            'if clause' in the Goal.is_achieved() method.
+        3. Done
     """
     def __init__(self, n, name, config = None):
         self.n = n
@@ -187,7 +194,12 @@ class SFGoal(Goal):
         space, the action and other variables (included in info). The check is
         different for each goal.
         
-        return achieved: Boolean, whether the goal has been achieved or not
+        params:
+            screen: np float array, contains the preprocessed observation
+            action: int, the integer id of the action chosen by the agent
+            info: dict, information coming from the environment
+        returns:
+            achieved: Boolean, whether the goal has been achieved or not
         """
         pfs = self.get_prep_features(screen)
         
@@ -196,15 +208,15 @@ class SFGoal(Goal):
             """
             If the goal has been achieved during frameskip then we take it as
             accomplished without further checking. This only applies to certain
-            goals
+            goals.
+            
+            NB: at the end frameskip = action_repeat = 1 in all the experiments
+            so this functionality might need to be revised if higher frameskip
+            is set.
             """
             achieved = True
         elif self.name == 'G_hit_fortress_twice':
             hit = info['steps_since_last_fortress_hit'] == 0
-#            print("detected %d\naux %d\nnormal %d\nmin %d" % (int(hit),
-#                                               info['steps_since_last_fortress_hit_aux'],
-#                                               info['steps_since_last_fortress_hit'],
-#                                               info['min_steps_between_shots']))
             if hit and \
                     info['steps_since_last_fortress_hit_aux'] <= \
                                             info['min_steps_between_shots']:
@@ -363,7 +375,7 @@ class SFGoal(Goal):
 
  
 def generate_SF_goals(environment, goal_names, config = None):
-    """
+    """adwx
     Gnerate Goal objects
     
     params:
@@ -371,12 +383,11 @@ def generate_SF_goals(environment, goal_names, config = None):
         goal_names: list of strings with the name of the goals
     """
     goals = {}
-    goal_names_to_exclude = []#['wait']
+    goal_names_to_exclude = [] #['wait']
     goal_names = [gn for gn in goal_names if gn not in goal_names_to_exclude]
     goal_size = len(goal_names) #onehot
     for i, goal_name in enumerate(goal_names):
-        #print(goal_name)
-        goals[i] = SFGoal(n = i,
+        goals[i] = SFGoal(n           = i,
                           name        = goal_name,
                           environment = environment,
                           config      = config)

@@ -3,11 +3,20 @@ import pprint
 import utils
 """
 Class for hyperparameters and other configuration aspects.
+There are hyperparamenters for the agents, environments and global aspects.
 [IMPORTANT] Parameters set through command line will overwrite whatever is here
 """
 
     
 class Configuration:
+    """
+    A 'Configuration' object has three types of 'settings' as attributes. There
+    is only one configuration object in the code and is the one that has all
+    the hyperparameters and settings. This object is passed through the methods 
+    of most of the classses involved in executing runs. Note that as for now
+    the game environments also receive this object so that makes the gym
+    environments dependent on this file.
+    """
     def __init__(self):
         self.gl = None      #Global settings
         self.ag = None      #Agent settings
@@ -36,6 +45,11 @@ class Configuration:
      
     @property
     def model_name(self):
+        """
+        Retrieves the learning model name. The learning model name is composed
+        by some of the settings. Which settings do belong to the model name can
+        be changed in the attribute 'attrs_in_dir' of 'GlobalSettings'.
+        """
         chain = []
         for attr_fullname in self.gl.attrs_in_dir:
             strings = attr_fullname.split('.')
@@ -99,7 +113,7 @@ class GenericSettings():
     def print(self):
         msg =  "\n" + self.to_str()
         print(msg)
-#        logging.info(msg)
+
             
     
     def to_disk(self, filepath):
@@ -110,6 +124,9 @@ class GenericSettings():
 
     
 class GlobalSettings(GenericSettings):
+    """
+    General settings
+    """
     def __init__(self, new_attrs = {}):        
         self.display_prob = .0
         self.date = utils.get_timestamp()
@@ -121,7 +138,9 @@ class GlobalSettings(GenericSettings):
         self.root_dir = os.path.normpath(os.path.join(os.path.dirname(
                                         os.path.realpath(__file__)), ".."))
         self.environments_dir = os.path.join(self.root_dir, 'Environments')
-    
+        # All these directories will be imported to be sure that the gyms are
+        # found. It is just a quick-fix
+        # TODO clean this directory list to be more precise
         self.env_dirs = [
             os.path.join(self.root_dir, 'Environments','gym-stochastic-mdp'),
             os.path.join(self.root_dir, 'src','rainbow'),
@@ -133,11 +152,11 @@ class GlobalSettings(GenericSettings):
                                                'gym_space_fortress', 'envs',
                                                'space_fortress'),
             os.path.join(self.root_dir,  'Environments','SpaceFortress')]
-
+        # Attributes that belong to the model name
         self.attrs_in_dir = [
 #                 'env.factor',
 #                 'ag.mode',
-                 'gl.date',
+                 'gl.date',      # Important to make the model names unique
                  'ag.goal_group',
                  'env.env_name',
                  'env.sparse_rewards',
@@ -174,14 +193,15 @@ class GlobalSettings(GenericSettings):
         self.others_dir = os.path.join(self.root_dir,  'Others')
         import platform
         if platform.linux_distribution()[0] == 'Ubuntu':
-            #Ponyland server
+            # Working on server 1
             self.data_dir = '/vol/tensusers/vgarciacazorla/'
         else:
-            #NLR server
+            # Working on server 2
             self.data_dir = self.others_dir
-        self.checkpoints_dir = os.path.join(self.data_dir, 'checkpoints') #TODO
-        self.logs_dir = os.path.join(self.data_dir, 'logs') #TODO
-        self.randomize = False
+        # Where the model checkpoints (network weights) will be stored
+        self.checkpoints_dir = os.path.join(self.data_dir, 'checkpoints')
+        # Where the logs (tensorboard, recorded episodes etc.) will be stored
+        self.logs_dir = os.path.join(self.data_dir, 'logs')
         self.update(new_attrs)
         
 
@@ -204,6 +224,7 @@ class HumanSettings(AgentSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent_type = 'human'
+        # Identifier for the goal groups defined in constants.py
         self.goal_group = 4
         
 
@@ -218,6 +239,7 @@ class DQNSettings(AgentSettings):
         
         self.batch_size = 32
         
+        # Rewards discount (gamma)
         self.discount = 0.99
         self.target_q_update_step = 1 * self.scale
         self.learning_rate = 5*1e-4
@@ -225,24 +247,35 @@ class DQNSettings(AgentSettings):
         self.learning_rate_decay = 0.96
         self.learning_rate_decay_step = 5 * self.scale
         
+        # Epislon-greedy exploration strategy
+        # Final value of epsilon
         self.ep_end = 0.05
+        # Initial value of epsilon
         self.ep_start = 1.
+        # % of training at which epsilon will reach its final value
         self.ep_end_t_perc = .65
         
-        self.history_length = 1
+        self.history_length = 1 # X observation fed by step. Not tested for x > 1
+        # Frequency for making update weights
         self.train_frequency = 4
+        # Don't update weights if this amount of steps have been taken
         self.learn_start = 10000
         
+        # Hidden layers of MLP
         self.architecture = [512, 512]
+        # Hidden layers of Dueling part of the architecture
         self.architecture_duel = [128]
         
+        # Amount steps per epoch. Is the frequency of writting logs to tensorboard
         self.test_step = 10000
         
         self.activation_fn = 'relu'
         self.prefix = ''
         
+        # Don't update weights if memory is less big than this
         self.memory_minimum = 10000
         
+        # Whether to use DQN extensions or not
         self.dueling = 0
         self.double_q = 0
         self.pmemory = 0
@@ -373,8 +406,7 @@ class EnvironmentSettings(GenericSettings):
     def __init__(self):
         self.env_name = ''   
         self.random_start = False
-        self.action_repeat = 1  
-        self.right_failure_prob = 0.
+        self.action_repeat = 1  # aka FRAMESKIP
         
 
        
