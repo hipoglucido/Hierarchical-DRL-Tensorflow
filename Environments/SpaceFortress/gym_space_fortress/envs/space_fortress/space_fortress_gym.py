@@ -11,6 +11,8 @@ from constants import Constants as CT
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 class QPanel:
@@ -39,7 +41,7 @@ class QPanel:
             self.history[key][0] = item
     def get_image(self, info):
         # Draw q values
-        dpi= plt.gcf().get_dpi()
+        dpi= 100#plt.gcf().get_dpi()
         
         
         figure = plt.figure(figsize = (self.width / dpi, self.height / dpi))

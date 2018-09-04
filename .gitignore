@@ -4,6 +4,7 @@ Others/logs/
 *.sh
 src/aux.py
 src/das.py
+src/dass.py
 *.save
 *.ipynb_checkpoints*
 *.ipynb_checkpoints
