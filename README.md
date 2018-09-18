@@ -1,13 +1,15 @@
 # h-DQN for Space Fortress
 The purpose of this project is to use Hierarchical Deep Reinforcement Learning to solve the Space Fortress Game implementing hDQN with Tensorflow.
+
 The [DQN](https://www.nature.com/articles/nature14236) will be used as baseline with the extensions [Double Q learning](https://arxiv.org/abs/1509.06461), [Dueling architecture](https://arxiv.org/abs/1511.06581) and [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952). This will be compared with another extension to handle options as actions via [**h-DQN**](https://arxiv.org/abs/1604.06057).
 
 ## Video of trained agents
 
-Experiment with dense rewards (easy): https://www.youtube.com/watch?v=OXT7jyvMJ2g
-Experiment with sparse rewards (hard): https://www.youtube.com/watch?v=ZJGslxgm2Uw&t=306s
+- Experiment with dense rewards (easy): https://www.youtube.com/watch?v=OXT7jyvMJ2g
+- Experiment with sparse rewards (hard): https://www.youtube.com/watch?v=ZJGslxgm2Uw&t=306s
 
 ## Code
+
 I have mostyl coded all this project myself but I took some parts and also inspiration from these repositories:
  - https://github.com/devsisters/DQN-tensorflow
  - https://github.com/DerkBarten/SpaceFortress
