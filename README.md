@@ -36,10 +36,11 @@ It will record videos of the last steps of the game. For each run, in the logs f
 ### Goals
 If using the hDQN version, one may want to define a new set of goals. Each set of goals is defined as a list of goal names (strings) in the `goal_groups` dict in `constants.py`. Sets of goals can be defined by 1) changing such dict and 2)  add the functionality to check if the goal is accomplished in the method `is_achieved` of the class `Goal`.
 
-## Others
+## Video of trained agents
 
-The project is not finished because I still have to run some experiments. Here is a gameplay of the agent
-https://www.youtube.com/watch?v=-PKxXXtKZdQ
+Experiment with dense rewards (easy): https://www.youtube.com/watch?v=OXT7jyvMJ2g
+Experiment with sparse rewards (hard): https://www.youtube.com/watch?v=ZJGslxgm2Uw&t=306s
+
 
 This projects makes an extensive use of tensorboard to visualize various learning metrics
 ![alt text](Others/tensorboard_rewards.png "Tensorboard rewards")
